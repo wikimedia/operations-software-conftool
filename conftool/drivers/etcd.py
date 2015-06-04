@@ -67,7 +67,6 @@ class Driver(drivers.BaseDriver):
         except etcd.EtcdKeyNotFound:
             return None
 
-
     def _data(self, etcdresult):
         if etcdresult is None or etcdresult.dir:
             return None

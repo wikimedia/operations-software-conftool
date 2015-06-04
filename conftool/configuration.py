@@ -17,6 +17,7 @@ def get(configfile):
 
 ConfigBase = collections.namedtuple('Config', ['driver', 'hosts',
                                                'namespace',
+                                               'api_version',
                                                'pools_path',
                                                'services_path',
                                                ])
@@ -27,6 +28,7 @@ class Config(ConfigBase):
                 driver='etcd',
                 hosts=['http://localhost:2379'],
                 namespace='/conftool',
+                api_version='v1',
                 pools_path='pools',
                 services_path='services'
                 ):
@@ -38,5 +40,6 @@ class Config(ConfigBase):
         return super(Config, cls).__new__(cls, driver=driver,
                                           hosts=hosts,
                                           namespace=namespace,
+                                          api_version=api_version,
                                           pools_path=pools_path,
                                           services_path=services_path)

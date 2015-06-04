@@ -9,7 +9,7 @@ class BackendError(Exception):
 
 class BaseDriver(object):
     def __init__(self, config):
-        self.base_path = config.namespace
+        self.base_path = os.path.join(config.namespace, config.api_version)
 
     def abspath(self, path):
         if path.startswith('/'):

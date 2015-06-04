@@ -13,6 +13,7 @@ def choice(*args):
 class Node(KVObject):
 
     _schema = {'weight': int, 'pooled': choice("yes", "no", "inactive")}
+    _tags = ['dc', 'cluster', 'service']
 
     def __init__(self, datacenter, cluster, servname, host):
         self.base_path = self.config.pools_path

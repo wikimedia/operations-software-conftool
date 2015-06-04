@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from conftool import backend
 from conftool import drivers
 
@@ -22,6 +23,10 @@ class KVObject(object):
     def key(self):
         raise NotImplementedError("All kvstore objects should implement this")
 
+    @property
+    def name(self):
+        return os.path.basename(self.key)
+
     def get_default(self, what):
         raise NotImplementedError("All kvstore objects should implement this.")
 
@@ -43,6 +48,23 @@ class KVObject(object):
     def delete(self):
         self.backend.driver.delete(self.key)
 
+    @classmethod
+    def get_tags(cls, taglist):
+        tuplestrip = lambda tup: tuple(map(lambda x: x.strip(), tup))
+        tagdict = dict([tuplestrip(el.split('=')) for el in taglist])
+        # will raise a KeyError if not all tags are matched
+        return [tagdict[t] for t in cls._tags]
+
+    def update(self, values):
+        """
+        Update values of properties in the schema
+        """
+        for k, v in values.items():
+            if k not in self._schema:
+                continue
+            self._set_value(k, self._schema[k], {k: v}, set_defaults=False)
+        self.write()
+
     def _from_net(self, values):
         """
         Fetch the values from the kvstore into the object
@@ -59,9 +81,14 @@ class KVObject(object):
                 values[key] = self.get_default(key)
         return values
 
-    def _set_value(self, key, validator, values):
+    def _set_value(self, key, validator, values, set_defaults=True):
         try:
             setattr(self, key, validator(values[key]))
         except Exception as e:
             # TODO: log validation error
-            setattr(self, key, self.get_default(key))
+            if set_defaults:
+                setattr(self, key, self.get_default(key))
+
+    def __str__(self):
+        d = {self.name: self._to_net()}
+        return json.dumps(d)

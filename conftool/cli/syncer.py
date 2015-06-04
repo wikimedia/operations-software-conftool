@@ -10,6 +10,7 @@ import os
 import functools
 import logging
 
+
 # Generic exception handling decorator
 def catch_and_log(log_msg):
     def actual_wrapper(fn):
@@ -45,7 +46,7 @@ def get_service_actions(cluster, data):
     _log.debug("New services in cluster %s: %s", cluster,
                " ".join(new_services))
     _log.debug("Services to remove in cluster %s: %s", cluster,
-               " ".join(new_services))
+               " ".join(del_services))
     return (new_services | changed_services, del_services)
 
 
@@ -127,25 +128,32 @@ def load_nodes(dc, data):
                 delete_node(dc, cluster, servname, el)
 
 
-def tag_files(l):
-    servicefile = None
-    poolsfiles = []
-    for filename in l:
-        if filename.endswith('services.yaml'):
-            servicefile = filename
-        else:
-            poolsfiles.append(filename)
-    return servicefile, poolsfiles
+def tag_files(directory):
+    def tag(d, path, files):
+        tag = path.replace(directory, '').lstrip('/')
+        if not tag:
+            return
+        real_files = [os.path.realpath(os.path.join(path, f)) for f in files]
+        d[tag].extend(real_files)
+    tagged = defaultdict(list)
+    os.path.walk(directory, tag, tagged)
+    return tagged
 
-
-def main():
+def get_args(args):
     parser = argparse.ArgumentParser(description="Tool to sync the declared "
                                      "configuration on-disk with the kvstore "
                                      "data")
-    parser.add_argument('--files', nargs='+', help="Location (on disk) of the"
-                        " file(s) that have changed")
+    parser.add_argument('--directory', help="Directory containing the files to sync")
     parser.add_argument('--config', help="Configuration file")
-    args = parser.parse_args()
+    return parser.parse_args(args)
+
+
+def main(arguments=None):
+    if arguments is None:
+        arguments = list(sys.argv)
+        arguments.pop(0)
+
+    args = get_args(arguments)
     logging.basicConfig(level=logging.DEBUG)
     try:
         c = configuration.get(args.config)
@@ -154,9 +162,11 @@ def main():
         raise
         _log.critical("Invalid configuration: %s", e)
         sys.exit(1)
-    (service_file, pools) = tag_files(args.files)
-    # Load services data
-    if service_file is not None:
+    files = tag_files(args.directory)
+    # Load services data.
+    # TODO: This must be fixed to be less specific
+    if files['services']:
+        service_file = files['services'][0]
         with open(service_file, 'rb') as fh:
             servdata = yaml.load(fh)
     else:
@@ -167,7 +177,7 @@ def main():
         load, rem[cluster] = get_service_actions(cluster, data)
         load_services(cluster, load, data)
     # sync nodes
-    for filename in pools:
+    for filename in files['nodes']:
         dc = os.path.basename(filename).rstrip('.yaml')
         with open(filename, 'rb') as fh:
             dc_data = yaml.load(fh)
