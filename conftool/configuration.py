@@ -20,6 +20,7 @@ ConfigBase = collections.namedtuple('Config', ['driver', 'hosts',
                                                'api_version',
                                                'pools_path',
                                                'services_path',
+                                               'driver_options'
                                                ])
 
 
@@ -30,7 +31,8 @@ class Config(ConfigBase):
                 namespace='/conftool',
                 api_version='v1',
                 pools_path='pools',
-                services_path='services'
+                services_path='services',
+                driver_options={}
                 ):
         if pools_path.startswith('/'):
             raise ValueError("pools_path must be a relative path.")
@@ -42,4 +44,5 @@ class Config(ConfigBase):
                                           namespace=namespace,
                                           api_version=api_version,
                                           pools_path=pools_path,
-                                          services_path=services_path)
+                                          services_path=services_path,
+                                          driver_options=driver_options)

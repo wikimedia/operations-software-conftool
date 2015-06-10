@@ -15,7 +15,8 @@ class Driver(drivers.BaseDriver):
         proto = urlparse.urlparse(config.hosts[0]).scheme
         self.client = etcd.Client(host=tuple(host_list),
                                   protocol=proto,
-                                  allow_reconnect=True)
+                                  allow_reconnect=True,
+                                  **config.driver_options)
         super(Driver, self).__init__(config)
 
     @drivers.wrap_exception(etcd.EtcdException)
