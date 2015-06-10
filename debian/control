@@ -1,0 +1,20 @@
+Source: python-conftool
+Section: python
+Priority: optional
+Maintainer: Giuseppe Lavagetto <glavagetto@wikimedia.org>
+Standards-Version: 3.9.6
+Build-Depends: debhelper (>= 9), dh-python,
+  python-all (>= 2.7), python-setuptools,
+  python-etcd (>= 0.3.4), python-yaml
+Homepage: https://github.com/wikimedia/operations-software-conftool
+X-Python-Version: >= 2.7
+
+Package: python-conftool
+Architecture: any
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
+Breaks: ${python:Breaks}
+Provides: ${python:Provides}
+Description: Set of tools to configure the WMF kv config store.
+ Conftool provides a couple of tools: conftool-sync that allows
+ syncing objects from a series of yaml files.
+

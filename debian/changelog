@@ -1,0 +1,5 @@
+python-conftool (0.0.1) unstable; urgency=medium
+
+  * Initial packaging
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Thu, 21 May 2015 10:35:24 +0100

@@ -1,0 +1,12 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: conftool
+Source: https://github.com/wikimedia/operations-software-conftool
+
+Files: *
+Copyright: 2015 Giuseppe Lavagetto <glavagetto@wikimedia.org>
+           2015 Wikimedia Foundation
+License: GPL-3.0
+
+License: GPL-3.0
+ See /usr/share/common-licenses/GPL-3.0
+
