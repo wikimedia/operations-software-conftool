@@ -3,9 +3,8 @@ Section: python
 Priority: optional
 Maintainer: Giuseppe Lavagetto <glavagetto@wikimedia.org>
 Standards-Version: 3.9.6
-Build-Depends: debhelper (>= 9), dh-python,
-  python-all (>= 2.7), python-setuptools,
-  python-etcd (>= 0.3.4), python-yaml
+Build-Depends: debhelper (>= 9),
+  python-all (>= 2.7), python-setuptools
 Homepage: https://github.com/wikimedia/operations-software-conftool
 X-Python-Version: >= 2.7
 

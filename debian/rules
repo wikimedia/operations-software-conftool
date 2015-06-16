@@ -2,9 +2,10 @@
 DPKG_EXPORT_BUILDFLAGS = 1
 include /usr/share/dpkg/default.mk
 
-export PYBUILD_NAME=conftool
-export PYBUILD_DISABLE=tests
-
 %:
-	dh $@ --with python2 --buildsystem=pybuild
+	dh $@ --with python2 --buildsystem=python_distutils
 
+clean:
+	dh_testdir
+	dh_auto_clean
+	dh_clean
