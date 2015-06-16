@@ -33,8 +33,15 @@ def main(cmdline=None):
                         help="the action to take: "
                         " [set/k1=v1:k2=v2...|get|delete] node", nargs=2,
                         required=True)
+    parser.add_argument('--debug', action="store_true",
+                        default=False, help="print debug info")
     args = parser.parse_args(cmdline)
-    logging.basicConfig(level=logging.WARN)
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARN)
+
     try:
         c = configuration.get(args.config)
         KVObject.setup(c)

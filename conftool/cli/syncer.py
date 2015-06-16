@@ -143,8 +143,11 @@ def get_args(args):
     parser = argparse.ArgumentParser(description="Tool to sync the declared "
                                      "configuration on-disk with the kvstore "
                                      "data")
-    parser.add_argument('--directory', help="Directory containing the files to sync")
+    parser.add_argument('--directory',
+                        help="Directory containing the files to sync")
     parser.add_argument('--config', help="Configuration file")
+    parser.add_argument('--debug', action="store_true",
+                        default=False, help="print debug info")
     return parser.parse_args(args)
 
 
@@ -154,7 +157,6 @@ def main(arguments=None):
         arguments.pop(0)
 
     args = get_args(arguments)
-    logging.basicConfig(level=logging.DEBUG)
     try:
         c = configuration.get(args.config)
         KVObject.setup(c)
@@ -162,6 +164,12 @@ def main(arguments=None):
         raise
         _log.critical("Invalid configuration: %s", e)
         sys.exit(1)
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARN)
+
     files = tag_files(args.directory)
     # Load services data.
     # TODO: This must be fixed to be less specific

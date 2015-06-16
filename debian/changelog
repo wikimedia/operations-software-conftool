@@ -1,3 +1,9 @@
+python-conftool (0.0.2) precise-wikimedia; urgency=medium
+
+  * Add the debug option, fix etcd driver arguments
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 16 Jun 2015 14:52:15 +0200
+
 python-conftool (0.0.1) unstable; urgency=medium
 
   * Initial packaging
