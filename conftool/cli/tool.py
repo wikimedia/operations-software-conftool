@@ -21,8 +21,8 @@ def main(cmdline=None):
         epilog="More details at"
         " <https://wikitech.wikimedia.org/wiki/conftool>.",
         fromfile_prefix_chars='@')
-    parser.add_argument('--config', nargs=1, help="Optional config file",
-                        default="/etc/conftool/config")
+    parser.add_argument('--config', help="Optional config file",
+                        default="/etc/conftool/config.yaml")
     parser.add_argument('--tags',
                         help="List of comma-separated tags; they need to "
                         "match the base tags of the object type you chose.",

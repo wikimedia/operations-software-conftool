@@ -145,7 +145,8 @@ def get_args(args):
                                      "data")
     parser.add_argument('--directory',
                         help="Directory containing the files to sync")
-    parser.add_argument('--config', help="Configuration file")
+    parser.add_argument('--config', help="Optional configuration file",
+                        default="/etc/conftool/config.yaml")
     parser.add_argument('--debug', action="store_true",
                         default=False, help="print debug info")
     return parser.parse_args(args)
