@@ -4,6 +4,7 @@ from conftool import KVObject
 
 class Service(KVObject):
     _schema = {'default_values': dict, 'datacenters': list}
+    _tags = ['cluster']
 
     def __init__(self, cluster, name, **kwdargs):
         self._key = os.path.join(self.config.services_path, cluster, name)

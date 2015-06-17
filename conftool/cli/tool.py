@@ -53,7 +53,7 @@ def main(cmdline=None):
     try:
         tags = cls.get_tags(args.tags.split(','))
     except KeyError as e:
-        _log.critical("Invalid tag list %s - reason: %s", args.tags, e)
+        _log.critical("Invalid tag list %s - we're missing tag: %s", args.tags, e)
         sys.exit(1)
 
     for unit in args.action:
