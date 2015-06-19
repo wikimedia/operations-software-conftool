@@ -1,3 +1,11 @@
+python-conftool (0.0.3) precise-wikimedia; urgency=medium
+
+  * Robustness fixes
+  * Better logging
+  * PEP8 compliance
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Fri, 19 Jun 2015 13:27:00 +0200
+
 python-conftool (0.0.2) precise-wikimedia; urgency=medium
 
   * Add the debug option, fix etcd driver arguments
