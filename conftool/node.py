@@ -2,6 +2,7 @@ import os
 from conftool import KVObject, _log
 from conftool.service import Service
 
+
 def choice(*args):
     def is_in(x):
         if x not in args:

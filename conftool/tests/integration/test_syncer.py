@@ -24,10 +24,10 @@ class SyncerIntegration(IntegrationTestBase):
         return {cluster: self.nodelist_generator(servnames, number, initial)}
 
     def test_tag_files(self):
-        d = os.path.join(test_base,'fixtures')
+        d = os.path.join(test_base, 'fixtures')
         res = syncer.tag_files(d)
         self.assertEquals(
-            res['services'][0], os.path.join(d,'services/data.yaml'))
+            res['services'][0], os.path.join(d, 'services/data.yaml'))
 
     def test_load_service(self):
         cluster = 'test'
@@ -46,8 +46,8 @@ class SyncerIntegration(IntegrationTestBase):
         for i in xrange(10):
             servname = 'espresso-machine' + str(i)
             s = service.Service(cluster, servname)
-            self.assertEquals(s.default_values, data[servname]['default_values'])
-
+            self.assertEquals(
+                s.default_values, data[servname]['default_values'])
 
     def test_remove_services(self):
         cluster = 'test'
@@ -57,7 +57,7 @@ class SyncerIntegration(IntegrationTestBase):
         syncer.remove_services(cluster, data.keys())
         s = service.Service(cluster, 'espresso-machine0')
         self.assertTrue(s.exists)
-        for i in xrange(1,10):
+        for i in xrange(1, 10):
             servname = 'espresso-machine' + str(i)
             s = service.Service(cluster, servname)
             self.assertFalse(s.exists)
@@ -95,10 +95,10 @@ class SyncerIntegration(IntegrationTestBase):
         sdata = self.service_generator('espresso-machine', 2, 1)
         syncer.load_services(cluster, sdata.keys(), sdata)
         for i in xrange(10):
-            syncer.load_node(dc,cluster, 'espresso-machine1', 'node-%d' % i)
-        expected_hosts = ["node-%d" % i for i in xrange(5,15)]
+            syncer.load_node(dc, cluster, 'espresso-machine1', 'node-%d' % i)
+        expected_hosts = ["node-%d" % i for i in xrange(5, 15)]
         n, d = syncer.get_changed_nodes(dc, cluster,
-                                    'espresso-machine1',  expected_hosts)
+                                        'espresso-machine1',  expected_hosts)
         self.assertIn('node-13', n)
         self.assertIn('node-4', d)
 

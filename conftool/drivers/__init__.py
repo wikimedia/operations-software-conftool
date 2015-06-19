@@ -1,5 +1,4 @@
 import os
-import collections
 import functools
 
 
@@ -8,6 +7,7 @@ class BackendError(Exception):
 
 
 class BaseDriver(object):
+
     def __init__(self, config):
         self.base_path = os.path.join(config.namespace, config.api_version)
 

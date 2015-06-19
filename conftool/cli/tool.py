@@ -11,6 +11,7 @@ from conftool import service, node
 
 object_types = {"node": node.Node, "service": service.Service}
 
+
 def main(cmdline=None):
     if cmdline is None:
         cmdline = list(sys.argv)
@@ -53,7 +54,8 @@ def main(cmdline=None):
     try:
         tags = cls.get_tags(args.tags.split(','))
     except KeyError as e:
-        _log.critical("Invalid tag list %s - we're missing tag: %s", args.tags, e)
+        _log.critical(
+            "Invalid tag list %s - we're missing tag: %s", args.tags, e)
         sys.exit(1)
 
     for unit in args.action:

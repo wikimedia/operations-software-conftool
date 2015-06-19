@@ -1,17 +1,21 @@
 import unittest
 import mock
-import conftool
 from conftool import KVObject, node, service
-from conftool import configuration, drivers, backend
+from conftool import configuration, drivers
+
 
 class MockDriver(drivers.BaseDriver):
+
     def __init__(self, config):
         self.base_path = '/base_path/v2'
 
+
 class MockBackend(object):
+
     def __init__(self, config):
         self.config = config
         self.driver = MockDriver(config)
+
 
 class TestNode(unittest.TestCase):
 

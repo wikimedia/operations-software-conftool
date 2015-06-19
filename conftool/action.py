@@ -23,7 +23,7 @@ class Action(object):
         set_arg = act.strip('set/')
         try:
             values = dict((el.strip().split('=')) for el in set_arg.split(':'))
-        except Exception as e:
+        except Exception:
             raise ActionError("Could not parse set instructions: %s" % set_arg)
         return ('set', values)
 

@@ -60,6 +60,7 @@ class EtcdProcessHelper(object):
 
 
 class IntegrationTestBase(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         program = cls._get_exe()
@@ -98,6 +99,7 @@ class IntegrationTestBase(unittest.TestCase):
     def tearDown(self):
         path = KVObject.backend.driver.base_path
         try:
-            KVObject.backend.driver.client.delete(path, recursive=True, dir=True)
+            KVObject.backend.driver.client.delete(
+                path, recursive=True, dir=True)
         except:
             pass

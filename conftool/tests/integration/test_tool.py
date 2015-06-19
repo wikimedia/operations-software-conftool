@@ -1,11 +1,11 @@
 import os
 import sys
 from conftool.cli import syncer, tool
-from conftool import service, node
 from conftool.tests.integration import IntegrationTestBase, test_base
 from contextlib import contextmanager
 from StringIO import StringIO
 import json
+
 
 @contextmanager
 def captured_output():
@@ -17,6 +17,7 @@ def captured_output():
             yield sys.stdout, sys.stderr
         finally:
             sys.stdout, sys.stderr = old_out, old_err
+
 
 class ToolIntegration(IntegrationTestBase):
 

@@ -1,5 +1,6 @@
 import yaml
 import collections
+from conftool import _log
 
 
 def get(configfile):
@@ -10,7 +11,8 @@ def get(configfile):
         with open(configfile, 'rb') as fh:
             config = yaml.load(fh.read())
     except Exception as e:
-        # TODO log something
+        _log.error('Could not load file %s: %s',
+                   configfile, e)
         config = {}
 
     return Config(**config)
@@ -25,6 +27,7 @@ ConfigBase = collections.namedtuple('Config', ['driver', 'hosts',
 
 
 class Config(ConfigBase):
+
     def __new__(cls,
                 driver='etcd',
                 hosts=['http://localhost:2379'],

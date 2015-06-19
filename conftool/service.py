@@ -30,7 +30,7 @@ class Service(KVObject):
 
     def _to_net(self):
         values = super(Service, self)._to_net()
-        for k,v in self._schemaless.items():
+        for k, v in self._schemaless.items():
             values[k] = v
         return values
 

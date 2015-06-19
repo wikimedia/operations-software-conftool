@@ -133,11 +133,13 @@ def tag_files(directory):
         tag = path.replace(directory, '').lstrip('/')
         if not tag:
             return
-        real_files = [os.path.realpath(os.path.join(path, f)) for f in files if f.endswith(".yaml")]
+        real_files = [os.path.realpath(os.path.join(path, f))
+                      for f in files if f.endswith(".yaml")]
         d[tag].extend(real_files)
     tagged = defaultdict(list)
     os.path.walk(directory, tag, tagged)
     return tagged
+
 
 def get_args(args):
     parser = argparse.ArgumentParser(description="Tool to sync the declared "
@@ -183,7 +185,9 @@ def main(arguments=None):
                     d = {}
             servdata.update(d)
     if not servdata:
-        _log.critical("We found no services, so we can't import nodes either. Bailing out")
+        _log.critical(
+            "We found no services, so we can't import"
+            " nodes either. Bailing out")
         sys.exit(1)
 
     # Refresh services:

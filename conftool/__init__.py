@@ -6,6 +6,7 @@ from conftool import drivers
 
 _log = logging.getLogger(__name__)
 
+
 class KVObject(object):
     backend = None
     config = None
@@ -77,14 +78,14 @@ class KVObject(object):
         for key in self._schema.keys():
             try:
                 values[key] = getattr(self, key)
-            except Exception as e:
+            except Exception:
                 values[key] = self.get_default(key)
         return values
 
     def _set_value(self, key, validator, values, set_defaults=True):
         try:
             setattr(self, key, validator(values[key]))
-        except Exception as e:
+        except Exception:
             # TODO: log validation error
             if set_defaults:
                 setattr(self, key, self.get_default(key))
