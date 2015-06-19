@@ -69,7 +69,7 @@ class IntegrationTestBase(unittest.TestCase):
             proc_name=program, port=2379)
         cls.processHelper.run()
         cls.fixture_dir = os.path.join(test_base, 'fixtures')
-        conf = configuration.get(None)
+        conf = configuration.Config(driver_options={'allow_reconnect': True})
         KVObject.setup(conf)
 
     @classmethod

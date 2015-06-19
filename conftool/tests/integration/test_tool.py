@@ -18,7 +18,7 @@ def captured_output():
         finally:
             sys.stdout, sys.stderr = old_out, old_err
 
-class SyncerIntegration(IntegrationTestBase):
+class ToolIntegration(IntegrationTestBase):
 
     def setUp(self):
         args = ['--directory', os.path.join(test_base, 'fixtures')]

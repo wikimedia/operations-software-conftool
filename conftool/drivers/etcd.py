@@ -13,6 +13,8 @@ class Driver(drivers.BaseDriver):
             h, p = urlparse.urlparse(el).netloc.split(':')
             host_list.append((h, int(p)))
         proto = urlparse.urlparse(config.hosts[0]).scheme
+        #since we're using a tuple, we need this.
+        config.driver_options['allow_reconnect'] = True
         self.client = etcd.Client(host=tuple(host_list),
                                   protocol=proto,
                                   **config.driver_options)

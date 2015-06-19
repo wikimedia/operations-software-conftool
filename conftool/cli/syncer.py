@@ -133,7 +133,7 @@ def tag_files(directory):
         tag = path.replace(directory, '').lstrip('/')
         if not tag:
             return
-        real_files = [os.path.realpath(os.path.join(path, f)) for f in files]
+        real_files = [os.path.realpath(os.path.join(path, f)) for f in files if f.endswith(".yaml")]
         d[tag].extend(real_files)
     tagged = defaultdict(list)
     os.path.walk(directory, tag, tagged)
@@ -173,24 +173,36 @@ def main(arguments=None):
 
     files = tag_files(args.directory)
     # Load services data.
-    # TODO: This must be fixed to be less specific
+    servdata = {}
     if files['services']:
-        service_file = files['services'][0]
-        with open(service_file, 'rb') as fh:
-            servdata = yaml.load(fh)
-    else:
-        servdata = {}
+        for service_file in files['services']:
+            with open(service_file, 'rb') as fh:
+                try:
+                    d = yaml.load(fh)
+                except:
+                    d = {}
+            servdata.update(d)
+    if not servdata:
+        _log.critical("We found no services, so we can't import nodes either. Bailing out")
+        sys.exit(1)
+
     # Refresh services:
     rem = {}
     for cluster, data in servdata.items():
+        if not type(data) == dict:
+            continue
         load, rem[cluster] = get_service_actions(cluster, data)
         load_services(cluster, load, data)
     # sync nodes
     for filename in files['nodes']:
         dc = os.path.basename(filename).rstrip('.yaml')
-        with open(filename, 'rb') as fh:
-            dc_data = yaml.load(fh)
-        load_nodes(dc, dc_data)
+        try:
+            with open(filename, 'rb') as fh:
+                dc_data = yaml.load(fh)
+            load_nodes(dc, dc_data)
+        except:
+            _log.error("Malformed yaml data in %s", filename)
+            _log.error("Skipping loading/removing nodes, please correct!")
     # Now delete services
     for cluster, servnames in rem.items():
         remove_services(cluster, servnames)
