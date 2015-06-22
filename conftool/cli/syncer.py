@@ -60,7 +60,7 @@ def load_service(cluster, servname, servdata):
 def load_services(cluster, servnames, data):
     # TODO: logs, exceptions
     for servname in servnames:
-        _log.info("Loading service %s/%s", cluster, servname)
+        print "Creating service %s/%s" % (cluster, servname)
         servdata = data[servname]
         load_service(cluster, servname, servdata)
 
@@ -70,6 +70,7 @@ def remove_services(cluster, servnames):
     for servname in servnames:
         s = service.Service(cluster, servname)
         if s.exists:
+            print "Removing service %s/%s" % (cluster, servname)
             _log.info("Removing service %s/%s", cluster, servname)
             s.delete()
 
@@ -96,8 +97,10 @@ def get_changed_nodes(dc, cluster, servname, expected_hosts):
 def load_node(dc, cluster, servname, host):
     n = node.Node(dc, cluster, servname, host)
     if not n.exists:
-        _log.debug("Creating node %s for cluster %s/%s", host,
-                   cluster, servname)
+        print "%s: Creating node %s for cluster %s/%s" % (dc,
+                                                          host,
+                                                          cluster,
+                                                          servname)
         n.write()
 
 
@@ -105,8 +108,10 @@ def load_node(dc, cluster, servname, host):
 def delete_node(dc, cluster, servname, host):
     n = node.Node(dc, cluster, servname, host)
     if n.exists:
-        _log.debug("Removing node %s from cluster %s/%s", host,
-                   cluster, servname)
+        print "%s: Removing node %s from cluster %s/%s" % (dc,
+                                                           host,
+                                                           cluster,
+                                                           servname)
         n.delete()
 
 
@@ -160,6 +165,11 @@ def main(arguments=None):
         arguments.pop(0)
 
     args = get_args(arguments)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARN)
+
     try:
         c = configuration.get(args.config)
         KVObject.setup(c)
@@ -168,10 +178,6 @@ def main(arguments=None):
         _log.critical("Invalid configuration: %s", e)
         sys.exit(1)
 
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.WARN)
 
     files = tag_files(args.directory)
     # Load services data.

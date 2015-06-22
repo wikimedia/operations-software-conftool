@@ -1,10 +1,12 @@
 import os
 import logging
 import json
+
+_log = logging.getLogger(__name__)
 from conftool import backend
 from conftool import drivers
 
-_log = logging.getLogger(__name__)
+
 
 
 class KVObject(object):
