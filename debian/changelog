@@ -1,3 +1,10 @@
+python-conftool (0.1.0) precise-wikimedia; urgency=medium
+
+  * Fix a bug in confctl handling of arguments
+  * Performance improvements
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 23 Jun 2015 12:50:28 +0200
+
 python-conftool (0.0.3) precise-wikimedia; urgency=medium
 
   * Robustness fixes
