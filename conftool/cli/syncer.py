@@ -77,7 +77,7 @@ def remove_services(cluster, servnames):
 
 @catch_and_log("error while calculating changed nodes")
 def get_changed_nodes(dc, cluster, servname, expected_hosts):
-    s = service.Service(cluster, servname)
+    s = node.ServiceCache.get(cluster, servname)
     if not s.exists:
         _log.warning("Service %s not found, skipping", servname)
         return ([], [])

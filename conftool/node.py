@@ -11,6 +11,23 @@ def choice(*args):
     return is_in
 
 
+class ServiceCache(object):
+    """
+    Cache class for services - this will make nodes fetch services
+    once per run, esp in the syncer, instead of fetching them node-by-node.
+    Since we need to refresh services before we refresh nodes, this is not
+    going to cause us reading stale data.
+    """
+    services = {}
+
+    @classmethod
+    def get(cls, cluster, servname):
+        key = "{}_{}".format(cluster,servname)
+        if key not in cls.services:
+            cls.services[key] = Service(cluster, servname)
+        return cls.services[key]
+
+
 class Node(KVObject):
 
     _schema = {'weight': int, 'pooled': choice("yes", "no", "inactive")}
@@ -18,9 +35,10 @@ class Node(KVObject):
 
     def __init__(self, datacenter, cluster, servname, host):
         self.base_path = self.config.pools_path
-        self.service = Service(cluster, servname)
+        self.service = ServiceCache.get(cluster, servname)
         self._key = self.kvpath(datacenter, cluster, servname, host)
         self.fetch()
+        self._defaults = {}
 
     @property
     def key(self):

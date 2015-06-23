@@ -38,7 +38,7 @@ class Driver(drivers.BaseDriver):
     @drivers.wrap_exception(etcd.EtcdException)
     def write(self, path, value):
         key = self.abspath(path)
-        res = self._fetch(key)
+        res = self._fetch(key, quorum=True)
         if res is not None:
             old_value = json.loads(res.value)
             old_value.update(value)
@@ -51,7 +51,6 @@ class Driver(drivers.BaseDriver):
     @drivers.wrap_exception(etcd.EtcdException)
     def ls(self, path):
         key = self.abspath(path)
-        super(Driver, self).ls(path)
         res = self.client.read(key)
         fullpath = key + '/'
         return [(el.key.replace(fullpath, ''), self._data(el))
@@ -63,9 +62,9 @@ class Driver(drivers.BaseDriver):
         key = self.abspath(path)
         self.client.delete(key)
 
-    def _fetch(self, key):
+    def _fetch(self, key, **kwdargs):
         try:
-            return self.client.read(key, quorum=True)
+            return self.client.read(key, **kwdargs)
         except etcd.EtcdKeyNotFound:
             return None
 
