@@ -87,10 +87,16 @@ class KVObject(object):
     def _set_value(self, key, validator, values, set_defaults=True):
         try:
             setattr(self, key, validator(values[key]))
-        except Exception:
-            # TODO: log validation error
+        except Exception as e:
+            _log.error("Value for key %s is invalid: %s",
+                       key, e)
             if set_defaults:
-                setattr(self, key, self.get_default(key))
+                val = self.get_default(key)
+                _log.warn("Setting %s to the default value %s",
+                          key, val)
+                setattr(self, key, val)
+            else:
+                _log.warn("Not setting a value")
 
     def __str__(self):
         d = {self.name: self._to_net()}

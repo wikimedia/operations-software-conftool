@@ -20,7 +20,7 @@ class Action(object):
             return ('delete', None)
         elif not act.startswith('set/'):
             raise ActionError("Cannot parse action %s" % act)
-        set_arg = act.strip('set/')
+        set_arg = act.replace('set/', '', 1)
         try:
             values = dict((el.strip().split('=')) for el in set_arg.split(':'))
         except Exception:
