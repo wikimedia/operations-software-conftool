@@ -88,7 +88,7 @@ class KVObject(object):
         try:
             setattr(self, key, validator(values[key]))
         except Exception as e:
-            _log.error("Value for key %s is invalid: %s",
+            _log.info("Value for key %s is invalid: %s",
                        key, e)
             if set_defaults:
                 val = self.get_default(key)

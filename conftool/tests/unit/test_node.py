@@ -1,20 +1,8 @@
 import unittest
 import mock
 from conftool import KVObject, node, service
-from conftool import configuration, drivers
-
-
-class MockDriver(drivers.BaseDriver):
-
-    def __init__(self, config):
-        self.base_path = '/base_path/v2'
-
-
-class MockBackend(object):
-
-    def __init__(self, config):
-        self.config = config
-        self.driver = MockDriver(config)
+from conftool import configuration
+from conftool.tests.unit import MockBackend
 
 
 class TestNode(unittest.TestCase):
@@ -30,7 +18,6 @@ class TestNode(unittest.TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
-        pass
 
     @mock.patch('conftool.node.Node.get_default')
     def test_new_node(self, mocker):

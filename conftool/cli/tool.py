@@ -8,9 +8,51 @@ from conftool import configuration, action, _log, KVObject
 from conftool.drivers import BackendError
 # TODO: auto import these somehow
 from conftool import service, node
+import re
 
 object_types = {"node": node.Node, "service": service.Service}
 
+
+def host_list(name, cur_dir, act):
+    warn = False
+    if name == "all":
+        leaves = KVObject.backend.driver.ls(cur_dir)
+        if act == "get":
+            print json.dumps(dict(leaves))
+            return []
+        else:
+            retval = leaves.keys()
+            warn = True
+    elif not name.startswith('re:'):
+        return [name]
+    else:
+        regex = name.replace('re:', '', 1)
+        try:
+            r = re.compile(regex)
+        except:
+            _log.critical("Invalid regexp: %s", regex)
+            sys.exit(1)
+        all = KVObject.backend.driver.ls(cur_dir).keys()
+        retval = [objname for objname in all if r.match(objname)]
+        warn = (len(all) <= 2 * len(retval))
+    if warn and act in ['set', 'del']:
+        raise_warning()
+    return retval
+
+def raise_warning():
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        print "Destructive operations are not scriptable"
+        " and should be run from the command line"
+        sys.exit(1)
+
+    print "You are operating on more than half of the objects, this is "
+    "potentially VERY DANGEROUS: do you want to continue?"
+    print "If so, please type: 'Yes, I am sure of what I am doing.'"
+    a = raw_input("confctl>")
+    if a == "Yes, I am sure of what I am doing.":
+        return True
+    print "Aborting"
+    sys.exit(1)
 
 def main(cmdline=None):
     if cmdline is None:
@@ -32,7 +74,8 @@ def main(cmdline=None):
                         choices=object_types.keys(), default='node')
     parser.add_argument('--action', action="append", metavar="ACTIONS",
                         help="the action to take: "
-                        " [set/k1=v1:k2=v2...|get|delete] node", nargs=2,
+                        " [set/k1=v1:k2=v2...|get|delete]"
+                        " node|all|re:<regex>", nargs=2,
                         required=True)
     parser.add_argument('--debug', action="store_true",
                         default=False, help="print debug info")
@@ -59,26 +102,24 @@ def main(cmdline=None):
         sys.exit(1)
 
     for unit in args.action:
-        try:
-            act, name = unit
-            if act == 'get' and name == "all":
-                cur_dir = cls.dir(*tags)
-                print json.dumps(dict(KVObject.backend.driver.ls(cur_dir)))
-                return
-            # Oh python I <3 you...
-            arguments = list(tags)
-            arguments.append(name)
-            obj = cls(*arguments)
-            a = action.Action(obj, act)
-            msg = a.run()
-        except action.ActionError as e:
-            _log.error("Invalid action, reason: %s", str(e))
-        except BackendError as e:
-            _log.error("Failure writing to the kvstore: %s", str(e))
-        except Exception as e:
-            _log.error("Generic action failure: %s", str(e))
-        else:
-            print(msg)
+        act, n = unit
+        cur_dir = cls.dir(*tags)
+        for name in host_list(n, cur_dir, act):
+            try:
+                # Oh python I <3 you...
+                arguments = list(tags)
+                arguments.append(name)
+                obj = cls(*arguments)
+                a = action.Action(obj, act)
+                msg = a.run()
+            except action.ActionError as e:
+                _log.error("Invalid action, reason: %s", str(e))
+            except BackendError as e:
+                _log.error("Failure writing to the kvstore: %s", str(e))
+            except Exception as e:
+                _log.error("Generic action failure: %s", str(e))
+            else:
+                print(msg)
 
 
 if __name__ == '__main__':
