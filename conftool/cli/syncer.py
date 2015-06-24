@@ -209,10 +209,12 @@ def main(arguments=None):
         try:
             with open(filename, 'rb') as fh:
                 dc_data = yaml.load(fh)
-            load_nodes(dc, dc_data)
         except:
             _log.error("Malformed yaml data in %s", filename)
             _log.error("Skipping loading/removing nodes, please correct!")
+        else:
+            load_nodes(dc, dc_data)
+
     # Now delete services
     for cluster, servnames in rem.items():
         remove_services(cluster, servnames)

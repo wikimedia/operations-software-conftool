@@ -51,7 +51,10 @@ class Driver(drivers.BaseDriver):
     @drivers.wrap_exception(etcd.EtcdException)
     def ls(self, path):
         key = self.abspath(path)
-        res = self.client.read(key)
+        try:
+            res = self.client.read(key)
+        except etcd.EtcdException:
+            raise ValueError("{} is not a directory".format(key))
         fullpath = key + '/'
         return [(el.key.replace(fullpath, ''), self._data(el))
                 for el in res.leaves
