@@ -1,0 +1,26 @@
+Wikimedia etcd conftool
+=======================
+
+Installation
+------------
+
+    python setup.py install
+
+Running tests
+-------------
+
+To run the integration tests, you will need to install `etcd` on your machine.
+
+We use the `tox` utility, a wrapper around virtualenv. To list available
+environements:
+
+    tox -l
+
+To run one:
+
+   tox -e flake8
+
+You can pass extra arguments to the underlying command, for example to only run
+the unit tests:
+
+   tox -e py27 -- --test-suite conftool.tests.unit
