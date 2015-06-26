@@ -16,12 +16,13 @@ object_types = {"node": node.Node, "service": service.Service}
 def host_list(name, cur_dir, act):
     warn = False
     if name == "all":
-        leaves = KVObject.backend.driver.ls(cur_dir)
+        all = KVObject.backend.driver.ls(cur_dir)
+        objlist = [k for (k,v) in all]
         if act == "get":
-            print json.dumps(dict(leaves))
+            print json.dumps(dict(all))
             return []
         else:
-            retval = leaves.keys()
+            retval = objlist
             warn = True
     elif not name.startswith('re:'):
         return [name]
@@ -32,9 +33,9 @@ def host_list(name, cur_dir, act):
         except:
             _log.critical("Invalid regexp: %s", regex)
             sys.exit(1)
-        all = KVObject.backend.driver.ls(cur_dir).keys()
-        retval = [objname for objname in all if r.match(objname)]
-        warn = (len(all) <= 2 * len(retval))
+        objlist = [k for (k,v) in KVObject.backend.driver.ls(cur_dir)]
+        retval = [objname for objname in objlist if r.match(objname)]
+        warn = (len(objlist) <= 2 * len(retval))
     if warn and act in ['set', 'del']:
         raise_warning()
     return retval

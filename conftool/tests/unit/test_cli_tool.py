@@ -16,16 +16,16 @@ class TestCliTool(unittest.TestCase):
 
     def test_get_hosts(self):
         """Tests getting the host list"""
-        host_dir = {
-            'cp1011.example.com': {'pooled': 'yes'},
-            'cp1020.example.com': {'pooled': 'no'},
-            'cp1014.local': {'pooled': 'no'}
-        }
+        host_dir = [
+            ('cp1011.example.com', {'pooled': 'yes'}),
+            ('cp1020.example.com', {'pooled': 'no'}),
+            ('cp1014.local', {'pooled': 'no'})
+        ]
         self._mock_list(host_dir)
         l = tool.host_list('simple', '/whatever', 'get')
         self.assertEquals(l, ['simple'])
         l = tool.host_list('all', '/whatever', 'dummy')
-        self.assertItemsEqual(l, host_dir.keys())
+        self.assertItemsEqual(l, [k for (k,v) in host_dir])
         l = tool.host_list('all', '/whatever', 'get')
         self.assertEquals(l, [])
         l = tool.host_list('re:.*\.local', '/whatever', 'get')

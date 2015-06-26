@@ -1,4 +1,4 @@
-python-conftool (0.1.2) UNRELEASED; urgency=medium
+python-conftool (0.1.2) precise-wikimedia; urgency=medium
 
   * Added regexp matching of targets
 
