@@ -22,7 +22,7 @@ class ServiceCache(object):
 
     @classmethod
     def get(cls, cluster, servname):
-        key = "{}_{}".format(cluster,servname)
+        key = "{}_{}".format(cluster, servname)
         if key not in cls.services:
             cls.services[key] = Service(cluster, servname)
         return cls.services[key]

@@ -17,7 +17,7 @@ def host_list(name, cur_dir, act):
     warn = False
     if name == "all":
         all = KVObject.backend.driver.ls(cur_dir)
-        objlist = [k for (k,v) in all]
+        objlist = [k for (k, v) in all]
         if act == "get":
             print json.dumps(dict(all))
             return []
@@ -33,12 +33,13 @@ def host_list(name, cur_dir, act):
         except:
             _log.critical("Invalid regexp: %s", regex)
             sys.exit(1)
-        objlist = [k for (k,v) in KVObject.backend.driver.ls(cur_dir)]
+        objlist = [k for (k, v) in KVObject.backend.driver.ls(cur_dir)]
         retval = [objname for objname in objlist if r.match(objname)]
         warn = (len(objlist) <= 2 * len(retval))
     if warn and act in ['set', 'del']:
         raise_warning()
     return retval
+
 
 def raise_warning():
     if not sys.stdin.isatty() or not sys.stdout.isatty():
@@ -54,6 +55,7 @@ def raise_warning():
         return True
     print "Aborting"
     sys.exit(1)
+
 
 def main(cmdline=None):
     if cmdline is None:

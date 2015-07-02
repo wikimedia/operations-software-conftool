@@ -4,6 +4,7 @@ from conftool import KVObject, configuration
 from conftool.tests.unit import MockBackend
 from conftool.cli import tool
 
+
 class TestCliTool(unittest.TestCase):
 
     def setUp(self):
@@ -12,7 +13,6 @@ class TestCliTool(unittest.TestCase):
 
     def _mock_list(self, values):
         KVObject.backend.driver.ls = mock.MagicMock(return_value=values)
-
 
     def test_get_hosts(self):
         """Tests getting the host list"""
@@ -25,7 +25,7 @@ class TestCliTool(unittest.TestCase):
         l = tool.host_list('simple', '/whatever', 'get')
         self.assertEquals(l, ['simple'])
         l = tool.host_list('all', '/whatever', 'dummy')
-        self.assertItemsEqual(l, [k for (k,v) in host_dir])
+        self.assertItemsEqual(l, [k for (k, v) in host_dir])
         l = tool.host_list('all', '/whatever', 'get')
         self.assertEquals(l, [])
         l = tool.host_list('re:.*\.local', '/whatever', 'get')

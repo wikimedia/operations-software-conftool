@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name='conftool',
     version='0.1.2',
-    description='Collection of tools to interoperate with distributed k/v stores',
+    description='Tools to interoperate with distributed k/v stores',
     author='Joe',
     author_email='glavagetto@wikimedia.org',
     url='https://github.com/wikimedia/operations-software-conftool',

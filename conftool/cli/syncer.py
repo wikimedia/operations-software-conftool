@@ -178,7 +178,6 @@ def main(arguments=None):
         _log.critical("Invalid configuration: %s", e)
         sys.exit(1)
 
-
     files = tag_files(args.directory)
     # Load services data.
     servdata = {}

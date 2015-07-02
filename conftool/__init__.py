@@ -7,8 +7,6 @@ from conftool import backend
 from conftool import drivers
 
 
-
-
 class KVObject(object):
     backend = None
     config = None
@@ -89,7 +87,7 @@ class KVObject(object):
             setattr(self, key, validator(values[key]))
         except Exception as e:
             _log.info("Value for key %s is invalid: %s",
-                       key, e)
+                      key, e)
             if set_defaults:
                 val = self.get_default(key)
                 _log.warn("Setting %s to the default value %s",
