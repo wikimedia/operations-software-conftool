@@ -60,6 +60,8 @@ class EtcdProcessHelper(object):
 
 class IntegrationTestBase(unittest.TestCase):
 
+    log = logging.getLogger(__name__)
+
     @classmethod
     def setUpClass(cls):
         program = cls._get_exe()
@@ -70,7 +72,17 @@ class IntegrationTestBase(unittest.TestCase):
         cls.processHelper.run()
         cls.fixture_dir = os.path.join(test_base, 'fixtures')
         conf = configuration.Config(driver_options={'allow_reconnect': True})
-        KVObject.setup(conf)
+        try:
+            KVObject.setup(conf)
+        except SystemExit as system_exit:
+            cls.log.critical("KVObject.setup() failed. sys.exit(%s)"
+                             % system_exit,
+                             exc_info=1)
+        cls.init_failed = True
+
+    def setUp(self):
+        if self.init_failed:
+            self.fail("Failed to initialize %s" % __name__)
 
     @classmethod
     def tearDownClass(cls):
