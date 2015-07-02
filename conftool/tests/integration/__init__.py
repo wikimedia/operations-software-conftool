@@ -22,7 +22,7 @@ class EtcdProcessHelper(object):
             cluster=False,
             tls=False
     ):
-
+        self.log = logging.getLogger(__name__ + '.' + self.__class__.__name__)
         self.base_directory = base_directory
         self.proc_name = proc_name
         self.port = port
@@ -34,7 +34,6 @@ class EtcdProcessHelper(object):
             self.schema = 'https://'
 
     def run(self, proc_args=None):
-        log = logging.getLogger()
         if self.proc is not None:
             raise Exception("etcd already running with pid %d", self.proc.pid)
         client = '%s127.0.0.1:%d' % (self.schema, self.port)
@@ -49,8 +48,8 @@ class EtcdProcessHelper(object):
             daemon_args.extend(proc_args)
 
         daemon = subprocess.Popen(daemon_args)
-        log.debug('Started %d' % daemon.pid)
-        log.debug('Params: %s' % daemon_args)
+        self.log.debug('Started etcd with pid %d' % daemon.pid)
+        self.log.debug('etcd params: %s' % daemon_args)
         time.sleep(2)
         self.proc = daemon
 
