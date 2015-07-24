@@ -36,7 +36,7 @@ def host_list(name, cur_dir, act):
         objlist = [k for (k, v) in KVObject.backend.driver.ls(cur_dir)]
         retval = [objname for objname in objlist if r.match(objname)]
         warn = (len(objlist) <= 2 * len(retval))
-    if warn and act in ['set', 'del']:
+    if warn and act[0:3] in ['set', 'del']:
         raise_warning()
     return retval
 
