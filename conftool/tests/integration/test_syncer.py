@@ -26,8 +26,8 @@ class SyncerIntegration(IntegrationTestBase):
     def test_tag_files(self):
         d = os.path.join(test_base, 'fixtures')
         res = syncer.tag_files(d)
-        self.assertEquals(
-            res['services'][0], os.path.join(d, 'services/data.yaml'))
+        self.assertIn(os.path.join(d, 'services/data.yaml'),
+                      res['services'])
 
     def test_load_service(self):
         cluster = 'test'

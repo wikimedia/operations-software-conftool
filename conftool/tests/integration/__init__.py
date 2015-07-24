@@ -64,6 +64,7 @@ class IntegrationTestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.init_failed = False
         program = cls._get_exe()
         cls.directory = tempfile.mkdtemp(prefix='conftool')
         cls.processHelper = EtcdProcessHelper(
@@ -78,7 +79,7 @@ class IntegrationTestBase(unittest.TestCase):
             cls.log.critical("KVObject.setup() failed. sys.exit(%s)"
                              % system_exit,
                              exc_info=1)
-        cls.init_failed = True
+            cls.init_failed = True
 
     def setUp(self):
         if self.init_failed:
