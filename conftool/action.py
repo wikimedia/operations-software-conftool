@@ -39,7 +39,9 @@ class Action(object):
             entity_type = self.entity.__class__.__name__,
             return "Deleted %s %s." % (entity_type,
                                        self.entity.name)
-        else:
+        elif self.action == 'set':
+            if not self.entity.exists:
+                raise ActionError("Entity %s doesn't exist" % self.entity.name)
             desc = []
             for (k, v) in self.args.items():
                 msg = "%s: %s changed %s => %s" % (
