@@ -2,7 +2,7 @@ python-conftool (0.1.2) precise-wikimedia; urgency=medium
 
   * Added regexp matching of targets
 
- -- Giuseppe Lavagetto <oblivian@flint>  Fri, 26 Jun 2015 07:51:14 +0200
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Fri, 26 Jun 2015 07:51:14 +0200
 
 python-conftool (0.1.1) precise-wikimedia; urgency=medium
 
