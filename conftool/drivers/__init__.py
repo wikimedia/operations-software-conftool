@@ -37,6 +37,15 @@ class BaseDriver(object):
             raise ValueError(
                 "{} is not a directory".format(self.abspath(path)))
 
+    def get_lock(self, path):
+        pass
+
+    def lock_exists(self, path):
+        pass
+
+    def release_lock(self, path):
+        pass
+
 
 def wrap_exception(exc):
     def actual_wrapper(fn):

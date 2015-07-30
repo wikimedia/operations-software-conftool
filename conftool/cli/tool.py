@@ -107,22 +107,27 @@ def main(cmdline=None):
     for unit in args.action:
         act, n = unit
         cur_dir = cls.dir(*tags)
-        for name in host_list(n, cur_dir, act):
-            try:
-                # Oh python I <3 you...
-                arguments = list(tags)
-                arguments.append(name)
-                obj = cls(*arguments)
-                a = action.Action(obj, act)
-                msg = a.run()
-            except action.ActionError as e:
-                _log.error("Invalid action, reason: %s", str(e))
-            except BackendError as e:
-                _log.error("Failure writing to the kvstore: %s", str(e))
-            except Exception as e:
-                _log.error("Generic action failure: %s", str(e))
-            else:
-                print(msg)
+        with cls.lock(cur_dir):
+            run_action(cls, n, cur_dir, act, tags)
+
+
+def run_action(cls, n, cur_dir, act, tags):
+    for name in host_list(n, cur_dir, act):
+        try:
+            # Oh python I <3 you...
+            arguments = list(tags)
+            arguments.append(name)
+            obj = cls(*arguments)
+            a = action.Action(obj, act)
+            msg = a.run()
+        except action.ActionError as e:
+            _log.error("Invalid action, reason: %s", str(e))
+        except BackendError as e:
+            _log.error("Failure writing to the kvstore: %s", str(e))
+        except Exception as e:
+            _log.error("Generic action failure: %s", str(e))
+        else:
+            print(msg)
 
 
 if __name__ == '__main__':

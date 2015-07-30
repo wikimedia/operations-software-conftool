@@ -59,20 +59,24 @@ def load_service(cluster, servname, servdata):
 
 def load_services(cluster, servnames, data):
     # TODO: logs, exceptions
-    for servname in servnames:
-        print "Creating service %s/%s" % (cluster, servname)
-        servdata = data[servname]
-        load_service(cluster, servname, servdata)
+    path = service.Service.dir(cluster)
+    with service.Service.lock(path):
+        for servname in servnames:
+            print "Creating service %s/%s" % (cluster, servname)
+            servdata = data[servname]
+            load_service(cluster, servname, servdata)
 
 
 @catch_and_log("error while deleting services")
 def remove_services(cluster, servnames):
-    for servname in servnames:
-        s = service.Service(cluster, servname)
-        if s.exists:
-            print "Removing service %s/%s" % (cluster, servname)
-            _log.info("Removing service %s/%s", cluster, servname)
-            s.delete()
+    path = service.Service.dir(cluster)
+    with service.Service.lock(path):
+        for servname in servnames:
+            s = service.Service(cluster, servname)
+            if s.exists:
+                print "Removing service %s/%s" % (cluster, servname)
+                _log.info("Removing service %s/%s", cluster, servname)
+                s.delete()
 
 
 @catch_and_log("error while calculating changed nodes")
@@ -125,12 +129,14 @@ def load_nodes(dc, data):
         for servname, hosts in cl.items():
             new_nodes, del_nodes = get_changed_nodes(dc, cluster,
                                                      servname, hosts)
-            for el in new_nodes:
-                _log.debug("See if %s is present", el)
-                load_node(dc, cluster, servname, el)
-            for el in del_nodes:
-                _log.debug("See if %s should be deleted", el)
-                delete_node(dc, cluster, servname, el)
+            path = node.Node.dir(dc, cluster, servname)
+            with node.Node.lock(path):
+                for el in new_nodes:
+                    _log.debug("See if %s is present", el)
+                    load_node(dc, cluster, servname, el)
+                for el in del_nodes:
+                    _log.debug("See if %s should be deleted", el)
+                    delete_node(dc, cluster, servname, el)
 
 
 def tag_files(directory):

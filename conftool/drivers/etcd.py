@@ -5,10 +5,12 @@ from conftool import drivers
 
 
 class Driver(drivers.BaseDriver):
+    lock_ttl = 60
 
     def __init__(self, config):
         super(Driver, self).__init__(config)
         host_list = []
+        self.locks = {}
         for el in config.hosts:
             h, p = urlparse.urlparse(el).netloc.split(':')
             host_list.append((h, int(p)))
@@ -75,3 +77,31 @@ class Driver(drivers.BaseDriver):
         if etcdresult is None or etcdresult.dir:
             return None
         return json.loads(etcdresult.value)
+
+    def get_lock(self, path):
+        name = path.replace('/', '-')
+        if name not in self.locks:
+            self.locks[name] = etcd.Lock(self.client, name)
+        self.locks[name].acquire(lock_ttl=self.lock_ttl)
+        if self.locks[name].is_acquired:
+            return self.locks[name]
+        else:
+            return False
+
+    def release_lock(self, path):
+        name = path.replace('/', '-')
+        # we can't remove a lock that was not set by us
+        if name not in self.locks:
+            return False
+        self.locks[name].release()
+        del self.locks[name]
+        return True
+
+    def watch_lock(self, path):
+        name = path.replace('/', '-')
+        l = etcd.Lock(self.client, name)
+        try:
+            r = self.client.read(l.path)
+            return bool(r._children)
+        except etcd.EtcdKeyNotFoundErrror:
+            return False

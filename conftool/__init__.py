@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+from contextlib import contextmanager
 
 _log = logging.getLogger(__name__)
 from conftool import backend
@@ -65,6 +66,18 @@ class KVObject(object):
                 continue
             self._set_value(k, self._schema[k], {k: v}, set_defaults=False)
         self.write()
+
+    @classmethod
+    @contextmanager
+    def lock(cls, path):
+        try:
+            l = cls.backend.driver.get_lock(path)
+            yield l
+            cls.backend.driver.release_lock(path)
+        except Exception as e:
+            _log.critical("Problems inside lock for %s: %s", path, e)
+            cls.backend.driver.release_lock(path)
+            raise
 
     def _from_net(self, values):
         """
