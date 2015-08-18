@@ -12,7 +12,7 @@ setup(
     install_requires=['python-etcd>=0.4.0', 'pyyaml'],
     test_suite='nose.collector',
     tests_require=['mock', 'nose'],
-    zip_safe=True,
+    zip_safe=False,
     packages=find_packages(),
     entry_points={
         'console_scripts': [

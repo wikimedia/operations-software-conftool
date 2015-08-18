@@ -43,7 +43,7 @@ class ToolIntegration(IntegrationTestBase):
 
     def test_change_node_regexp(self):
         """
-        Test changing values according to a regexp
+        Changing values according to a regexp
         """
         args = self.generate_args('set/pooled=yes re:cp105.')
         tool.main(cmdline=args)

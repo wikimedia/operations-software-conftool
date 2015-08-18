@@ -78,6 +78,9 @@ class KVObject(object):
             _log.critical("Problems inside lock for %s: %s", path, e)
             cls.backend.driver.release_lock(path)
             raise
+        except (SystemExit, KeyboardInterrupt) as e:
+            _log.critical("Aborted.")
+            cls.backend.driver.release_lock(path)
 
     def _from_net(self, values):
         """

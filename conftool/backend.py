@@ -17,5 +17,5 @@ class Backend(object):
             self.driver = cls(config)
         except Exception as e:
             _log.critical("Could not load driver %s: %s",
-                          self.config.driver, e)
+                          self.config.driver, e, exc_info=True)
             sys.exit(3)
