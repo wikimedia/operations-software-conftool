@@ -123,8 +123,10 @@ def run_action(cls, n, cur_dir, act, tags):
         except action.ActionError as e:
             _log.error("Invalid action, reason: %s", str(e))
         except BackendError as e:
+            _log.error("Error when trying to %s on %s", act, name)
             _log.error("Failure writing to the kvstore: %s", str(e))
         except Exception as e:
+            _log.error("Error when trying to %s on %s", act, name)
             _log.error("Generic action failure: %s", str(e))
         else:
             print(msg)

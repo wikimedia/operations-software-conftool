@@ -1,0 +1,3 @@
+port: 2379
+host: "localhost"
+protocol: "http"

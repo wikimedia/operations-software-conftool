@@ -6,6 +6,7 @@ import unittest
 import shutil
 import tempfile
 from conftool import configuration, KVObject
+import mock
 
 test_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), '..'))
@@ -72,9 +73,12 @@ class IntegrationTestBase(unittest.TestCase):
             proc_name=program, port=2379)
         cls.processHelper.run()
         cls.fixture_dir = os.path.join(test_base, 'fixtures')
-        conf = configuration.Config(driver_options={'allow_reconnect': True})
+        config_file = os.path.join(cls.fixture_dir, 'etcd_testrc')
+        conf = configuration.Config(driver_options={
+            'etcd_config_file': config_file})
         try:
             KVObject.setup(conf)
+            KVObject.setup = mock.MagicMock()
         except SystemExit as system_exit:
             cls.log.critical("KVObject.setup() failed. sys.exit(%s)"
                              % system_exit,

@@ -1,7 +1,28 @@
 import etcd
-import urlparse
+import os
 import json
+import yaml
+
 from conftool import drivers
+
+
+def get_config(configfile):
+    conf = {}
+    configfiles = ['/etc/etcd/etcdrc']
+    configfiles.append(os.path.join(
+        os.path.expanduser('~'),
+        '.etcdrc'))
+    if configfile:
+        configfiles.append(configfile)
+
+    for filename in configfiles:
+        try:
+            with open(filename, 'r') as f:
+                c = yaml.load(f)
+                conf.update(c)
+        except:
+            continue
+    return conf
 
 
 class Driver(drivers.BaseDriver):
@@ -9,17 +30,12 @@ class Driver(drivers.BaseDriver):
 
     def __init__(self, config):
         super(Driver, self).__init__(config)
-        host_list = []
         self.locks = {}
-        for el in config.hosts:
-            h, p = urlparse.urlparse(el).netloc.split(':')
-            host_list.append((h, int(p)))
-        proto = urlparse.urlparse(config.hosts[0]).scheme
-        # since we're using a tuple, we need this.
-        config.driver_options['allow_reconnect'] = True
-        self.client = etcd.Client(host=tuple(host_list),
-                                  protocol=proto,
-                                  **config.driver_options)
+        configfile = config.driver_options.get(
+            'etcd_config_file',
+            '/etc/conftool/etcdrc')
+        driver_config = get_config(configfile)
+        self.client = etcd.Client(**driver_config)
         super(Driver, self).__init__(config)
 
     @drivers.wrap_exception(etcd.EtcdException)
