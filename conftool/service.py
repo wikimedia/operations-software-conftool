@@ -7,9 +7,13 @@ class Service(KVObject):
     _tags = ['cluster']
 
     def __init__(self, cluster, name, **kwdargs):
-        self._key = os.path.join(self.config.services_path, cluster, name)
+        self._key = os.path.join(self.base_path(), cluster, name)
         self._schemaless = kwdargs
         self.fetch()
+
+    @classmethod
+    def base_path(cls):
+        return cls.config.services_path
 
     def get_default(self, what):
         """

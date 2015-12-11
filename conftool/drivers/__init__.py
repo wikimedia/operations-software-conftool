@@ -6,6 +6,10 @@ class BackendError(Exception):
     pass
 
 
+class NotFoundError(BackendError):
+    pass
+
+
 class BaseDriver(object):
 
     def __init__(self, config):
@@ -18,6 +22,9 @@ class BaseDriver(object):
             return os.path.join(self.base_path, path)
 
     def is_dir(self, path):
+        pass
+
+    def find_in_path(self, path, name):
         pass
 
     def write(self, key, value):

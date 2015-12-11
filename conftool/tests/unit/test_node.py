@@ -1,6 +1,6 @@
 import unittest
 import mock
-from conftool import KVObject, node, service
+from conftool import KVObject, node, service, drivers
 from conftool import configuration
 from conftool.tests.unit import MockBackend
 
@@ -8,7 +8,11 @@ from conftool.tests.unit import MockBackend
 class TestNode(unittest.TestCase):
 
     def _mock_read(self, values):
-        KVObject.backend.driver.read = mock.MagicMock(return_value=values)
+        if values is None:
+            KVObject.backend.driver.read = mock.MagicMock(
+                side_effect=drivers.NotFoundError)
+        else:
+            KVObject.backend.driver.read = mock.MagicMock(return_value=values)
 
     def _mock_defaults(self, values):
         def _side_effect(what):
@@ -26,7 +30,7 @@ class TestNode(unittest.TestCase):
         self._mock_read(None)
         n = node.Node('dc', 'cluster', 'service', 'foo')
         # Test
-        self.assertEquals(n.base_path, 'pools')
+        self.assertEquals(n.base_path(), 'pools')
         self.assertEquals(n.key, 'pools/dc/cluster/service/foo')
         self.assertFalse(n.exists)
         self.assertEquals(n.pooled, 'default_value')

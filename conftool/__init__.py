@@ -19,7 +19,17 @@ class KVObject(object):
         cls.backend = backend.Backend(cls.config)
 
     def kvpath(self, *args):
-        return os.path.join(self.base_path, *args)
+        return os.path.join(self.base_path(), *args)
+
+    @classmethod
+    def find(cls, name):
+        """Generator of a list of objects for a given name"""
+        for tags in cls.backend.driver.find_in_path(cls.base_path(), name):
+            yield cls(*tags)
+
+    @classmethod
+    def base_path(self):
+        raise NotImplementedError("All kvstore objects should implement this")
 
     @property
     def key(self):
@@ -38,9 +48,11 @@ class KVObject(object):
             values = self.backend.driver.read(self.key)
             if values:
                 self.exists = True
-        except drivers.BackendError:
+        except drivers.NotFoundError:
+            return self._from_net(None)
+        except drivers.BackendError as e:
+            _log.error("Backend error while fetching %s: %s", self.key, e)
             # TODO: maybe catch the backend errors separately
-            # TODO: log errors
             return None
         self._from_net(values)
 

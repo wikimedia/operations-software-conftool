@@ -56,13 +56,13 @@ class Driver(drivers.BaseDriver):
     @drivers.wrap_exception(etcd.EtcdException)
     def write(self, path, value):
         key = self.abspath(path)
-        res = self._fetch(key, quorum=True)
-        if res is not None:
+        try:
+            res = self._fetch(key, quorum=True)
             old_value = json.loads(res.value)
             old_value.update(value)
             res.value = json.dumps(old_value)
             return self._data(self.client.update(res))
-        else:
+        except drivers.NotFoundError:
             val = json.dumps(value)
             self.client.write(key, val, prevExist=False)
 
@@ -83,16 +83,36 @@ class Driver(drivers.BaseDriver):
         key = self.abspath(path)
         self.client.delete(key)
 
+    @drivers.wrap_exception(etcd.EtcdException)
+    def find_in_path(self, path, name):
+        """Find all subpaths that end with a given name"""
+        key = self.abspath(path)
+        r = self.client.read(key, recursive=True)
+        for obj in r.leaves:
+            if obj.dir:
+                continue
+            path, obj_name = os.path.split(obj.key)
+            if obj_name == name:
+                fullpath = key + '/'
+                path = obj.key.replace(fullpath, '').replace('//', '/')
+                yield path.split('/')
+
     def _fetch(self, key, **kwdargs):
         try:
             return self.client.read(key, **kwdargs)
         except etcd.EtcdKeyNotFound:
+            raise drivers.NotFoundError()
             return None
 
     def _data(self, etcdresult):
         if etcdresult is None or etcdresult.dir:
             return None
-        return json.loads(etcdresult.value)
+        try:
+            return json.loads(etcdresult.value)
+        except ValueError:
+            raise drivers.BackendError(
+                "The kvstore contains malformed data at key %s" %
+                etcdresult.key)
 
     def get_lock(self, path):
         name = path.replace('/', '-')

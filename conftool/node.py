@@ -34,11 +34,14 @@ class Node(KVObject):
     _tags = ['dc', 'cluster', 'service']
 
     def __init__(self, datacenter, cluster, servname, host):
-        self.base_path = self.config.pools_path
         self.service = ServiceCache.get(cluster, servname)
         self._key = self.kvpath(datacenter, cluster, servname, host)
         self.fetch()
         self._defaults = {}
+
+    @classmethod
+    def base_path(cls):
+        return cls.config.pools_path
 
     @property
     def key(self):
