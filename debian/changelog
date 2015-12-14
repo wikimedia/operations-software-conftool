@@ -1,3 +1,12 @@
+python-conftool (0.2.0) UNRELEASED; urgency=medium
+
+  * Don't create inexistent entitites
+  * Use locks for writing
+  * Use system-wide configuration for the etcd driver
+  * Add --find to confctl, allowing to find all instances of a node
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Fri, 11 Dec 2015 12:43:25 +0100
+
 python-conftool (0.1.2) precise-wikimedia; urgency=medium
 
   * Added regexp matching of targets
