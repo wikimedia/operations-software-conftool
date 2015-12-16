@@ -1,14 +1,20 @@
 # TODO: logging
-from conftool import KVObject, configuration, _log
-from collections import defaultdict
-from conftool import node, service
-from conftool.drivers import BackendError
 import argparse
 import sys
 import yaml
 import os
 import functools
 import logging
+from contextlib import contextmanager
+from conftool import KVObject, configuration, _log
+from collections import defaultdict
+from conftool import node, service
+from conftool.drivers import BackendError
+
+
+@contextmanager
+def dummy_lock(*args, **kwargs):
+    yield
 
 
 # Generic exception handling decorator
@@ -57,10 +63,10 @@ def load_service(cluster, servname, servdata):
     s.write()
 
 
-def load_services(cluster, servnames, data):
+def load_services(cluster, servnames, data, lock):
     # TODO: logs, exceptions
     path = service.Service.dir(cluster)
-    with service.Service.lock(path):
+    with lock(path):
         for servname in servnames:
             print "Creating service %s/%s" % (cluster, servname)
             servdata = data[servname]
@@ -68,9 +74,9 @@ def load_services(cluster, servnames, data):
 
 
 @catch_and_log("error while deleting services")
-def remove_services(cluster, servnames):
+def remove_services(cluster, servnames, lock):
     path = service.Service.dir(cluster)
-    with service.Service.lock(path):
+    with lock(path):
         for servname in servnames:
             s = service.Service(cluster, servname)
             if s.exists:
@@ -119,7 +125,7 @@ def delete_node(dc, cluster, servname, host):
         n.delete()
 
 
-def load_nodes(dc, data):
+def load_nodes(dc, data, lock):
     # Read data and arrange them in the form we expect
     for cluster, cl_data in data.items():
         cl = defaultdict(list)
@@ -130,7 +136,7 @@ def load_nodes(dc, data):
             new_nodes, del_nodes = get_changed_nodes(dc, cluster,
                                                      servname, hosts)
             path = node.Node.dir(dc, cluster, servname)
-            with node.Node.lock(path):
+            with lock(path):
                 for el in new_nodes:
                     _log.debug("See if %s is present", el)
                     load_node(dc, cluster, servname, el)
@@ -162,6 +168,9 @@ def get_args(args):
                         default="/etc/conftool/config.yaml")
     parser.add_argument('--debug', action="store_true",
                         default=False, help="print debug info")
+    parser.add_argument(
+        '--lock', action='store_true', default=False,
+        help="Use etcd locking (very slow, generally not needed)")
     return parser.parse_args(args)
 
 
@@ -207,7 +216,11 @@ def main(arguments=None):
         if not type(data) == dict:
             continue
         load, rem[cluster] = get_service_actions(cluster, data)
-        load_services(cluster, load, data)
+        if args.lock:
+            servlocker = service.Service.lock
+        else:
+            servlocker = dummy_lock
+        load_services(cluster, load, data, servlocker)
     # sync nodes
     for filename in files['nodes']:
         dc = os.path.basename(filename).rstrip('.yaml')
@@ -218,8 +231,12 @@ def main(arguments=None):
             _log.error("Malformed yaml data in %s", filename)
             _log.error("Skipping loading/removing nodes, please correct!")
         else:
-            load_nodes(dc, dc_data)
+            if args.lock:
+                locker = service.Service.lock
+            else:
+                locker = dummy_lock
+            load_nodes(dc, dc_data, locker)
 
     # Now delete services
     for cluster, servnames in rem.items():
-        remove_services(cluster, servnames)
+        remove_services(cluster, servnames, servlocker)

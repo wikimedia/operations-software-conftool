@@ -42,7 +42,7 @@ class SyncerIntegration(IntegrationTestBase):
     def test_load_services(self):
         cluster = 'test'
         data = self.service_generator('espresso-machine', 10)
-        syncer.load_services(cluster, data.keys(), data)
+        syncer.load_services(cluster, data.keys(), data, syncer.dummy_lock)
         for i in xrange(10):
             servname = 'espresso-machine' + str(i)
             s = service.Service(cluster, servname)
@@ -52,9 +52,9 @@ class SyncerIntegration(IntegrationTestBase):
     def test_remove_services(self):
         cluster = 'test'
         data = self.service_generator('espresso-machine', 10)
-        syncer.load_services(cluster, data.keys(), data)
+        syncer.load_services(cluster, data.keys(), data, syncer.dummy_lock)
         del data['espresso-machine0']
-        syncer.remove_services(cluster, data.keys())
+        syncer.remove_services(cluster, data.keys(), syncer.dummy_lock)
         s = service.Service(cluster, 'espresso-machine0')
         self.assertTrue(s.exists)
         for i in xrange(1, 10):
@@ -65,7 +65,7 @@ class SyncerIntegration(IntegrationTestBase):
     def test_get_service_actions(self):
         cluster = 'test'
         data = self.service_generator('espresso-machine', 10)
-        syncer.load_services(cluster, data.keys(), data)
+        syncer.load_services(cluster, data.keys(), data, syncer.dummy_lock)
         new_data = self.service_generator('espresso-machine', 15, initial=5)
         new_data['espresso-machine6']['datacenters'] = ['sofa']
         (new, delete) = syncer.get_service_actions(cluster, new_data)
@@ -82,7 +82,7 @@ class SyncerIntegration(IntegrationTestBase):
     def test_load_node(self):
         cluster = 'test'
         sdata = self.service_generator('espresso-machine', 2, initial=1)
-        syncer.load_services(cluster, sdata.keys(), sdata)
+        syncer.load_services(cluster, sdata.keys(), sdata, syncer.dummy_lock)
         serv = sdata.keys().pop()
         syncer.load_node('sofa', cluster, serv, 'one-off')
         n = node.Node('sofa', cluster, serv, 'one-off')
@@ -93,7 +93,7 @@ class SyncerIntegration(IntegrationTestBase):
         dc = 'sofa'
         cluster = 'test'
         sdata = self.service_generator('espresso-machine', 2, 1)
-        syncer.load_services(cluster, sdata.keys(), sdata)
+        syncer.load_services(cluster, sdata.keys(), sdata, syncer.dummy_lock)
         for i in xrange(10):
             syncer.load_node(dc, cluster, 'espresso-machine1', 'node-%d' % i)
         expected_hosts = ["node-%d" % i for i in xrange(5, 15)]
@@ -106,9 +106,9 @@ class SyncerIntegration(IntegrationTestBase):
         dc = 'sofa'
         cluster = 'test'
         sdata = self.service_generator('espresso-machine', 2)
-        syncer.load_services(cluster, sdata.keys(), sdata)
+        syncer.load_services(cluster, sdata.keys(), sdata, syncer.dummy_lock)
         data = self.node_generator(cluster, sdata.keys(), 20)
-        syncer.load_nodes(dc, data)
+        syncer.load_nodes(dc, data, syncer.dummy_lock)
         for servname in sdata.keys():
             for i in xrange(20):
                 nodename = "node-%d" % i
