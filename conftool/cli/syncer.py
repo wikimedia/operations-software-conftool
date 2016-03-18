@@ -6,7 +6,8 @@ import os
 import functools
 import logging
 from contextlib import contextmanager
-from conftool import KVObject, configuration, _log
+from conftool import configuration, _log
+from conftool.kvobject import KVObject
 from collections import defaultdict
 from conftool import node, service
 from conftool.drivers import BackendError

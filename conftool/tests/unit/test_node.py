@@ -1,6 +1,7 @@
 import unittest
 import mock
-from conftool import KVObject, node, service, drivers
+from conftool.kvobject import KVObject
+from conftool import node, service, drivers
 from conftool import configuration
 from conftool.tests.unit import MockBackend
 
@@ -50,6 +51,13 @@ class TestNode(unittest.TestCase):
         self.assertEquals(n.pooled, "no")
         # Note: this fails at the moment
         # self.assertRaises(ValueError, setattr, n, "pooled", "maybe")
+
+    def test_tags(self):
+        """Test tags are correctly reported"""
+        self._mock_read({"pooled": "yes", "weight": 20})
+        n = node.Node('dc', 'cluster', 'service', 'foo')
+        for k, v in n.tags.items():
+            self.assertEquals(k, v)
 
     def test_dir(self):
         self.assertEquals(node.Node.dir('a', 'b', 'c'), 'pools/a/b/c')

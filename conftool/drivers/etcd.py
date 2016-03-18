@@ -4,6 +4,20 @@ import json
 import yaml
 
 from conftool import drivers
+"""
+
+This driver will look at the following config files:
+
+* /etc/etcd/etcdrc
+
+* ~/.etcdrc
+
+* what specified in the conftool configuration as driver_options =>
+  etcd_config_file or /etc/conftool/etcdrc
+
+read them as YAML files, and then pass every config switch found in there
+to python-etcd.
+"""
 
 
 def get_config(configfile):
@@ -66,17 +80,33 @@ class Driver(drivers.BaseDriver):
             val = json.dumps(value)
             self.client.write(key, val, prevExist=False)
 
-    @drivers.wrap_exception(etcd.EtcdException)
     def ls(self, path):
+        """Given a path, returns a tuple (key, data) for each value found"""
+        objects = self._ls(path, recursive=False)
+        fullpath = self.abspath(path) + '/'
+        return [(el.key.replace(fullpath, ''), self._data(el))
+                for el in objects]
+
+    def all_keys(self, path):
+        # The full path we're searching in
+        base_path = self.abspath(path) + '/'
+
+        def split_path(p):
+            """Strip the root path and normalize elements"""
+            r = p.replace(base_path, '').replace('//', '/')
+            return r.split('/')
+
+        return [split_path(el.key)
+                for el in self._ls(path, recursive=True) if not el.dir]
+
+    @drivers.wrap_exception(etcd.EtcdException)
+    def _ls(self, path, recursive=False):
         key = self.abspath(path)
         try:
-            res = self.client.read(key)
+            res = self.client.read(key, recursive=recursive)
         except etcd.EtcdException:
             raise ValueError("{} is not a directory".format(key))
-        fullpath = key + '/'
-        return [(el.key.replace(fullpath, ''), self._data(el))
-                for el in res.leaves
-                if el.key != key]
+        return [el for el in res.leaves if el.key != key]
 
     @drivers.wrap_exception(etcd.EtcdException)
     def delete(self, path):

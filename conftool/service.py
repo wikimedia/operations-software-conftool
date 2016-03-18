@@ -1,9 +1,12 @@
 import os
-from conftool import KVObject
+from conftool.kvobject import KVObject
 
 
 class Service(KVObject):
-    _schema = {'default_values': dict, 'datacenters': list}
+    _schema = {
+        'default_values': dict,
+        'datacenters': lambda x: x if isinstance(x, list) else []
+    }
     _tags = ['cluster']
 
     def __init__(self, cluster, name, **kwdargs):

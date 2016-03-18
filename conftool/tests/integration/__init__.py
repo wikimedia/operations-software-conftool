@@ -1,12 +1,15 @@
-import os
-import time
 import logging
-import subprocess
-import unittest
-import shutil
-import tempfile
-from conftool import configuration, KVObject
 import mock
+import os
+import shutil
+import subprocess
+import tempfile
+import time
+import unittest
+
+from conftool import configuration
+from conftool.kvobject import KVObject
+
 
 test_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), '..'))

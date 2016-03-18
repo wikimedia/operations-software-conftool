@@ -1,14 +1,17 @@
 # Conftool cli module
 #
 import argparse
-import sys
+from collections import defaultdict
 import logging
 import json
-from conftool import configuration, action, _log, KVObject
-from conftool.drivers import BackendError
-# TODO: auto import these somehow
-from conftool import service, node
+import os
 import re
+import sys
+
+from conftool.kvobject import KVObject
+from conftool import configuration, action, _log
+from conftool.drivers import BackendError
+from conftool import service, node
 
 
 class ToolCli(object):
@@ -16,11 +19,7 @@ class ToolCli(object):
 
     def __init__(self, args):
         self.args = args
-        if self.args.tags:
-            self._tags = self.args.tags.split(',')
-        elif not self.args.find:
-            _log.critical("Either tags or find should be provided")
-            sys.exit(1)
+        self._tags = self.args.taglist.split(',')
         self.entity = self.object_types[args.object_type]
 
     def setup(self):
@@ -29,26 +28,22 @@ class ToolCli(object):
 
     @property
     def tags(self):
-        if self.args.find:
-            return []
-        else:
-            try:
-                return self.entity.get_tags(self._tags)
-            except KeyError as e:
-                _log.critical(
-                    "Invalid tag list %s - we're missing tag: %s",
-                    self.args.tags, e)
-                sys.exit(1)
+        try:
+            return self.entity.parse_tags(self._tags)
+        except KeyError as e:
+            _log.critical(
+                "Invalid tag list %s - we're missing tag: %s",
+                self.args.taglist, e)
+            sys.exit(1)
+        except ValueError:
+            _log.critical("Invalid tag list %s", self.args.taglist)
+            sys.exit(1)
 
     def host_list(self):
-        if self.args.find:
-            for o in self.entity.find(self._namedef):
-                yield o
-        else:
-            for objname in self._tagged_host_list():
-                arguments = list(self.tags)
-                arguments.append(objname)
-                yield self.entity(*arguments)
+        for objname in self._tagged_host_list():
+            arguments = list(self.tags)
+            arguments.append(objname)
+            yield self.entity(*arguments)
 
     def _tagged_host_list(self):
         cur_dir = self.entity.dir(*self.tags)
@@ -78,21 +73,25 @@ class ToolCli(object):
             ToolCli.raise_warning()
         return retval
 
-    def run_action(self, act, namedef):
-        self._action = act
-        self._namedef = namedef
+    def run_action(self, unit):
+        self._action, self._namedef = unit
+        return self._run_action()
+
+    def _run_action(self):
         for obj in self.host_list():
             try:
-                a = action.Action(obj, act)
+                a = action.Action(obj, self._action)
                 msg = a.run()
             except action.ActionError as e:
                 _log.error("Invalid action, reason: %s", str(e))
             except BackendError as e:
-                _log.error("Error when trying to %s on %s", act, namedef)
+                _log.error("Error when trying to %s on %s", self._action,
+                           self._namedef)
                 _log.error("Failure writing to the kvstore: %s", str(e))
             except Exception as e:
-                _log.error("Error when trying to %s on %s", act, namedef)
-                _log.error("Generic action failure: %s", str(e))
+                _log.error("Error when trying to %s on %s", self._action,
+                           self._namedef)
+                _log.exception("Generic action failure: %s", str(e))
             else:
                 print(msg)
 
@@ -113,41 +112,140 @@ class ToolCli(object):
         sys.exit(1)
 
 
-def main(cmdline=None):
-    if cmdline is None:
-        cmdline = list(sys.argv)
-        cmdline.pop(0)
+class ToolCliFind(ToolCli):
+    """Subclass used for the --find mode"""
+    def __init__(self, args):
+        self.args = args
+        self.entity = self.object_types[args.object_type]
 
+    @property
+    def tags(self):
+        return []
+
+    def host_list(self):
+        for o in self.entity.find(self._namedef):
+            yield o
+
+
+class ToolCliByLabel(ToolCli):
+    """Subclass used for the select mode"""
+    def __init__(self, args):
+        self.args = args
+        self.selectors = {}
+        self.parse_selectors()
+        self.entity = self.object_types[args.object_type]
+
+    def parse_selectors(self):
+        for tag in self.args.selector.split(','):
+            k, expr = tag.split('=', 1)
+            # All our selector are anchored regexes
+            self.selectors[k] = re.compile('^%s$' % expr)
+
+    @property
+    def tags(self):
+        return []
+
+    def host_list(self):
+        """Gets all the hosts matching our selectors"""
+        objects = [obj for obj in self.entity.query(self.selectors)]
+        # Any selector that includes multiple objects will show a list of
+        # host that have been selected
+        if self._action != 'get' and len(objects) > 1:
+            self.raise_warning(objects)
+        return objects
+
+    def run_action(self, unit):
+        self._action = unit
+        self._namedef = self.args.selector
+        return self._run_action()
+
+    def raise_warning(self, objects):
+        tag_hosts = defaultdict(list)
+        for obj in objects:
+            dir = os.path.dirname(obj.key).replace(self.entity.base_path(), '')
+            tag_hosts[dir].append(obj.name)
+        print "The selector you chose has selected the following objects:"
+        print json.dumps(tag_hosts)
+        print "Ok to continue? [y/N]"
+        a = raw_input("confctl>")
+        if a.lower() != 'y':
+            print "Aborting"
+            sys.exit(1)
+
+
+def parse_args(cmdline):
     parser = argparse.ArgumentParser(
         description="Tool to interact with the WMF config store",
         epilog="More details at"
         " <https://wikitech.wikimedia.org/wiki/conftool>.",
         fromfile_prefix_chars='@')
-    parser.add_argument('--config', help="Optional config file",
-                        default="/etc/conftool/config.yaml")
-    parser.add_argument('--tags',
-                        help="List of comma-separated tags; they need to "
-                        "match the base tags of the object type you chose.",
-                        required=False, default=[])
-    parser.add_argument('--find', help="Find all instances of the node",
-                        required=False, default=False, action='store_true')
+    parser.add_argument('--config', help="Config file", default="/etc/conftool/config.yaml")
     parser.add_argument('--object-type', dest="object_type",
                         choices=ToolCli.object_types.keys(), default='node')
-    parser.add_argument('--action', action="append", metavar="ACTIONS",
-                        help="the action to take: "
-                        " [set/k1=v1:k2=v2...|get|delete]"
-                        " node|all|re:<regex>|find:node", nargs=2,
-                        required=True)
     parser.add_argument('--debug', action="store_true",
                         default=False, help="print debug info")
-    args = parser.parse_args(cmdline)
+
+    # Subparsers for the three operating models
+    subparsers = parser.add_subparsers(
+        help='Program mode: tags, find or select', dest='mode')
+
+    # Tags mode
+    tags = subparsers.add_parser(
+        'tags',
+        help="Select a specific service via full list of tags")
+    tags.add_argument(
+        'taglist',
+        help="List of comma-separated tags; they need to "
+        "match the base tags of the object type you chose.")
+
+    find = subparsers.add_parser('find',
+                                 help="Find all instances of the node by name")
+    for subparser in [tags, find]:
+        subparser.add_argument('--action', action="append", metavar="ACTIONS",
+                               help="the action to take: "
+                               " [set/k1=v1:k2=v2...|get|delete]"
+                               " node|all|re:<regex>|find:node", nargs=2)
+    select = subparsers.add_parser('select',
+                                   help="Select nodes via tag selectors")
+    select.add_argument(
+        'selector',
+        help="Label selector in the form tag=regex: "
+        "dc=eqiad,cluster=cache_.*,service=nginx,name=.*.eqiad.wmnet")
+    select.add_argument('action', action="append", metavar="ACTIONS",
+                        help="the action to take: "
+                        " [set/k1=v1:k2=v2...|get|delete]")
+
+    return parser.parse_args(cmdline)
+
+
+def mangle_argv(cmdline):
+    """Basic mangling of the command line arguments"""
+    # Backwards compatibility. Ugly but passable
+    for i, arg in enumerate(cmdline):
+        if arg in ['--tags', '--find']:
+            cmdline[i] = arg.replace('--', '')
+    return cmdline
+
+
+def main(cmdline=None):
+    if cmdline is None:
+        cmdline = list(sys.argv)
+        cmdline.pop(0)
+
+    cmdline = mangle_argv(cmdline)
+    args = parse_args(cmdline)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.WARN)
 
-    cli = ToolCli(args)
+    if args.mode == 'select':
+        cli = ToolCliByLabel(args)
+    elif args.mode == 'find':
+        cli = ToolCliFind(args)
+    else:
+        cli = ToolCli(args)
 
     try:
         cli.setup()
@@ -156,8 +254,8 @@ def main(cmdline=None):
         sys.exit(1)
 
     for unit in args.action:
-        act, name_def = unit
-        cli.run_action(act, name_def)
+        # TODO: fix base class
+        cli.run_action(unit)
 
 
 if __name__ == '__main__':

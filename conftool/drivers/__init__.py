@@ -27,6 +27,18 @@ class BaseDriver(object):
     def find_in_path(self, path, name):
         pass
 
+    def all_keys(self, path):
+        """
+        Given a path, return all nodes beneath it as a list [tag1,...,name]
+
+        This can be used to enumerate all objects, and then construct the object
+
+        for args in objclass.backend.driver.all_keys(objclass):
+            yield objclass(*args)
+
+        """
+        pass
+
     def write(self, key, value):
         pass
 

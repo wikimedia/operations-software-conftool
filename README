@@ -1,10 +1,93 @@
-Wikimedia etcd conftool
+Wikimedia conftool
 =======================
+
+Conftool is a tool for storing configuration
+objects with associated tags into a remote k-v store.
+
+Currently only an etcd backend is implemented, but the tool is
+designed so that adding additional backends shouldn't be too hard.
 
 Installation
 ------------
 
     python setup.py install
+
+Configuration
+-------------
+
+The default config file for `conftool` is located at
+`/etc/conftool/config.yaml`; it can be changed via a command-line
+switch, `--config`. The following configurations can be changed:
+
+* `driver` (default: 'etcd'): the driver to use. At the moment, only an
+  etcd driver is available
+
+* `hosts` (default: ['http://localhost:2379']): a list of hosts to
+  connect to, available for the driver to use.
+
+* `namespace` (default: '/conftool'): the basic key namespace in the
+  k-v backend
+
+* `api_version` (default: 'v1'): an api versioning token that allows
+  for seamless schema changes
+
+* `pools_path` (default: 'pools'): base path for the 'node' entity
+
+* `services_path` (default: 'services'): base path for the 'service' entity
+
+* `driver_options` (default: {}): a dict of options to pass to the
+  specific driver you're using. Check the specific driver class for details.
+
+Usage
+-----
+
+Conftool is based on the idea that a basic configuration structure is
+held in yaml files that are synced to the kv store via a cli tool
+called `conftool-sync`, but the values within each config object can be
+fetched (and changed) dinamically using `confctl`.
+
+Each type of objects has a set of tags associated with it; for example,
+the 'node' object (that is used to describe a server/service within a
+pool) has the following tags associated with it: dc (datacenter),
+cluster (the cluster of machines), service (the specific service),
+plus the fqdn of the node as the object name. In general, tags are
+used so that it's easy for you (or applications) to retreive/modify
+objects in the store. The values of the objects will not be touched by
+the syncing process.
+
+`confctl` allows to find objects and view, modify and delete objects.
+
+There are three ways to find objects:
+
+* via a tag selector:
+
+        confctl select 'foo=PATTERN,fizz=PATTERN,...,name=PATTERN' (get|set/k=v:k1=v1...,del)
+
+  this is by far the most powerful method: it allows to find any object with a
+  selection of matching tags and name; if any label is omitted, it is discarded
+  in the selection process. New users should typically use this method, as it's
+  much more powerful than the other two
+
+* via a full list of tags and a namedef:
+
+        confctl tags foo=TAG,bar=TAG,fizz=TAG --action (get|set/k=v:k1=v1...,del) NAMEDEF
+
+  where namedef is either the node name or a regex in the form re:PATTERN. It
+  will act on any node matching said pattern, with those specific tags. A
+  special NAMEDEF is 'all', which will make conftool act on all the objects
+  corresponding to the listed tags. This method is most convenient when acting
+  on a single object (say by depooling a service when it is restarted), because
+  it's more optimized than the other ones (typically needs one query to the backend
+  instead than doing expensive recursive queries).
+
+* via the node name, with the 'find' mode:
+
+        confctl find --action (get|set/k=v:k1=v1...,del) NAME
+
+  this will act on all the objects with name NAME independently of the
+  attached tags. This search mode is deprecated, and will be removed in some
+  future release.
+
 
 Running tests
 -------------

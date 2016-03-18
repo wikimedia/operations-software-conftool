@@ -1,14 +1,7 @@
 import os
-from conftool import KVObject, _log
+from conftool import _log, choice
+from conftool.kvobject import KVObject
 from conftool.service import Service
-
-
-def choice(*args):
-    def is_in(x):
-        if x not in args:
-            raise ValueError("{} not in '{}'".format(x, ",".join(args)))
-        return x
-    return is_in
 
 
 class ServiceCache(object):

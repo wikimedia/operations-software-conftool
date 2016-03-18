@@ -1,6 +1,7 @@
 import unittest
 import mock
-from conftool import KVObject, configuration
+from conftool.kvobject import KVObject
+from conftool import configuration
 from conftool import node
 from conftool.tests.unit import MockBackend
 from conftool.cli import tool
@@ -18,49 +19,50 @@ class TestToolCli(unittest.TestCase):
     def _mock_args(self, **kw):
         arg = mock.MagicMock()
         arg.object_type = 'node'
-        arg.find = False
+        arg.mode = 'tags'
         for prop, value in kw.items():
             setattr(arg, prop, value)
         return arg
 
     def test_init(self):
         """Test case for `conftool.cli.tool.ToolCli.__init__`"""
-        args = self._mock_args(find=False, tags="")
+        args = self._mock_args(taglist="")
         with self.assertRaises(SystemExit) as cm:
             t = tool.ToolCli(args)
+            t.tags
         self.assertEquals(cm.exception.code, 1)
 
-        args = self._mock_args(tags="a=b,b=c,d=2")
+        args = self._mock_args(taglist="a=b,b=c,d=2")
         t = tool.ToolCli(args)
-        self.assertEquals(t.args.find, False)
+        self.assertEquals(t.args.mode, 'tags')
         self.assertItemsEqual(t._tags, ['a=b', 'b=c', 'd=2'])
 
     def test_tags(self):
-        args = self._mock_args(tags="dc=a,cluster=b,service=apache2")
+        args = self._mock_args(taglist="dc=a,cluster=b,service=apache2")
         t = tool.ToolCli(args)
         self.assertItemsEqual(t.tags, ['a', 'b', 'apache2'])
-        args = self._mock_args(find=True)
-        t = tool.ToolCli(args)
+        args = self._mock_args(mode='find')
+        t = tool.ToolCliFind(args)
         self.assertEquals(t.tags, [])
         args = self._mock_args(
-            find=True,
+            mode='find',
             object_type='node',
         )
-        t = tool.ToolCli(args)
+        t = tool.ToolCliFind(args)
         self.assertEquals(t.entity.__name__, 'Node')
 
     def test_host_list_find(self):
         args = self._mock_args(
-            find=True,
+            mode="find",
             object_type='node',
         )
 
-        t = tool.ToolCli(args)
+        t = tool.ToolCliFind(args)
         t._namedef = 'cp1048.example.com'
         res = [
-            node.Node('mycloset', 'cache_unicorns',
+            node.Node('test', 'cache',
                       'ssl', 'cp1048.example.com'),
-            node.Node('mycloset', 'cache_unicorns',
+            node.Node('test', 'cache',
                       'http', 'cp1048.example.com'),
         ]
         t.entity.find = mock.MagicMock(return_value=res)
@@ -76,7 +78,7 @@ class TestToolCli(unittest.TestCase):
             ('cp1014.local', {'pooled': 'no'})
         ]
         self._mock_list(host_dir)
-        args = self._mock_args(tags="dc=a,cluster=b,service=apache2")
+        args = self._mock_args(taglist="dc=a,cluster=b,service=apache2")
 
         def tagged(args, name, act):
             t = tool.ToolCli(args)
@@ -107,3 +109,11 @@ class TestToolCli(unittest.TestCase):
         # Majority of nodes via a regex will raise a system exit
         with self.assertRaises(SystemExit):
             tagged(args, 're:cp10(11|20)\.example\.com', 'set')
+
+    def test_parse_args(self):
+        # Taglist
+        cmdline = ['tags', 'dc=a,cluster=b', '--action', 'get', 'all']
+        args = tool.parse_args(cmdline)
+        self.assertEquals(args.mode, 'tags')
+        self.assertEquals(args.taglist, 'dc=a,cluster=b')
+        self.assertEquals(args.action, [['get', 'all']])
