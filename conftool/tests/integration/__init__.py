@@ -7,7 +7,7 @@ import tempfile
 import time
 import unittest
 
-from conftool import configuration
+from conftool import configuration, setup_irc, IRCSocketHandler
 from conftool.kvobject import KVObject
 
 
@@ -82,6 +82,7 @@ class IntegrationTestBase(unittest.TestCase):
         try:
             KVObject.setup(conf)
             KVObject.setup = mock.MagicMock()
+            setup_irc(conf)
         except SystemExit as system_exit:
             cls.log.critical("KVObject.setup() failed. sys.exit(%s)"
                              % system_exit,
@@ -89,6 +90,10 @@ class IntegrationTestBase(unittest.TestCase):
             cls.init_failed = True
 
     def setUp(self):
+        # Intercept IRC messages
+        l = logging.getLogger('conftool.announce')
+        self.irc = l.handlers[0]
+        self.irc.emit = mock.MagicMock(spec=IRCSocketHandler.emit)
         if self.init_failed:
             self.fail("Failed to initialize %s" % __name__)
 

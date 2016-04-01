@@ -9,7 +9,7 @@ import re
 import sys
 
 from conftool.kvobject import KVObject
-from conftool import configuration, action, _log
+from conftool import configuration, action, _log, setup_irc
 from conftool.drivers import BackendError
 from conftool import service, node
 
@@ -21,10 +21,12 @@ class ToolCli(object):
         self.args = args
         self._tags = self.args.taglist.split(',')
         self.entity = self.object_types[args.object_type]
+        self.irc = logging.getLogger('conftool.announce')
 
     def setup(self):
         c = configuration.get(self.args.config)
         KVObject.setup(c)
+        setup_irc(c)
 
     @property
     def tags(self):
@@ -73,27 +75,40 @@ class ToolCli(object):
             ToolCli.raise_warning()
         return retval
 
+    def announce(self):
+        if self._action != 'get' and not self.args.quiet:
+            self.irc.warn(
+                "conftool action : %s; selector: %s (tags: %s)", self._action,
+                self._namedef, self._tags
+            )
+
     def run_action(self, unit):
         self._action, self._namedef = unit
         return self._run_action()
 
     def _run_action(self):
+        fail = False
         for obj in self.host_list():
             try:
                 a = action.Action(obj, self._action)
                 msg = a.run()
             except action.ActionError as e:
+                fail = True
                 _log.error("Invalid action, reason: %s", str(e))
             except BackendError as e:
+                fail = True
                 _log.error("Error when trying to %s on %s", self._action,
                            self._namedef)
                 _log.error("Failure writing to the kvstore: %s", str(e))
             except Exception as e:
+                fail = True
                 _log.error("Error when trying to %s on %s", self._action,
                            self._namedef)
                 _log.exception("Generic action failure: %s", str(e))
             else:
                 print(msg)
+        if not fail:
+            self.announce()
 
     @staticmethod
     def raise_warning():
@@ -117,6 +132,7 @@ class ToolCliFind(ToolCli):
     def __init__(self, args):
         self.args = args
         self.entity = self.object_types[args.object_type]
+        self.irc = logging.getLogger('conftool.announce')
 
     @property
     def tags(self):
@@ -126,24 +142,26 @@ class ToolCliFind(ToolCli):
         for o in self.entity.find(self._namedef):
             yield o
 
+    def announce(self):
+        if self._action != 'get' and not self.args.quiet:
+            self.irc.warn(
+                "conftool action : %s; selector: %s", self._action,
+                self._namedef
+            )
 
-class ToolCliByLabel(ToolCli):
+
+class ToolCliByLabel(ToolCliFind):
     """Subclass used for the select mode"""
     def __init__(self, args):
-        self.args = args
+        super(ToolCliByLabel, self).__init__(args)
         self.selectors = {}
         self.parse_selectors()
-        self.entity = self.object_types[args.object_type]
 
     def parse_selectors(self):
         for tag in self.args.selector.split(','):
             k, expr = tag.split('=', 1)
             # All our selector are anchored regexes
             self.selectors[k] = re.compile('^%s$' % expr)
-
-    @property
-    def tags(self):
-        return []
 
     def host_list(self):
         """Gets all the hosts matching our selectors"""
@@ -184,6 +202,8 @@ def parse_args(cmdline):
                         choices=ToolCli.object_types.keys(), default='node')
     parser.add_argument('--debug', action="store_true",
                         default=False, help="print debug info")
+    parser.add_argument('--quiet', action="store_true", dest='quiet',
+                        default=False, help="Do not announce the change to IRC")
 
     # Subparsers for the three operating models
     subparsers = parser.add_subparsers(

@@ -25,6 +25,7 @@ def captured_output():
 class ToolIntegration(IntegrationTestBase):
 
     def setUp(self):
+        super(ToolIntegration, self).setUp()
         args = ['--directory', os.path.join(test_base, 'fixtures')]
         syncer.main(arguments=args)
 
@@ -60,6 +61,8 @@ class ToolIntegration(IntegrationTestBase):
         k.sort()
         self.assertEquals(k, ['cp1008', 'tags'])
         self.assertEquals(output['cp1008']['pooled'], 'no')
+        # Check the irc message was not sent for a get operation
+        self.assertEquals(self.irc.emit.called, False)
 
     def test_find_node(self):
         args = ['find', '--action', 'get', 'cp1008']
@@ -72,6 +75,8 @@ class ToolIntegration(IntegrationTestBase):
         args = ['--find', '--action', 'get', 'cp1008']
         output = self.output_for(args)
         self.assertEquals(len(output), 3)
+        # Check the irc message was not sent for a get operation
+        self.assertEquals(self.irc.emit.called, False)
 
     def test_change_node_regexp(self):
         """
@@ -79,17 +84,20 @@ class ToolIntegration(IntegrationTestBase):
         """
         args = self.generate_args('set/pooled=yes re:cp105.')
         tool.main(cmdline=args)
+        self.assertEquals(self.irc.emit.called, True)
         for hostname in ['cp1052', 'cp1053', 'cp1054', 'cp1055']:
-                n = node.Node('eqiad', 'cache_text', 'https', hostname)
-                self.assertTrue(n.exists)
-                self.assertEquals(n.pooled, "yes")
+            n = node.Node('eqiad', 'cache_text', 'https', hostname)
+            self.assertTrue(n.exists)
+            self.assertEquals(n.pooled, "yes")
 
     def test_create_returns_error(self):
         """
         Test creation is not possible from confctl
         """
-        args = self.generate_args('set/pooled=yes re:cp1059')
+        args = self.generate_args('set/pooled=yes cp1059')
         tool.main(cmdline=args)
+        # This doesn't get announced to irc.
+        self.assertEquals(self.irc.emit.called, False)
         n = node.Node('eqiad', 'cache_text', 'https', 'cp1059')
         self.assertFalse(n.exists)
 
@@ -103,7 +111,6 @@ class ToolIntegration(IntegrationTestBase):
         self.assertEquals(len(output), 41)
 
     def test_select_raise_warning(self):
-
         # Check that the warning gets called upon if we select more than
         # one node, or not if we don't
         args = ['select', 'cluster=appservers', 'set/pooled=yes']
@@ -123,7 +130,6 @@ class ToolIntegration(IntegrationTestBase):
         tool.ToolCliByLabel.raise_warning.assert_not_called()
         out = self.output_for(['select', 'name=mw1018', 'get'])
         self.assertEquals(out[0]['mw1018']['pooled'], 'inactive')
-
 
     def test_select_empty(self):
         # Test that regexes are anchored and a partial name will not

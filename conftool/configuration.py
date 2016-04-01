@@ -22,7 +22,9 @@ ConfigBase = collections.namedtuple('Config', ['driver', 'hosts',
                                                'api_version',
                                                'pools_path',
                                                'services_path',
-                                               'driver_options'
+                                               'driver_options',
+                                               'tcpircbot_host',
+                                               'tcpircbot_port'
                                                ])
 
 
@@ -35,7 +37,9 @@ class Config(ConfigBase):
                 api_version='v1',
                 pools_path='pools',
                 services_path='services',
-                driver_options={}
+                driver_options={},
+                tcpircbot_host='localhost',
+                tcpircbot_port='9999'
                 ):
         if pools_path.startswith('/'):
             raise ValueError("pools_path must be a relative path.")
@@ -48,4 +52,6 @@ class Config(ConfigBase):
                                           api_version=api_version,
                                           pools_path=pools_path,
                                           services_path=services_path,
-                                          driver_options=driver_options)
+                                          driver_options=driver_options,
+                                          tcpircbot_host=tcpircbot_host,
+                                          tcpircbot_port=int(tcpircbot_port))

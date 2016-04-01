@@ -36,7 +36,14 @@ switch, `--config`. The following configurations can be changed:
 * `services_path` (default: 'services'): base path for the 'service' entity
 
 * `driver_options` (default: {}): a dict of options to pass to the
-  specific driver you're using. Check the specific driver class for details.
+  specific driver you're using. Check the specific driver class for
+  details.
+
+* `tcpircbot_host` host to connect to to announce to the IRC bot what
+  we're doing
+
+* `tcpircbot_port` port to connect to to announce to the IRC bot what
+  we're doing
 
 Usage
 -----
