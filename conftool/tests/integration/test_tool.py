@@ -69,8 +69,7 @@ class ToolIntegration(IntegrationTestBase):
         output = self.output_for(args)
         self.assertEquals(len(output), 3)
         for serv in output:
-            self.assertIn(serv['tags']['service'],
-                          ['varnish-be', 'https', 'varnish-fe'])
+            self.assertTrue(serv['tags'].startswith('dc=eqiad'))
         # Test that old-style parameters are still valid
         args = ['--find', '--action', 'get', 'cp1008']
         output = self.output_for(args)

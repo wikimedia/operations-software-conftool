@@ -1,5 +1,6 @@
 import os
 import json
+from collections import OrderedDict
 from contextlib import contextmanager
 from conftool import _log, backend, drivers
 
@@ -159,6 +160,8 @@ class KVObject(object):
                 _log.warn("Not setting a value")
 
     def __str__(self):
-        d = {self.name: self._to_net()}
-        d['tags'] = self.tags
+        d = OrderedDict()
+        d[self.name] = self._to_net()
+        tags = self.tags
+        d['tags'] = ','.join(["%s=%s" % (k, tags[k]) for k in self._tags])
         return json.dumps(d)
