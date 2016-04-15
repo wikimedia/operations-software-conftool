@@ -1,4 +1,11 @@
-python-conftool (0.2.0) UNRELEASED; urgency=medium
+python-conftool (0.3.0) unstable; urgency=medium
+
+  * Added select mode, deprecated --find
+  * Added logging to irc via tcpircbot
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Fri, 15 Apr 2016 15:52:12 +0100
+
+python-conftool (0.2.0) unstable; urgency=medium
 
   * Don't create inexistent entitites
   * Use locks for writing
