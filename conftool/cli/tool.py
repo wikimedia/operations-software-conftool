@@ -4,6 +4,7 @@ import argparse
 from collections import defaultdict
 import logging
 import json
+import yaml
 import os
 import re
 import sys
@@ -54,7 +55,10 @@ class ToolCli(object):
             all = KVObject.backend.driver.ls(cur_dir)
             objlist = [k for (k, v) in all]
             if self._action == "get":
-                print json.dumps(dict(all))
+                if self.args.yaml:
+                    print yaml.dump(dict(all), default_flow_style=False)
+                else:
+                    print json.dumps(dict(all))
                 return []
             else:
                 retval = objlist
@@ -183,7 +187,10 @@ class ToolCliByLabel(ToolCliFind):
             dir = os.path.dirname(obj.key).replace(self.entity.base_path(), '')
             tag_hosts[dir].append(obj.name)
         print "The selector you chose has selected the following objects:"
-        print json.dumps(tag_hosts)
+        if self.args.yaml:
+            print yaml.dump(tag_hosts, default_flow_style=False)
+        else:
+            print json.dumps(tag_hosts)
         print "Ok to continue? [y/N]"
         a = raw_input("confctl>")
         if a.lower() != 'y':
@@ -200,6 +207,8 @@ def parse_args(cmdline):
     parser.add_argument('--config', help="Config file", default="/etc/conftool/config.yaml")
     parser.add_argument('--object-type', dest="object_type",
                         choices=ToolCli.object_types.keys(), default='node')
+    parser.add_argument('--yaml', action="store_true",
+                        default=False, help="output values in YAML")
     parser.add_argument('--debug', action="store_true",
                         default=False, help="print debug info")
     parser.add_argument('--quiet', action="store_true", dest='quiet',
