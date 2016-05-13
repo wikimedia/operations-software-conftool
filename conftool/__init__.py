@@ -54,6 +54,7 @@ class IRCSocketHandler(logging.Handler):
         except (socket.timeout, socket.error, socket.gaierror):
             self.handleError(record)
 
+
 _irc = logging.getLogger('conftool.announce')
 
 

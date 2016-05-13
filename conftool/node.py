@@ -1,6 +1,5 @@
-import os
 from conftool import _log, choice
-from conftool.kvobject import KVObject
+from conftool.kvobject import Entity
 from conftool.service import Service
 
 
@@ -21,30 +20,19 @@ class ServiceCache(object):
         return cls.services[key]
 
 
-class Node(KVObject):
+class Node(Entity):
 
     _schema = {'weight': int, 'pooled': choice("yes", "no", "inactive")}
     _tags = ['dc', 'cluster', 'service']
 
     def __init__(self, datacenter, cluster, servname, host):
         self.service = ServiceCache.get(cluster, servname)
-        self._key = self.kvpath(datacenter, cluster, servname, host)
-        self.fetch()
-        self._defaults = {}
+        super(Node, self).__init__(datacenter, cluster, servname, host)
 
     @classmethod
     def base_path(cls):
         return cls.config.pools_path
 
-    @property
-    def key(self):
-        return self._key
-
     def get_default(self, what):
         _log.debug("Setting default for %s", what)
         return self.service.get_defaults(what)
-
-    @classmethod
-    def dir(cls, dc, cluster, service):
-        return os.path.join(cls.config.pools_path, dc,
-                            cluster, service)

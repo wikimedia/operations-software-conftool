@@ -17,6 +17,7 @@ def get(configfile):
 
     return Config(**config)
 
+
 ConfigBase = collections.namedtuple('Config', ['driver', 'hosts',
                                                'namespace',
                                                'api_version',

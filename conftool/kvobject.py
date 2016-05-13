@@ -57,6 +57,10 @@ class KVObject(object):
         raise NotImplementedError("All kvstore objects should implement this")
 
     @property
+    def dir(self):
+        raise NotImplementedError("All kvstore objects should implement this")
+
+    @property
     def name(self):
         return os.path.basename(self.key)
 
@@ -82,7 +86,7 @@ class KVObject(object):
             if values:
                 self.exists = True
         except drivers.NotFoundError:
-            return self._from_net(None)
+            return self._from_net({})
         except drivers.BackendError as e:
             _log.error("Backend error while fetching %s: %s", self.key, e)
             # TODO: maybe catch the backend errors separately
@@ -165,3 +169,70 @@ class KVObject(object):
         tags = self.tags
         d['tags'] = ','.join(["%s=%s" % (k, tags[k]) for k in self._tags])
         return json.dumps(d)
+
+    def __eq__(self, obj):
+        return (self.__class__ == obj.__class__ and
+                self.name == obj.name and
+                self.tags == obj.tags and
+                self._to_net() == obj._to_net())
+
+
+class Entity(KVObject):
+    """
+    General-purpose entity with a strict schema
+    """
+
+    def __init__(self, *tags):
+        if len(tags) != (len(self._tags) + 1):
+            raise ValueError(
+                "Need %s as tags, %s provided",
+                ",".join(self._tags),
+                ",".join(tags[:-1]))
+
+        self._name = tags[-1]
+        self._key = self.kvpath(*tags)
+        self._current_tags = {}
+        for i, tag in enumerate(self._tags):
+            self._current_tags[tag] = tags[i]
+        self.fetch()
+        self._defaults = {}
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def tags(self):
+        return self._current_tags
+
+    @classmethod
+    def dir(cls, *tags):
+        if len(tags) != len(cls._tags):
+            raise ValueError("Need %s as tags, %s provided",
+                             ",".join(cls._tags),
+                             ",".join(tags))
+        return os.path.join(cls.base_path(), *tags)
+
+
+class FreeSchemaEntity(Entity):
+
+    def __init__(self, *tags, **kwargs):
+        self._schemaless = kwargs
+        super(FreeSchemaEntity, self).__init__(*tags)
+
+    def _to_net(self):
+        values = super(FreeSchemaEntity, self)._to_net()
+        for k, v in self._schemaless.items():
+            values[k] = v
+        return values
+
+    def _from_net(self, values):
+        super(FreeSchemaEntity, self)._from_net(values)
+        if values is None:
+            return
+        for key, value in values.items():
+            if key not in self._schema:
+                self._schemaless[key] = value
+
+    def changed(self, data):
+        return self._to_net() != data
