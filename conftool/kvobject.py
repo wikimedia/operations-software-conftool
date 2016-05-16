@@ -1,7 +1,9 @@
-import os
 import json
+import os
+
 from collections import OrderedDict
 from contextlib import contextmanager
+
 from conftool import _log, backend, drivers
 
 
@@ -9,6 +11,7 @@ class KVObject(object):
     backend = None
     config = None
     _schema = {}
+    static_values = False
 
     @classmethod
     def setup(cls, configobj):
@@ -49,7 +52,7 @@ class KVObject(object):
                 yield cls(*labels)
 
     @classmethod
-    def base_path(self):
+    def base_path(cls):
         raise NotImplementedError("All kvstore objects should implement this")
 
     @property
@@ -86,12 +89,12 @@ class KVObject(object):
             if values:
                 self.exists = True
         except drivers.NotFoundError:
-            return self._from_net({})
+            return self.from_net(None)
         except drivers.BackendError as e:
             _log.error("Backend error while fetching %s: %s", self.key, e)
             # TODO: maybe catch the backend errors separately
             return None
-        self._from_net(values)
+        self.from_net(values)
 
     def write(self):
         return self.backend.driver.write(self.key, self._to_net())
@@ -119,6 +122,46 @@ class KVObject(object):
         self.write()
 
     @classmethod
+    def from_yaml(cls, data):
+        if cls.static_values:
+            return cls._kv_from_yaml(data)
+        else:
+            return cls._from_yaml(data)
+
+    @classmethod
+    def _kv_from_yaml(cls, data):
+        """Get keys and values from the yaml file"""
+        depth = len(cls._tags)
+        if depth == 0:
+            return data
+        # Flatten a multidimensional dict
+        # to {a/b/c/d: val} format
+        while depth > 0:
+            depth -= 1
+            tmpdict = {}
+            for k, v in data.items():
+                tmpdict.update({("%s/%s" % (k, el)): val for el, val in v.items()})
+            data = tmpdict
+        return data
+
+    @classmethod
+    def _from_yaml(cls, data):
+        depth = len(cls._tags)
+        if depth == 0:
+            return {el: None for el in data}
+        while depth > 1:
+            depth -= 1
+            tmpdict = {}
+            for k, v in data.items():
+                tmpdict.update({("%s/%s" % (k, el)): val for el, val in v.items()})
+            data = tmpdict
+        tmpdict = {}
+        for tags, names in data.items():
+            tmpdict.update(
+                dict([("%s/%s" % (tags, name), None) for name in names]))
+        return tmpdict
+
+    @classmethod
     @contextmanager
     def lock(cls, path):
         try:
@@ -133,7 +176,7 @@ class KVObject(object):
             _log.critical("Aborted.")
             cls.backend.driver.release_lock(path)
 
-    def _from_net(self, values):
+    def from_net(self, values):
         """
         Fetch the values from the kvstore into the object
         """
@@ -150,11 +193,18 @@ class KVObject(object):
         return values
 
     def _set_value(self, key, validator, values, set_defaults=True):
+        # When initializing a object, we don't really care
+        # about logging warnings
+        if values is None:
+            if set_defaults:
+                setattr(self, key, self.get_default(key))
+            return
+
         try:
             setattr(self, key, validator(values[key]))
         except Exception as e:
             _log.info("Value for key %s is invalid: %s",
-                      key, e)
+                      key, e, exc_info=True)
             if set_defaults:
                 val = self.get_default(key)
                 _log.warn("Setting %s to the default value %s",
@@ -181,6 +231,7 @@ class Entity(KVObject):
     """
     General-purpose entity with a strict schema
     """
+    depends = []
 
     def __init__(self, *tags):
         if len(tags) != (len(self._tags) + 1):
@@ -226,8 +277,8 @@ class FreeSchemaEntity(Entity):
             values[k] = v
         return values
 
-    def _from_net(self, values):
-        super(FreeSchemaEntity, self)._from_net(values)
+    def from_net(self, values):
+        super(FreeSchemaEntity, self).from_net(values)
         if values is None:
             return
         for key, value in values.items():

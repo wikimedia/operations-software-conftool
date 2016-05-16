@@ -1,0 +1,27 @@
+pony:
+  path: "ponies"
+  tags:
+    - color
+    - gender
+  schema:
+    hair_color:
+      type: "string"
+      default: "cyan"
+    accessories:
+      type: "list"
+      default: []
+unicorn:
+  path: "unicorns"
+  tags:
+    - color
+    - gender
+  schema:
+    hair_color:
+      type: "string"
+      default: "pink"
+    accessories:
+      type: "list"
+      default: ['horn']
+    magic:
+      type: "enum:rainbows|confetti|stars|nyancats"
+      default: "rainbows"

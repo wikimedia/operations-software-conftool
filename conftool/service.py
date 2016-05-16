@@ -1,12 +1,14 @@
 from conftool.kvobject import FreeSchemaEntity
+from conftool.types import get_validator
 
 
 class Service(FreeSchemaEntity):
     _schema = {
-        'default_values': dict,
-        'datacenters': lambda x: x if isinstance(x, list) else []
+        'default_values': get_validator('dict'),
+        'datacenters': get_validator('list')
     }
     _tags = ['cluster']
+    static_values = True
 
     @classmethod
     def base_path(cls):

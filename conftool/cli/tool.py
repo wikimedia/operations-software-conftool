@@ -4,25 +4,42 @@ import argparse
 from collections import defaultdict
 import logging
 import json
-import yaml
 import os
 import re
 import sys
 
+import yaml
+
+from conftool import _log, action, configuration, loader, setup_irc
 from conftool.kvobject import KVObject
-from conftool import configuration, action, _log, setup_irc
 from conftool.drivers import BackendError
-from conftool import service, node
+
+
+class ObjectTypeError(Exception):
+    """
+    Exception raised whenever an inexistent object type is raised
+    """
+    pass
 
 
 class ToolCli(object):
-    object_types = {"node": node.Node, "service": service.Service}
 
     def __init__(self, args):
         self.args = args
+        self._load_schema()
         self._tags = self.args.taglist.split(',')
-        self.entity = self.object_types[args.object_type]
         self.irc = logging.getLogger('conftool.announce')
+
+    def _load_schema(self):
+        self._schema = loader.Schema.from_file(self.args.schema)
+        try:
+            self.entity = self._schema.entities[self.args.object_type]
+        except KeyError:
+            _log.critical(
+                "Object type %s is not available in the current schema",
+                self.args.object_type
+            )
+            raise ObjectTypeError(self.args.object_type)
 
     def setup(self):
         c = configuration.get(self.args.config)
@@ -52,13 +69,13 @@ class ToolCli(object):
         cur_dir = self.entity.dir(*self.tags)
         warn = False
         if self._namedef == "all":
-            all = KVObject.backend.driver.ls(cur_dir)
-            objlist = [k for (k, v) in all]
+            all_objects = KVObject.backend.driver.ls(cur_dir)
+            objlist = [k for (k, v) in all_objects]
             if self._action == "get":
                 if self.args.yaml:
-                    print yaml.dump(dict(all), default_flow_style=False)
+                    print yaml.dump(dict(all_objects), default_flow_style=False)
                 else:
-                    print json.dumps(dict(all))
+                    print json.dumps(dict(all_objects))
                 return []
             else:
                 retval = objlist
@@ -138,7 +155,7 @@ class ToolCliFind(ToolCli):
     """Subclass used for the --find mode"""
     def __init__(self, args):
         self.args = args
-        self.entity = self.object_types[args.object_type]
+        self._load_schema()
         self.irc = logging.getLogger('conftool.announce')
 
     @property
@@ -188,8 +205,8 @@ class ToolCliByLabel(ToolCliFind):
         tag_hosts = defaultdict(list)
         hosts_set = set()
         for obj in objects:
-            dir = os.path.dirname(obj.key).replace(self.entity.base_path(), '')
-            tag_hosts[dir].append(obj.name)
+            path = os.path.dirname(obj.key).replace(self.entity.base_path(), '')
+            tag_hosts[path].append(obj.name)
             hosts_set.add(obj.name)
 
         if self.args.host and len(hosts_set) <= 1:
@@ -215,8 +232,7 @@ def parse_args(cmdline):
         " <https://wikitech.wikimedia.org/wiki/conftool>.",
         fromfile_prefix_chars='@')
     parser.add_argument('--config', help="Config file", default="/etc/conftool/config.yaml")
-    parser.add_argument('--object-type', dest="object_type",
-                        choices=ToolCli.object_types.keys(), default='node')
+    parser.add_argument('--object-type', dest="object_type", default='node')
     parser.add_argument('--yaml', action="store_true",
                         default=False, help="output values in YAML")
     parser.add_argument('--host', action='store_true',
@@ -225,6 +241,10 @@ def parse_args(cmdline):
                         default=False, help="print debug info")
     parser.add_argument('--quiet', action="store_true", dest='quiet',
                         default=False, help="Do not announce the change to IRC")
+    parser.add_argument(
+        '--schema', default="/etc/conftool/schema.yaml",
+        help="Schema file that defines additional object types"
+    )
 
     # Subparsers for the three operating models
     subparsers = parser.add_subparsers(
@@ -270,8 +290,7 @@ def mangle_argv(cmdline):
 
 def main(cmdline=None):
     if cmdline is None:
-        cmdline = list(sys.argv)
-        cmdline.pop(0)
+        cmdline = sys.argv[1:]
 
     cmdline = mangle_argv(cmdline)
     args = parse_args(cmdline)
@@ -281,12 +300,16 @@ def main(cmdline=None):
     else:
         logging.basicConfig(level=logging.WARN)
 
-    if args.mode == 'select':
-        cli = ToolCliByLabel(args)
-    elif args.mode == 'find':
-        cli = ToolCliFind(args)
-    else:
-        cli = ToolCli(args)
+    try:
+
+        if args.mode == 'select':
+            cli = ToolCliByLabel(args)
+        elif args.mode == 'find':
+            cli = ToolCliFind(args)
+        else:
+            cli = ToolCli(args)
+    except ObjectTypeError:
+        sys.exit(1)
 
     try:
         cli.setup()

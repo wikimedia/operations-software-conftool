@@ -56,6 +56,9 @@ held in yaml files that are synced to the kv store via a cli tool
 called `conftool-sync`, but the values within each config object can be
 fetched (and changed) dinamically using `confctl`.
 
+Objects that conftool can treat are managed via a schema file; details
+about schema files syntax can be found in the dedicated section.
+
 Each type of objects has a set of tags associated with it; for example,
 the 'node' object (that is used to describe a server/service within a
 pool) has the following tags associated with it: dc (datacenter),
@@ -97,6 +100,54 @@ There are three ways to find objects:
   this will act on all the objects with name NAME independently of the
   attached tags. This search mode is deprecated, and will be removed in some
   future release.
+
+you can also set the values from a yaml file instead of the command line,
+which could be useful whenever you find yourself manipulating complex
+fields like dictionaries or lists, by just using the action `set/@filename`
+
+Defining a schema
+-----------------
+
+A schema can be defined in a yaml file, in the form
+
+    ENTITY_NAME:
+      path: PATH
+      tags: [TAG1,TAG2,...]
+      schema:
+        FIELD1:
+          type: "string"
+          default: "DEFAULT1"
+        FIELD2:
+          type: "enum:yes|no|inactive"
+          default: "inactive"
+        ...
+      depends:
+        - OTHER_ENTITY
+      free_form: false
+
+here, ENTITY_NAME is the name of the object type, as indicated on the
+command line via the `--object-type ENTITY_NAME` switch. Every object
+type has a path in the k/v store path-like key we're using, identified
+by the PATH variable. Every object of this type will have the listed
+tags (TAG1, TAG2, ...) attached to them.
+
+Within the `schema` key we have the list of the fields of the object,
+with their associated types. Supported types at the moment include:
+
+* `string`
+* `int`
+* `list`
+* `dict`
+* `enum:CHOICEA|CHOICHEB|...` an enumeration of allowed values
+
+Since the object type can reference another object type, there is the
+possibility to indicate a dependency, although at the moment automatic
+reference and storage of relationship is only supported for builtin
+object types.
+
+Finally, `free_form` determines if only predefined fields are accepted
+(when `false`, the default) or if additional fields can be added to an
+object.
 
 
 Running tests

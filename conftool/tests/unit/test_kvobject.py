@@ -7,7 +7,7 @@ import mock
 from conftool import configuration, drivers
 from conftool.kvobject import KVObject
 from conftool.tests.unit import MockBackend, MockEntity, MockFreeEntity
-
+from conftool.types import get_validator
 
 class TestKVObject(unittest.TestCase):
 
@@ -83,13 +83,13 @@ class TestKVObject(unittest.TestCase):
 
     def test_fetch(self):
         MockEntity.backend.driver.read = mock.Mock(return_value={'a': 1, 'b': 'b-val'})
-        with mock.patch('conftool.tests.unit.MockEntity._from_net') as mocker:
+        with mock.patch('conftool.tests.unit.MockEntity.from_net') as mocker:
             obj = MockEntity('Foo', 'Bar', 'test')
             mocker.assert_called_with({'a': 1, 'b': 'b-val'})
             # Non-existent key?
             MockEntity.backend.driver.read.side_effect = drivers.NotFoundError('test')
             MockEntity('Foo', 'Bar', 'test')
-            mocker.assert_called_with({})
+            mocker.assert_called_with(None)
 
     def test_write(self):
         MockEntity.backend.driver.write = mock.Mock(return_value={'a': 5, 'b': 'meh'})
@@ -129,7 +129,7 @@ class TestKVObject(unittest.TestCase):
         self.entity._set_value.assert_not_called()
         # Setting a value in the schema does set it
         self.entity.update({'a': 10})
-        self.entity._set_value.assert_called_with('a', int, {'a': 10},
+        self.entity._set_value.assert_called_with('a', get_validator('int'), {'a': 10},
                                                   set_defaults=False)
         self.entity.write.assert_called_with()
 
@@ -142,17 +142,17 @@ class TestKVObject(unittest.TestCase):
 
     def test_from_net(self):
         obj = MockEntity('a', 'b', 'c')
-        obj._from_net({'a': 256})
+        obj.from_net({'a': 256})
         self.assertEqual(obj._to_net(), {'a': 256, 'b': 'FooBar'})
 
     def test_set_value(self):
         with mock.patch('conftool.tests.unit.MockEntity.fetch'):
             obj = MockEntity('a', 'b', 'c')
         # set an existing value
-        obj._set_value('a', int, {'a': 256})
+        obj._set_value('a', get_validator('int'), {'a': 256})
         self.assertEqual(obj.a, 256)
         # Set an inexistent value with no defaults
-        obj._set_value('c', str, {})
+        obj._set_value('c', get_validator('string'), {})
         self.assertEqual(obj.c, 'FooBar')
 
     def test_str(self):
@@ -190,7 +190,7 @@ class TestFreeSchemaObject(unittest.TestCase):
 
     def test_from_net(self):
         a = MockFreeEntity('Foo', 'Bar', 'test', some_key="some_value")
-        a._from_net({'some_key': 'another_value', 'm': 5})
+        a.from_net({'some_key': 'another_value', 'm': 5})
         self.assertEqual(a.a, 1)
         self.assertEqual(a._schemaless['some_key'], 'another_value')
 

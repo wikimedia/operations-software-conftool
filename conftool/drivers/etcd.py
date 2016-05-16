@@ -1,6 +1,7 @@
-import etcd
-import os
 import json
+import os
+
+import etcd
 import yaml
 
 from conftool import drivers
@@ -80,9 +81,9 @@ class Driver(drivers.BaseDriver):
             val = json.dumps(value)
             self.client.write(key, val, prevExist=False)
 
-    def ls(self, path):
+    def ls(self, path, recursive=False):
         """Given a path, returns a tuple (key, data) for each value found"""
-        objects = self._ls(path, recursive=False)
+        objects = self._ls(path, recursive=recursive)
         fullpath = self.abspath(path) + '/'
         return [(el.key.replace(fullpath, ''), self._data(el))
                 for el in objects]
@@ -98,6 +99,12 @@ class Driver(drivers.BaseDriver):
 
         return [split_path(el.key)
                 for el in self._ls(path, recursive=True) if not el.dir]
+
+    def all_data(self, path):
+        """Return a (path, object) tuple for all the objects"""
+        base_path = self.abspath(path) + '/'
+        return [(obj.key.replace(base_path, ''), self._data(obj))
+                for obj in self._ls(path, recursive=True) if not obj.dir]
 
     @drivers.wrap_exception(etcd.EtcdException)
     def _ls(self, path, recursive=False):

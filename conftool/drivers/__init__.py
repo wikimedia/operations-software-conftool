@@ -1,5 +1,5 @@
-import os
 import functools
+import os
 
 
 class BackendError(Exception):
@@ -36,6 +36,13 @@ class BaseDriver(object):
         for args in objclass.backend.driver.all_keys(objclass):
             yield objclass(*args)
 
+        """
+        pass
+
+    def all_data(self, path):
+        """
+        Given a path, return a list of tuples for all the objects under that
+        path in the form [(relative_path1, data1), (relative_path2, data2), ...]
         """
         pass
 

@@ -1,6 +1,6 @@
 from conftool import drivers
 from conftool.kvobject import Entity, FreeSchemaEntity
-
+from conftool.types import get_validator
 
 class MockDriver(drivers.BaseDriver):
 
@@ -17,7 +17,7 @@ class MockBackend(object):
 
 class MockEntity(Entity):
     _tags = ['foo', 'bar']
-    _schema = {'a': int, 'b': str}
+    _schema = {'a': get_validator('int'), 'b': get_validator('string')}
 
     @classmethod
     def base_path(cls):
@@ -32,7 +32,7 @@ class MockEntity(Entity):
 
 class MockFreeEntity(FreeSchemaEntity):
     _tags = ['foo', 'bar']
-    _schema = {'a': int, 'b': str}
+    _schema = {'a': get_validator('int'), 'b': get_validator('string')}
 
     @classmethod
     def base_path(cls):
