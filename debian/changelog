@@ -1,3 +1,9 @@
+python-conftool (0.3.1) jessie-wikimedia; urgency=medium
+
+  * Make confctl exit with approriate status codes on failure. 
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 20 Sep 2016 17:25:24 +0200
+
 python-conftool (0.3.0) unstable; urgency=medium
 
   * Added select mode, deprecated --find
