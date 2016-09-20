@@ -31,7 +31,9 @@ class ToolIntegration(IntegrationTestBase):
 
     def output_for(self, args):
         with captured_output() as (out, err):
-            tool.main(cmdline=args)
+            with self.assertRaises(SystemExit) as cm:
+                tool.main(cmdline=args)
+                self.assertEquals(cm.exception_code, 0)
         res = out.getvalue().strip()
         output = []
         if not res:
@@ -53,10 +55,7 @@ class ToolIntegration(IntegrationTestBase):
 
     def test_get_node(self):
         args = self.generate_args('get cp1008')
-        with captured_output() as (out, err):
-            tool.main(cmdline=args)
-        res = out.getvalue().strip()
-        output = json.loads(res)
+        output = self.output_for(args)[0]
         k = output.keys()
         k.sort()
         self.assertEquals(k, ['cp1008', 'tags'])
@@ -82,7 +81,9 @@ class ToolIntegration(IntegrationTestBase):
         Changing values according to a regexp
         """
         args = self.generate_args('set/pooled=yes re:cp105.')
-        tool.main(cmdline=args)
+        with self.assertRaises(SystemExit) as cm:
+            tool.main(cmdline=args)
+            self.assertEquals(cm.exception_code, 0)
         self.assertEquals(self.irc.emit.called, True)
         for hostname in ['cp1052', 'cp1053', 'cp1054', 'cp1055']:
             n = node.Node('eqiad', 'cache_text', 'https', hostname)
@@ -94,7 +95,10 @@ class ToolIntegration(IntegrationTestBase):
         Test creation is not possible from confctl
         """
         args = self.generate_args('set/pooled=yes cp1059')
-        tool.main(cmdline=args)
+        with self.assertRaises(SystemExit) as cm:
+            tool.main(cmdline=args)
+            # In error, we exit with status 1
+            self.assertEquals(cm.exception_code, 1)
         # This doesn't get announced to irc.
         self.assertEquals(self.irc.emit.called, False)
         n = node.Node('eqiad', 'cache_text', 'https', 'cp1059')
@@ -114,7 +118,9 @@ class ToolIntegration(IntegrationTestBase):
         # one node, or not if we don't
         args = ['select', 'cluster=appservers', 'set/pooled=yes']
         tool.ToolCliByLabel.raise_warning = mock.MagicMock()
-        tool.main(cmdline=args)
+        with self.assertRaises(SystemExit) as cm:
+            tool.main(cmdline=args)
+            self.assertEquals(cm.exception_code, 0)
         self.assertEquals(tool.ToolCliByLabel.raise_warning.call_count,1)
         # now let's loop through the responses from conftool get
         args = ['select', 'cluster=appservers', 'get']
@@ -125,7 +131,10 @@ class ToolIntegration(IntegrationTestBase):
             self.assertEquals(res[k]['pooled'], 'yes')
         tool.ToolCliByLabel.raise_warning.reset_mock()
         args = ['select', 'name=mw1018', 'set/pooled=inactive']
-        tool.main(cmdline=args)
+        with self.assertRaises(SystemExit) as cm:
+            tool.main(cmdline=args)
+            self.assertEquals(cm.exception_code, 0)
+
         tool.ToolCliByLabel.raise_warning.assert_not_called()
         out = self.output_for(['select', 'name=mw1018', 'get'])
         self.assertEquals(out[0]['mw1018']['pooled'], 'inactive')

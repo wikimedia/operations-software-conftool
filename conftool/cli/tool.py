@@ -113,6 +113,9 @@ class ToolCli(object):
                 print(msg)
         if not fail:
             self.announce()
+            return True
+        else:
+            return False
 
     @staticmethod
     def raise_warning():
@@ -282,9 +285,12 @@ def main(cmdline=None):
         _log.critical("Invalid configuration: %s", e)
         sys.exit(1)
 
+    exit_status = 0
     for unit in args.action:
         # TODO: fix base class
-        cli.run_action(unit)
+        if not cli.run_action(unit):
+            exit_status = 1
+    sys.exit(exit_status)
 
 
 if __name__ == '__main__':
