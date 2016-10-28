@@ -186,9 +186,16 @@ class ToolCliByLabel(ToolCliFind):
 
     def raise_warning(self, objects):
         tag_hosts = defaultdict(list)
+        hosts_set = set()
         for obj in objects:
             dir = os.path.dirname(obj.key).replace(self.entity.base_path(), '')
             tag_hosts[dir].append(obj.name)
+            hosts_set.add(obj.name)
+
+        if self.args.host and len(hosts_set) <= 1:
+            # The host option is set and all objects belong to the same host
+            return
+
         print "The selector you chose has selected the following objects:"
         if self.args.yaml:
             print yaml.dump(tag_hosts, default_flow_style=False)
@@ -212,6 +219,8 @@ def parse_args(cmdline):
                         choices=ToolCli.object_types.keys(), default='node')
     parser.add_argument('--yaml', action="store_true",
                         default=False, help="output values in YAML")
+    parser.add_argument('--host', action='store_true',
+                        help='Do not raise warning if all objects belong to the same host')
     parser.add_argument('--debug', action="store_true",
                         default=False, help="print debug info")
     parser.add_argument('--quiet', action="store_true", dest='quiet',

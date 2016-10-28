@@ -117,6 +117,7 @@ class ToolIntegration(IntegrationTestBase):
         # Check that the warning gets called upon if we select more than
         # one node, or not if we don't
         args = ['select', 'cluster=appservers', 'set/pooled=yes']
+        original_raise_warning = tool.ToolCliByLabel.raise_warning
         tool.ToolCliByLabel.raise_warning = mock.MagicMock()
         with self.assertRaises(SystemExit) as cm:
             tool.main(cmdline=args)
@@ -138,6 +139,8 @@ class ToolIntegration(IntegrationTestBase):
         tool.ToolCliByLabel.raise_warning.assert_not_called()
         out = self.output_for(['select', 'name=mw1018', 'get'])
         self.assertEquals(out[0]['mw1018']['pooled'], 'inactive')
+
+        tool.ToolCliByLabel.raise_warning = original_raise_warning
 
     def test_select_empty(self):
         # Test that regexes are anchored and a partial name will not

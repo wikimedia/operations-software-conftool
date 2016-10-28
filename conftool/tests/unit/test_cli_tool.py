@@ -1,5 +1,6 @@
 import unittest
 import mock
+
 from conftool.kvobject import KVObject
 from conftool import configuration
 from conftool import node
@@ -109,6 +110,43 @@ class TestToolCli(unittest.TestCase):
         # Majority of nodes via a regex will raise a system exit
         with self.assertRaises(SystemExit):
             tagged(args, 're:cp10(11|20)\.example\.com', 'set')
+
+    def test_host_multiple_services(self):
+        """Set all services in a single host w/ and w/o the --host flag"""
+        # The query return a single host with multiple services
+        query_result = [
+            node.Node('dc', 'cluster', 'service_a', 'host_a'),
+            node.Node('dc', 'cluster', 'service_b', 'host_a'),
+            node.Node('dc', 'cluster', 'service_c', 'host_a')]
+
+        args = self._mock_args(selector='name=cp3009.esams.wmnet', host=False)
+        cli = tool.ToolCliByLabel(args)
+        cli._action = 'set'
+        cli.entity.query = mock.MagicMock(return_value=query_result)
+
+        # With args.host=False we expect raw_input question, answering yes
+        with mock.patch('__builtin__.raw_input', return_value='y') as _raw:
+            cli.host_list()
+            _raw.assert_called_once_with('confctl>')
+
+        # With args.host=False we expect raw_input question, answering no
+        with mock.patch('__builtin__.raw_input', return_value='n') as _raw:
+            self.assertRaises(SystemExit, cli.host_list)
+
+        # With args.host=True we do not expect raw_input questions
+        cli.args.host = True
+        with mock.patch('__builtin__.raw_input') as _raw:
+            cli.host_list()
+            self.assertEquals(_raw.call_args_list, [])
+
+        # Adding another host to the query result
+        query_result.append(node.Node('dc', 'cluster', 'service_a', 'host_b'))
+        cli.entity.query = mock.MagicMock(return_value=query_result)
+
+        # With args.host=True we expect raw_input question, answering y
+        with mock.patch('__builtin__.raw_input', return_value='y') as _raw:
+            cli.host_list()
+            _raw.assert_called_once_with('confctl>')
 
     def test_parse_args(self):
         # Taglist
