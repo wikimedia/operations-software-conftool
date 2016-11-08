@@ -1,6 +1,9 @@
 Wikimedia conftool
 =======================
 
+[![Build Status](https://travis-ci.org/wikimedia/operations-software-conftool.svg?branch=master)](https://travis-ci.org/wikimedia/operations-software-conftool)
+[![Coverage Status](https://coveralls.io/repos/github/wikimedia/operations-software-conftool/badge.svg?branch=master)](https://coveralls.io/github/wikimedia/operations-software-conftool?branch=master)
+
 Conftool is a tool for storing configuration
 objects with associated tags into a remote k-v store.
 
@@ -108,9 +111,9 @@ environements:
 
 To run one:
 
-   tox -e flake8
+    tox -e flake8
 
 You can pass extra arguments to the underlying command, for example to only run
 the unit tests:
 
-   tox -e py27 -- --test-suite conftool.tests.unit
+    tox -e py27 -- --test-suite conftool.tests.unit

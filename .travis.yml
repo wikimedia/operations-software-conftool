@@ -1,0 +1,15 @@
+language: python
+python: 2.7
+before_install:
+  - curl -Ls https://github.com/coreos/etcd/releases/download/v3.0.14/etcd-v3.0.14-linux-amd64.tar.gz -o etcd.tar.gz
+  - mkdir -p bin
+  - tar --strip-components=1 -C bin -xf etcd.tar.gz etcd-v3.0.14-linux-amd64/etcd
+  - pip install --upgrade setuptools
+
+install:
+    - pip install tox
+    - pip install "python-etcd>=0.4.3" pyyaml
+    - pip install mock nose
+    - pip install coveralls
+script: PATH=$PATH:bin coverage run --source=conftool --omit="conftool/tests/*" setup.py test
+after_success: coveralls
