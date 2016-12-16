@@ -1,70 +1,70 @@
 cache_text:
-  cp1008:
+  cp0008:
     - varnish-fe
     - varnish-be
     - https
-  cp1052:
+  cp0052:
     - varnish-fe
     - varnish-be
     - https
-  cp1053:
+  cp0053:
     - varnish-fe
     - varnish-be
     - https
-  cp1054:
+  cp0054:
     - varnish-fe
     - varnish-be
     - https
-  cp1055:
+  cp0055:
     - varnish-fe
     - varnish-be
     - https
-  cp1065:
+  cp0065:
     - varnish-fe
     - varnish-be
     - https
-  cp1066:
+  cp0066:
     - varnish-fe
     - varnish-be
     - https
-  cp1067:
+  cp0067:
     - varnish-fe
     - varnish-be
     - https
-  cp1068:
+  cp0068:
     - varnish-fe
     - varnish-be
     - https
 appservers:
-  mw1018: [ apache ]
-  mw1019: [ apache ]
-  mw1020: [ apache ]
-  mw1021: [ apache ]
-  mw1022: [ apache ]
-  mw1023: [ apache ]
-  mw1024: [ apache ]
-  mw1025: [ apache ]
-  mw1026: [ apache ]
-  mw1027: [ apache ]
-  mw1028: [ apache ]
-  mw1029: [ apache ]
-  mw1030: [ apache ]
-  mw1031: [ apache ]
-  mw1032: [ apache ]
-  mw1033: [ apache ]
-  mw1034: [ apache ]
-  mw1035: [ apache ]
-  mw1036: [ apache ]
-  mw1037: [ apache ]
-  mw1038: [ apache ]
-  mw1039: [ apache ]
-  mw1040: [ apache ]
-  mw1041: [ apache ]
-  mw1042: [ apache ]
-  mw1043: [ apache ]
-  mw1044: [ apache ]
-  mw1045: [ apache ]
-  mw1046: [ apache ]
-  mw1047: [ apache ]
-  mw1048: [ apache ]
-  mw1049: [ apache ]
+  srv0018: [ apache ]
+  srv0019: [ apache ]
+  srv0020: [ apache ]
+  srv0021: [ apache ]
+  srv0022: [ apache ]
+  srv0023: [ apache ]
+  srv0024: [ apache ]
+  srv0025: [ apache ]
+  srv0026: [ apache ]
+  srv0027: [ apache ]
+  srv0028: [ apache ]
+  srv0029: [ apache ]
+  srv0030: [ apache ]
+  srv0031: [ apache ]
+  srv0032: [ apache ]
+  srv0033: [ apache ]
+  srv0034: [ apache ]
+  srv0035: [ apache ]
+  srv0036: [ apache ]
+  srv0037: [ apache ]
+  srv0038: [ apache ]
+  srv0039: [ apache ]
+  srv0040: [ apache ]
+  srv0041: [ apache ]
+  srv0042: [ apache ]
+  srv0043: [ apache ]
+  srv0044: [ apache ]
+  srv0045: [ apache ]
+  srv0046: [ apache ]
+  srv0047: [ apache ]
+  srv0048: [ apache ]
+  srv0049: [ apache ]

@@ -5,30 +5,30 @@ cache_text:
       "pooled": "no"
       "weight": 0
     datacenters:
-      - codfw
-      - eqiad
-      - esams
-      - ulsfo
+      - foo
+      - bar
+      - baz
+      - quux
   varnish-be:
     port: 3128
     default_values:
       "pooled": "no"
       "weight": 0
     datacenters:
-      - codfw
-      - eqiad
-      - esams
-      - ulsfo
+      - foo
+      - bar
+      - baz
+      - quux
   https:
     port: 443
     default_values:
       "pooled": "no"
       "weight": 0
     datacenters:
-      - codfw
-      - eqiad
-      - esams
-      - ulsfo
+      - foo
+      - bar
+      - baz
+      - quux
 appservers:
   apache:
     port: 80
@@ -36,7 +36,5 @@ appservers:
       "pooled": "yes"
       "weight": 0
     datacenters:
-      - codfw
-      - eqiad
-  
-    
+      - foo
+      - bar

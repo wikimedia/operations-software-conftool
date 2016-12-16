@@ -59,12 +59,12 @@ class TestToolCli(unittest.TestCase):
         )
 
         t = tool.ToolCliFind(args)
-        t._namedef = 'cp1048.example.com'
+        t._namedef = 'cp0048.example.com'
         res = [
             node.Node('test', 'cache',
-                      'ssl', 'cp1048.example.com'),
+                      'ssl', 'cp0048.example.com'),
             node.Node('test', 'cache',
-                      'http', 'cp1048.example.com'),
+                      'http', 'cp0048.example.com'),
         ]
         t.entity.find = mock.MagicMock(return_value=res)
         tres = [o for o in t.host_list()]
@@ -74,9 +74,9 @@ class TestToolCli(unittest.TestCase):
     def test_hosts_list_tags(self):
         """Tests getting the host list"""
         host_dir = [
-            ('cp1011.example.com', {'pooled': 'yes'}),
-            ('cp1020.example.com', {'pooled': 'no'}),
-            ('cp1014.local', {'pooled': 'no'})
+            ('cp0011.example.com', {'pooled': 'yes'}),
+            ('cp0020.example.com', {'pooled': 'no'}),
+            ('cp0014.local', {'pooled': 'no'})
         ]
         self._mock_list(host_dir)
         args = self._mock_args(taglist="dc=a,cluster=b,service=apache2")
@@ -101,7 +101,7 @@ class TestToolCli(unittest.TestCase):
 
         # Regex matching
         l = tagged(args, 're:.*\.local', 'get')
-        self.assertEquals(l, ['cp1014.local'])
+        self.assertEquals(l, ['cp0014.local'])
 
         # All nodes set raise a system exit
         with self.assertRaises(SystemExit):
@@ -109,7 +109,7 @@ class TestToolCli(unittest.TestCase):
 
         # Majority of nodes via a regex will raise a system exit
         with self.assertRaises(SystemExit):
-            tagged(args, 're:cp10(11|20)\.example\.com', 'set')
+            tagged(args, 're:cp00(11|20)\.example\.com', 'set')
 
     def test_host_multiple_services(self):
         """Set all services in a single host w/ and w/o the --host flag"""
@@ -119,7 +119,7 @@ class TestToolCli(unittest.TestCase):
             node.Node('dc', 'cluster', 'service_b', 'host_a'),
             node.Node('dc', 'cluster', 'service_c', 'host_a')]
 
-        args = self._mock_args(selector='name=cp3009.esams.wmnet', host=False)
+        args = self._mock_args(selector='name=cp0009.local', host=False)
         cli = tool.ToolCliByLabel(args)
         cli._action = 'set'
         cli.entity.query = mock.MagicMock(return_value=query_result)
