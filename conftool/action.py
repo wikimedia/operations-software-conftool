@@ -82,9 +82,11 @@ class Action(object):
                 raise ActionError("Entity %s doesn't exist" % self.entity.name)
             desc = []
             for (k, v) in self.args.items():
-                msg = "%s: %s changed %s => %s" % (
-                    self.entity.name, k,
-                    getattr(self.entity, k), v)
-                desc.append(msg)
+                curval = getattr(self.entity, k)
+                if v != curval:
+                    msg = "%s: %s changed %s => %s" % (
+                        self.entity.name, k,
+                        curval, v)
+                    desc.append(msg)
             self.entity.update(self.args)
             return "\n".join(desc)
