@@ -1,3 +1,12 @@
+python-conftool (0.4.0) UNRELEASED; urgency=medium
+
+  * Allow defining any object type via a schema file
+  * Refactoring of the syncer system
+  * Added travis, coveralls support
+  * Add --host option 
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Wed, 22 Feb 2017 16:16:03 +0100
+
 python-conftool (0.3.1) jessie-wikimedia; urgency=medium
 
   * Make confctl exit with approriate status codes on failure. 

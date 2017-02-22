@@ -4,10 +4,10 @@ from setuptools import setup, find_packages
 
 setup(
     name='conftool',
-    version='0.3.1',
+    version='0.4.0',
     description='Tools to interoperate with distributed k/v stores',
     author='Joe',
-    author_email='glavagetto@wikimedia.org',
+    author_email='joe@wikimedia.org',
     url='https://github.com/wikimedia/operations-software-conftool',
     install_requires=['python-etcd>=0.4.3', 'pyyaml'],
     test_suite='nose.collector',
