@@ -76,7 +76,7 @@ class Syncer(object):
             self.add(name, cls, [])
 
         for name in self.load_order:
-            _log.info("Adding entities for entity %s", name)
+            _log.info("Adding objects for %s", name)
             sync = syncers[name]
             try:
                 sync.load()
@@ -87,6 +87,7 @@ class Syncer(object):
         # Now let's cleanup in reverse order
         self.load_order.reverse()
         for name in self.load_order:
+            _log.info("Removing stale objects for %s", name)
             syncers[name].cleanup()
 
 
@@ -130,17 +131,19 @@ class EntitySyncer(object):
         to_load, self.to_remove = self.get_changes(self.data)
         for key in to_load:
             tags = key.split('/')
-            _log.debug("Loading %s with tags %s", self.entity, ','.join(tags))
+            _log.debug("Loading %s:%s", self.entity, key)
             obj = self.cls(*tags)
-            exists = obj.exists
-            if not exists:
-                _log.info("Creating %s with tags %s", self.entity, '/'.join(tags))
             if obj.static_values:
+                _log.info("Syncing static object %s:%s", self.entity, key)
                 obj.from_net(self.data[key])
-                obj.write()
             else:
-                if not exists:
-                    obj.write()
+                if obj.exists:
+                    # For some reason, the object already exists, do nothing
+                    _log.warning("Not loading %s:%s: object already exists")
+                    continue
+                else:
+                    _log.info("Creating %s with tags %s", self.entity, key)
+            obj.write()
 
     def cleanup(self):
         if self.skip_removal:
@@ -153,7 +156,7 @@ class EntitySyncer(object):
             tags = key.split('/')
             obj = self.cls(*tags)
             if obj.exists:
-                _log.info("Removing %s with tags %s", self.entity, '/'.join(tags))
+                _log.info("Removing %s with tags %s", self.entity, key)
                 obj.delete()
 
     def get_changes(self, exp_data):
@@ -201,10 +204,17 @@ def main(arguments=None):
         arguments = sys.argv[1:]
 
     args = get_args(arguments)
+
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
+        log_level = logging.DEBUG
     else:
-        logging.basicConfig(level=logging.INFO)
+        log_level = logging.INFO
+
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s [%(levelname)s] %(name)s::%(funcName)s: %(message)s',
+        datefmt='%F %T'
+    )
 
     try:
         c = configuration.get(args.config)
