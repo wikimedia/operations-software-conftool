@@ -36,3 +36,14 @@ class FieldValidatorsTestCase(unittest.TestCase):
         validator = types.get_validator("enum:a|b|c")
         self.assertEqual('c', validator('c'))
         self.assertRaises(ValueError, validator, 'd')
+
+    def test_any_validator(self):
+        validator = types.get_validator("any")
+        self.assertEqual("a string", validator("a string"))
+        self.assertEqual(['a', 'list'], validator(['a', 'list']))
+        self.assertEqual({'a': 'dict'}, validator({'a': 'dict'}))
+
+        class Foo(object):
+            pass
+
+        self.assertRaises(ValueError, validator, Foo())

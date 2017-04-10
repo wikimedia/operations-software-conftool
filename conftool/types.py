@@ -1,3 +1,6 @@
+import json
+
+
 def choice(arg):
     args = arg.split('|')
 
@@ -20,6 +23,15 @@ def dict_validator(data):
     return data
 
 
+def any_validator(data):
+    """Any value that can be translated to json is ok."""
+    try:
+        json.dumps(data)
+        return data
+    except TypeError:
+        raise ValueError('values need to be json-serializable')
+
+
 validators = {
     'int': int,
     'list': lambda x: x if isinstance(x, list) else [],
@@ -27,6 +39,7 @@ validators = {
     'bool': bool_validator,
     'enum': choice,
     'dict': dict_validator,
+    'any': any_validator,
 }
 
 

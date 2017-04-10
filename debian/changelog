@@ -1,4 +1,10 @@
-python-conftool (0.4.0) UNRELEASED; urgency=medium
+python-conftool (0.4.1) UNRELEASED; urgency=medium
+
+  * Add a raw 'any' type to the schema
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Mon, 10 Apr 2017 13:42:04 +0200
+
+python-conftool (0.4.0) jessie-wikimedia; urgency=medium
 
   * Allow defining any object type via a schema file
   * Refactoring of the syncer system
