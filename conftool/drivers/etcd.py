@@ -2,6 +2,7 @@ import json
 import os
 
 import etcd
+import urllib3
 import yaml
 
 from conftool import drivers
@@ -50,6 +51,8 @@ class Driver(drivers.BaseDriver):
             'etcd_config_file',
             '/etc/conftool/etcdrc')
         driver_config = get_config(configfile)
+        if config.driver_options.get('suppress_san_warnings', True):
+            urllib3.disable_warnings(category=urllib3.exceptions.SubjectAltNameWarning)
         self.client = etcd.Client(**driver_config)
         super(Driver, self).__init__(config)
 
