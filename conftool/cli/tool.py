@@ -1,5 +1,7 @@
 # Conftool cli module
 #
+from __future__ import print_function
+
 import argparse
 from collections import defaultdict
 import logging
@@ -13,6 +15,9 @@ import yaml
 from conftool import _log, action, configuration, loader, setup_irc
 from conftool.kvobject import KVObject
 from conftool.drivers import BackendError
+
+if sys.version_info[0] == 2:  # Python 2
+    from __builtin__ import raw_input as input
 
 
 class ObjectTypeError(Exception):
@@ -73,9 +78,9 @@ class ToolCli(object):
             objlist = [k for (k, v) in all_objects]
             if self._action == "get":
                 if self.args.yaml:
-                    print yaml.dump(dict(all_objects), default_flow_style=False)
+                    print(yaml.dump(dict(all_objects), default_flow_style=False))
                 else:
-                    print json.dumps(dict(all_objects))
+                    print(json.dumps(dict(all_objects)))
                 return []
             else:
                 retval = objlist
@@ -86,7 +91,7 @@ class ToolCli(object):
             regex = self._namedef.replace('re:', '', 1)
             try:
                 r = re.compile(regex)
-            except:
+            except Exception:
                 _log.critical("Invalid regexp: %s", regex)
                 sys.exit(1)
             objlist = [k for (k, v) in KVObject.backend.driver.ls(cur_dir)]
@@ -98,7 +103,7 @@ class ToolCli(object):
 
     def announce(self):
         if self._action != 'get' and not self.args.quiet:
-            self.irc.warn(
+            self.irc.warning(
                 "conftool action : %s; selector: %s (tags: %s)", self._action,
                 self._namedef, self._tags
             )
@@ -127,6 +132,8 @@ class ToolCli(object):
                            self._namedef)
                 _log.exception("Generic action failure: %s", str(e))
             else:
+                if sys.version_info[0] == 2:  # Python 2
+                    msg = msg.decode('utf-8')
                 print(msg)
         if not fail:
             self.announce()
@@ -137,17 +144,17 @@ class ToolCli(object):
     @staticmethod
     def raise_warning():
         if not sys.stdin.isatty() or not sys.stdout.isatty():
-            print "Destructive operations are not scriptable"
+            print("Destructive operations are not scriptable")
             " and should be run from the command line"
             sys.exit(1)
 
-        print "You are operating on more than half of the objects, this is "
+        print("You are operating on more than half of the objects, this is ")
         "potentially VERY DANGEROUS: do you want to continue?"
-        print "If so, please type: 'Yes, I am sure of what I am doing.'"
-        a = raw_input("confctl>")
+        print("If so, please type: 'Yes, I am sure of what I am doing.'")
+        a = input("confctl>")
         if a == "Yes, I am sure of what I am doing.":
             return True
-        print "Aborting"
+        print("Aborting")
         sys.exit(1)
 
 
@@ -168,7 +175,7 @@ class ToolCliFind(ToolCli):
 
     def announce(self):
         if self._action != 'get' and not self.args.quiet:
-            self.irc.warn(
+            self.irc.warning(
                 "conftool action : %s; selector: %s", self._action,
                 self._namedef
             )
@@ -213,15 +220,15 @@ class ToolCliByLabel(ToolCliFind):
             # The host option is set and all objects belong to the same host
             return
 
-        print "The selector you chose has selected the following objects:"
+        print("The selector you chose has selected the following objects:")
         if self.args.yaml:
-            print yaml.dump(tag_hosts, default_flow_style=False)
+            print(yaml.dump(tag_hosts, default_flow_style=False))
         else:
-            print json.dumps(tag_hosts)
-        print "Ok to continue? [y/N]"
-        a = raw_input("confctl>")
+            print(json.dumps(tag_hosts))
+        print("Ok to continue? [y/N]")
+        a = input("confctl>")
         if a.lower() != 'y':
-            print "Aborting"
+            print("Aborting")
             sys.exit(1)
 
 
@@ -249,7 +256,7 @@ def parse_args(cmdline):
     # Subparsers for the three operating models
     subparsers = parser.add_subparsers(
         help='Program mode: tags, find or select', dest='mode')
-
+    subparsers.required = True
     # Tags mode
     tags = subparsers.add_parser(
         'tags',

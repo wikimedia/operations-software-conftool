@@ -111,7 +111,7 @@ class EntitySyncer(object):
                 _log.info("Parsing file %s", filename)
                 try:
                     filedata = yaml.load(fh)
-                except:
+                except Exception:
                     _log.critical("Malformed data in file %s",
                                   filename)
                     filedata = {}

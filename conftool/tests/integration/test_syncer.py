@@ -31,7 +31,7 @@ class SyncerIntegration(IntegrationTestBase):
     @staticmethod
     def service_generator(base_servname, number, initial=0):
         data = {}
-        for i in xrange(initial, number):
+        for i in range(initial, number):
             servname = base_servname + str(i)
             data[servname] = {'default_values': {"pooled": "yes", "weight": i},
                               'datacenters': ['kitchen_sink', 'sofa']}
@@ -40,7 +40,7 @@ class SyncerIntegration(IntegrationTestBase):
     @staticmethod
     def nodelist_generator(servnames, number, initial=0):
         return {nodename: servnames for nodename
-                in ["node-%d" % i for i in xrange(initial, number)]}
+                in ["node-%d" % i for i in range(initial, number)]}
 
     def node_generator(self, cluster, servnames, number, initial=0):
         return {cluster: self.nodelist_generator(servnames, number, initial)}
@@ -51,10 +51,10 @@ class SyncerIntegration(IntegrationTestBase):
             sync = syncer.Syncer('/nonexistent', basepath)
             sync.load()
 
-        for i in xrange(10):
+        for i in range(10):
             servname = 'espresso-machine' + str(i)
             s = service.Service('test', servname)
-            self.assertEquals(
+            self.assertEqual(
                 s.default_values, data[servname]['default_values'])
 
     def test_remove_services(self):
@@ -69,7 +69,7 @@ class SyncerIntegration(IntegrationTestBase):
             sync.load()
         s = service.Service(cluster, 'espresso-machine0')
         self.assertTrue(s.exists)
-        for i in xrange(1, 10):
+        for i in range(1, 10):
             servname = 'espresso-machine' + str(i)
             s = service.Service(cluster, servname)
             self.assertFalse(s.exists)
@@ -78,37 +78,37 @@ class SyncerIntegration(IntegrationTestBase):
         dc = 'testdc'
         cluster = 'test'
         services = self.service_generator('espresso-machine', 2)
-        nodes = self.node_generator(cluster, services.keys(), 20)
+        nodes = self.node_generator(cluster, list(services.keys()), 20)
         with temp_data(services, nodes) as basepath:
             sync = syncer.Syncer('/nonexistent', basepath)
             sync.load()
 
-        for servname in services.keys():
-            for i in xrange(20):
+        for servname in services:
+            for i in range(20):
                 nodename = "node-%d" % i
                 n = node.Node(dc, cluster, servname, nodename)
                 self.assertTrue(n.exists)
-                self.assertEquals(n.pooled, 'yes')
+                self.assertEqual(n.pooled, 'yes')
 
     def test_remove_nodes(self):
         dc = 'testdc'
         cluster = 'test'
         services = self.service_generator('espresso-machine', 2)
-        nodes = self.node_generator(cluster, services.keys(), 20)
+        nodes = self.node_generator(cluster, list(services.keys()), 20)
         with temp_data(services, nodes) as basepath:
             sync = syncer.Syncer('/nonexistent', basepath)
             sync.load()
 
-        nodes =  self.node_generator(cluster, services.keys(), 10)
+        nodes =  self.node_generator(cluster, list(services.keys()), 10)
         with temp_data(services, nodes) as basepath:
             sync = syncer.Syncer('/nonexistent', basepath)
             sync.load()
-        for servname in services.keys():
-            for i in xrange(10):
+        for servname in services:
+            for i in range(10):
                 nodename = "node-%d" % i
                 n = node.Node(dc, cluster, servname, nodename)
                 self.assertTrue(n.exists)
-            for i in xrange(10, 20):
+            for i in range(10, 20):
                 nodename = "node-%d" % i
                 n = node.Node(dc, cluster, servname, nodename)
                 self.assertFalse(n.exists)

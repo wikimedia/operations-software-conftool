@@ -28,7 +28,7 @@ class FactoryTestCase(unittest.TestCase):
     def test_base_path(self):
         """Test that base path is correct"""
         entity = loader.factory('Test', self.base_defs)
-        self.assertEquals(entity.base_path(), 'example.org')
+        self.assertEqual(entity.base_path(), 'example.org')
 
     def test_class_type(self):
         """Test the correct class is subclassed"""
@@ -42,8 +42,7 @@ class FactoryTestCase(unittest.TestCase):
         """Test that all properties are statically set correctly"""
         entity = loader.factory('Test', self.base_defs)
         self.assertListEqual(entity._tags, ['test', 'example'])
-        self.assertEquals(entity._schema.keys().sort(),
-                          self.base_defs['schema'].keys().sort())
+        self.assertEqual(sorted(entity._schema.keys()), sorted(self.base_defs['schema'].keys()))
 
     def test_entity(self):
         """Test that an entity works as expected"""
@@ -52,10 +51,10 @@ class FactoryTestCase(unittest.TestCase):
             t = Test('mytest')
         t = Test('entity', 'foo', 'mytest')
         self.assertDictEqual(t.tags, {'test': 'entity', 'example': 'foo'})
-        self.assertEquals(t.key, 'example.org/entity/foo/mytest')
-        self.assertEquals(Test.dir('a', 'b'), 'example.org/a/b')
-        self.assertEquals(t.astring, 'foo')
-        self.assertEquals(t.anenum, 'foo')
+        self.assertEqual(t.key, 'example.org/entity/foo/mytest')
+        self.assertEqual(Test.dir('a', 'b'), 'example.org/a/b')
+        self.assertEqual(t.astring, 'foo')
+        self.assertEqual(t.anenum, 'foo')
 
         with self.assertRaises(ValueError):
             Test.dir('a', 'b', 'c')
@@ -63,11 +62,11 @@ class FactoryTestCase(unittest.TestCase):
     def test_depends(self):
         """Test that dependencies are set as expected"""
         Test = loader.factory('Test', self.base_defs)
-        self.assertEquals(Test.depends, [])
+        self.assertEqual(Test.depends, [])
         d = self.base_defs
         d['depends'] = ['a', 'b']
         Test = loader.factory('Test', d)
-        self.assertEquals(Test.depends, ['a', 'b'])
+        self.assertEqual(Test.depends, ['a', 'b'])
 
 
 class SchemaTestCase(unittest.TestCase):
@@ -78,14 +77,14 @@ class SchemaTestCase(unittest.TestCase):
 
     def test_load_schema(self):
         schema = loader.Schema.from_file(self.schema_file)
-        self.assertEquals(set(schema.entities.keys()),
+        self.assertEqual(set(schema.entities.keys()),
                           set(['node', 'pony', 'service', 'unicorn']))
         n = schema.entities['pony']('violet', 'female', 'foobar')
         n.hair_color = "violet"
-        self.assertEquals(n.accessories, [])
-        self.assertEquals(n.tags, {'color': 'violet', 'gender': 'female'})
+        self.assertEqual(n.accessories, [])
+        self.assertEqual(n.tags, {'color': 'violet', 'gender': 'female'})
         pinkunicorn = schema.entities['unicorn']('pink', 'undefined', 'foobar')
-        self.assertEquals(pinkunicorn.magic, 'rainbows')
+        self.assertEqual(pinkunicorn.magic, 'rainbows')
 
     def test_broken_schemas(self):
         """

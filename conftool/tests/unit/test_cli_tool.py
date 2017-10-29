@@ -1,3 +1,4 @@
+import sys
 import unittest
 import mock
 
@@ -21,6 +22,7 @@ class TestToolCli(unittest.TestCase):
         arg = mock.MagicMock()
         arg.object_type = 'node'
         arg.mode = 'tags'
+        arg.schema = 'conftool/tests/fixtures/schema.yaml'
         for prop, value in kw.items():
             setattr(arg, prop, value)
         return arg
@@ -31,26 +33,32 @@ class TestToolCli(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             t = tool.ToolCli(args)
             t.tags
-        self.assertEquals(cm.exception.code, 1)
+        self.assertEqual(cm.exception.code, 1)
 
         args = self._mock_args(taglist="a=b,b=c,d=2")
         t = tool.ToolCli(args)
-        self.assertEquals(t.args.mode, 'tags')
-        self.assertItemsEqual(t._tags, ['a=b', 'b=c', 'd=2'])
+        self.assertEqual(t.args.mode, 'tags')
+        if sys.version_info[0] == 2:
+            self.assertItemsEqual(t._tags, ['a=b', 'b=c', 'd=2'])
+        else:
+            self.assertCountEqual(t._tags, ['a=b', 'b=c', 'd=2'])
 
     def test_tags(self):
         args = self._mock_args(taglist="dc=a,cluster=b,service=apache2")
         t = tool.ToolCli(args)
-        self.assertItemsEqual(t.tags, ['a', 'b', 'apache2'])
+        if sys.version_info[0] == 2:
+            self.assertItemsEqual(t.tags, ['a', 'b', 'apache2'])
+        else:
+            self.assertCountEqual(t.tags, ['a', 'b', 'apache2'])
         args = self._mock_args(mode='find')
         t = tool.ToolCliFind(args)
-        self.assertEquals(t.tags, [])
+        self.assertEqual(t.tags, [])
         args = self._mock_args(
             mode='find',
             object_type='node',
         )
         t = tool.ToolCliFind(args)
-        self.assertEquals(t.entity.__name__, 'Node')
+        self.assertEqual(t.entity.__name__, 'Node')
 
     def test_host_list_find(self):
         args = self._mock_args(
@@ -68,7 +76,7 @@ class TestToolCli(unittest.TestCase):
         ]
         t.entity.find = mock.MagicMock(return_value=res)
         tres = [o for o in t.host_list()]
-        self.assertEquals(tres, res)
+        self.assertEqual(tres, res)
         t.entity.find.assert_called_with(t._namedef)
 
     def test_hosts_list_tags(self):
@@ -89,19 +97,22 @@ class TestToolCli(unittest.TestCase):
 
         # Getting a single node
         l = tagged(args, 'a_node_name', 'get')
-        self.assertEquals(l, ['a_node_name'])
+        self.assertEqual(l, ['a_node_name'])
 
         # Getting all nodes
         l = tagged(args, 'all', 'dummy')
-        self.assertItemsEqual(l, [k for (k, v) in host_dir])
+        if sys.version_info[0] == 2:
+            self.assertItemsEqual(l, [k for (k, v) in host_dir])
+        else:
+            self.assertCountEqual(l, [k for (k, v) in host_dir])
 
         # GET of all nodes is a special case
         l = tagged(args, 'all', 'get')
-        self.assertEquals(l, [])
+        self.assertEqual(l, [])
 
         # Regex matching
         l = tagged(args, 're:.*\.local', 'get')
-        self.assertEquals(l, ['cp1014.local'])
+        self.assertEqual(l, ['cp1014.local'])
 
         # All nodes set raise a system exit
         with self.assertRaises(SystemExit):
@@ -124,27 +135,27 @@ class TestToolCli(unittest.TestCase):
         cli._action = 'set'
         cli.entity.query = mock.MagicMock(return_value=query_result)
 
-        # With args.host=False we expect raw_input question, answering yes
-        with mock.patch('__builtin__.raw_input', return_value='y') as _raw:
+        # With args.host=False we expect input question, answering yes
+        with mock.patch('conftool.cli.tool.input', return_value='y') as _raw:
             cli.host_list()
             _raw.assert_called_once_with('confctl>')
 
-        # With args.host=False we expect raw_input question, answering no
-        with mock.patch('__builtin__.raw_input', return_value='n') as _raw:
+        # With args.host=False we expect input question, answering no
+        with mock.patch('conftool.cli.tool.input', return_value='n') as _raw:
             self.assertRaises(SystemExit, cli.host_list)
 
-        # With args.host=True we do not expect raw_input questions
+        # With args.host=True we do not expect input questions
         cli.args.host = True
-        with mock.patch('__builtin__.raw_input') as _raw:
+        with mock.patch('conftool.cli.tool.input') as _raw:
             cli.host_list()
-            self.assertEquals(_raw.call_args_list, [])
+            self.assertEqual(_raw.call_args_list, [])
 
         # Adding another host to the query result
         query_result.append(node.Node('dc', 'cluster', 'service_a', 'host_b'))
         cli.entity.query = mock.MagicMock(return_value=query_result)
 
-        # With args.host=True we expect raw_input question, answering y
-        with mock.patch('__builtin__.raw_input', return_value='y') as _raw:
+        # With args.host=True we expect input question, answering y
+        with mock.patch('conftool.cli.tool.input', return_value='y') as _raw:
             cli.host_list()
             _raw.assert_called_once_with('confctl>')
 
@@ -152,6 +163,8 @@ class TestToolCli(unittest.TestCase):
         # Taglist
         cmdline = ['tags', 'dc=a,cluster=b', '--action', 'get', 'all']
         args = tool.parse_args(cmdline)
-        self.assertEquals(args.mode, 'tags')
-        self.assertEquals(args.taglist, 'dc=a,cluster=b')
-        self.assertEquals(args.action, [['get', 'all']])
+        self.assertEqual(args.mode, 'tags')
+        self.assertEqual(args.taglist, 'dc=a,cluster=b')
+        self.assertEqual(args.action, [['get', 'all']])
+        # Check the subparser command is required
+        self.assertRaises(SystemExit, tool.parse_args, [])

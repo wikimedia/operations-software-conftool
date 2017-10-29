@@ -31,24 +31,24 @@ class TestNode(unittest.TestCase):
         self._mock_read(None)
         n = node.Node('dc', 'cluster', 'service', 'foo')
         # Test
-        self.assertEquals(n.base_path(), 'pools')
-        self.assertEquals(n.key, 'pools/dc/cluster/service/foo')
+        self.assertEqual(n.base_path(), 'pools')
+        self.assertEqual(n.key, 'pools/dc/cluster/service/foo')
         self.assertFalse(n.exists)
-        self.assertEquals(n.pooled, 'default_value')
-        self.assertEquals(n.name, 'foo')
+        self.assertEqual(n.pooled, 'default_value')
+        self.assertEqual(n.name, 'foo')
 
     def test_read(self):
         """Test that reading fetches correctly the values"""
         self._mock_read({"pooled": "yes", "weight": 20})
         n = node.Node('dc', 'cluster', 'service', 'foo')
-        self.assertEquals(n.weight, 20)
-        self.assertEquals(n.pooled, "yes")
+        self.assertEqual(n.weight, 20)
+        self.assertEqual(n.pooled, "yes")
 
     def test_failed_validation(self):
         """Test bad validation"""
         self._mock_read({"pooled": "maybe?", "weight": 20})
         n = node.Node('dc', 'cluster', 'service', 'foo')
-        self.assertEquals(n.pooled, "no")
+        self.assertEqual(n.pooled, "no")
         # Note: this fails at the moment
         # self.assertRaises(ValueError, setattr, n, "pooled", "maybe")
 
@@ -57,7 +57,7 @@ class TestNode(unittest.TestCase):
         self._mock_read({"pooled": "yes", "weight": 20})
         n = node.Node('dc', 'cluster', 'service', 'foo')
         for k, v in n.tags.items():
-            self.assertEquals(k, v)
+            self.assertEqual(k, v)
 
     def test_dir(self):
-        self.assertEquals(node.Node.dir('a', 'b', 'c'), 'pools/a/b/c')
+        self.assertEqual(node.Node.dir('a', 'b', 'c'), 'pools/a/b/c')

@@ -31,11 +31,11 @@ class TestService(unittest.TestCase):
         self._mock_read(None)
         n = service.Service('cluster', 'foo')
         # Test
-        self.assertEquals(n.base_path(), 'services')
-        self.assertEquals(n.key, 'services/cluster/foo')
+        self.assertEqual(n.base_path(), 'services')
+        self.assertEqual(n.key, 'services/cluster/foo')
         self.assertFalse(n.exists)
-        self.assertEquals(n.datacenters, 'default_value')
-        self.assertEquals(n.name, 'foo')
+        self.assertEqual(n.datacenters, 'default_value')
+        self.assertEqual(n.name, 'foo')
 
     def test_read(self):
         """Test that reading fetches correctly the values"""
@@ -43,23 +43,23 @@ class TestService(unittest.TestCase):
                          "default_values": {"pooled": "no"},
                          "something_else": "some_value"})
         s = service.Service('cluster', 'foo')
-        self.assertEquals(s.datacenters, ['a', 'b', 'c'])
-        self.assertEquals(s.default_values['pooled'], "no")
-        self.assertEquals(s._schemaless['something_else'], 'some_value')
+        self.assertEqual(s.datacenters, ['a', 'b', 'c'])
+        self.assertEqual(s.default_values['pooled'], "no")
+        self.assertEqual(s._schemaless['something_else'], 'some_value')
 
     def test_failed_validation(self):
         """Test bad validation"""
         self._mock_read({"datacenters": "maybe?", "default_values": 20})
         s = service.Service('cluster', 'foo')
-        self.assertEquals(s.datacenters, [])
-        self.assertEquals(s.default_values, {'pooled': "no", "weight": 0})
+        self.assertEqual(s.datacenters, [])
+        self.assertEqual(s.default_values, {'pooled': "no", "weight": 0})
 
     def test_tags(self):
         self._mock_read({"datacenters": ['a', 'b', 'c'],
                          "default_values": {"pooled": "no"},
                          "something_else": "some_value"})
         s = service.Service('cluster', 'foo')
-        self.assertEquals(s.tags, {'cluster': 'cluster'})
+        self.assertEqual(s.tags, {'cluster': 'cluster'})
 
     def test_dir(self):
-        self.assertEquals(service.Service.dir('a'), 'services/a')
+        self.assertEqual(service.Service.dir('a'), 'services/a')

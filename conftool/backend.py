@@ -12,7 +12,7 @@ class Backend(object):
             dir, "drivers/{}.py".format(self.config.driver))
         ctx = {}
         try:
-            execfile(driver_file, ctx)
+            exec(compile(open(driver_file).read(), driver_file, 'exec'), ctx)
             cls = ctx['Driver']
             self.driver = cls(config)
         except Exception as e:

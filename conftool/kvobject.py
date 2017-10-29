@@ -106,7 +106,7 @@ class KVObject(object):
     def parse_tags(cls, taglist):
         """Given a taglist as a string, return an ordered list of tags"""
         def tuplestrip(tup):
-            return tuple(map(lambda x: x.strip(), tup))
+            return tuple([x.strip() for x in tup])
         tagdict = dict([tuplestrip(el.split('=')) for el in taglist])
         # will raise a KeyError if not all tags are matched
         return [tagdict[t] for t in cls._tags]
@@ -165,8 +165,8 @@ class KVObject(object):
     @contextmanager
     def lock(cls, path):
         try:
-            l = cls.backend.driver.get_lock(path)
-            yield l
+            lock = cls.backend.driver.get_lock(path)
+            yield lock
             cls.backend.driver.release_lock(path)
         except Exception as e:
             _log.critical("Problems inside lock for %s: %s", path, e)
@@ -185,7 +185,7 @@ class KVObject(object):
 
     def _to_net(self):
         values = {}
-        for key in self._schema.keys():
+        for key in self._schema:
             try:
                 values[key] = getattr(self, key)
             except Exception:

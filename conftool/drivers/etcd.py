@@ -36,7 +36,7 @@ def get_config(configfile):
             with open(filename, 'r') as f:
                 c = yaml.load(f)
                 conf.update(c)
-        except:
+        except Exception:
             continue
     return conf
 
@@ -175,9 +175,9 @@ class Driver(drivers.BaseDriver):
 
     def watch_lock(self, path):
         name = path.replace('/', '-')
-        l = etcd.Lock(self.client, name)
+        lock = etcd.Lock(self.client, name)
         try:
-            r = self.client.read(l.path)
+            r = self.client.read(lock.path)
             return bool(r._children)
         except etcd.EtcdKeyNotFoundErrror:
             return False

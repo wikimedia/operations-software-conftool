@@ -23,16 +23,16 @@ class EntitySyncerTestCase(unittest.TestCase):
     def test_init(self):
         # Test initialization
         e = EntitySyncer('unicorn', self.schema.entities['unicorn'])
-        self.assertEquals(e.data, {})
-        self.assertEquals(e.cls, self.schema.entities['unicorn'])
+        self.assertEqual(e.data, {})
+        self.assertEqual(e.cls, self.schema.entities['unicorn'])
 
     def test_load_files(self):
         e = EntitySyncer('node', self.schema.entities['node'])
         # Test files with the wrong extensions do not get picked
         e.load_files(self.fixtures_dir)
-        self.assertNotIn('eqiad/cache_text/https/not_to_load', e.data.keys())
+        self.assertNotIn('eqiad/cache_text/https/not_to_load', e.data)
         # Test actually loading data yields the expected result
-        self.assertIn('eqiad/cache_text/https/cp1008', e.data.keys())
+        self.assertIn('eqiad/cache_text/https/cp1008', e.data)
         # Test can survive a malformed file
         e = EntitySyncer('service', self.schema.entities['service'])
         e.load_files(self.fixtures_dir)
