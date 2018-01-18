@@ -62,19 +62,6 @@ class ToolIntegration(IntegrationTestBase):
         # Check the irc message was not sent for a get operation
         self.assertEqual(self.irc.emit.called, False)
 
-    def test_find_node(self):
-        args = ['find', '--action', 'get', 'cp1008']
-        output = self.output_for(args)
-        self.assertEqual(len(output), 3)
-        for serv in output:
-            self.assertTrue(serv['tags'].startswith('dc=eqiad'))
-        # Test that old-style parameters are still valid
-        args = ['--find', '--action', 'get', 'cp1008']
-        output = self.output_for(args)
-        self.assertEqual(len(output), 3)
-        # Check the irc message was not sent for a get operation
-        self.assertEqual(self.irc.emit.called, False)
-
     def test_change_node_regexp(self):
         """
         Changing values according to a regexp

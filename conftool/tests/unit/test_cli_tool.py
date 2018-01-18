@@ -50,34 +50,6 @@ class TestToolCli(unittest.TestCase):
             self.assertItemsEqual(t.tags, ['a', 'b', 'apache2'])
         else:
             self.assertCountEqual(t.tags, ['a', 'b', 'apache2'])
-        args = self._mock_args(mode='find')
-        t = tool.ToolCliFind(args)
-        self.assertEqual(t.tags, [])
-        args = self._mock_args(
-            mode='find',
-            object_type='node',
-        )
-        t = tool.ToolCliFind(args)
-        self.assertEqual(t.entity.__name__, 'Node')
-
-    def test_host_list_find(self):
-        args = self._mock_args(
-            mode="find",
-            object_type='node',
-        )
-
-        t = tool.ToolCliFind(args)
-        t._namedef = 'cp1048.example.com'
-        res = [
-            node.Node('test', 'cache',
-                      'ssl', 'cp1048.example.com'),
-            node.Node('test', 'cache',
-                      'http', 'cp1048.example.com'),
-        ]
-        t.entity.find = mock.MagicMock(return_value=res)
-        tres = [o for o in t.host_list()]
-        self.assertEqual(tres, res)
-        t.entity.find.assert_called_with(t._namedef)
 
     def test_hosts_list_tags(self):
         """Tests getting the host list"""

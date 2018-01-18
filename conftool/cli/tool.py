@@ -27,13 +27,23 @@ class ObjectTypeError(Exception):
     pass
 
 
-class ToolCli(object):
+class ToolCliBase(object):
 
     def __init__(self, args):
         self.args = args
         self._load_schema()
-        self._tags = self.args.taglist.split(',')
         self.irc = logging.getLogger('conftool.announce')
+
+    @property
+    def tags(self):
+        return []
+
+    def announce(self):
+        if self._action != 'get' and not self.args.quiet:
+            self.irc.warning(
+                "conftool action : %s; selector: %s", self._action,
+                self._namedef
+            )
 
     def _load_schema(self):
         self._schema = loader.Schema.from_file(self.args.schema)
@@ -50,6 +60,42 @@ class ToolCli(object):
         c = configuration.get(self.args.config)
         KVObject.setup(c)
         setup_irc(c)
+
+    def _run_action(self):
+        fail = False
+        for obj in self.host_list():
+            try:
+                a = action.Action(obj, self._action)
+                msg = a.run()
+            except action.ActionError as e:
+                fail = True
+                _log.error("Invalid action, reason: %s", str(e))
+            except BackendError as e:
+                fail = True
+                _log.error("Error when trying to %s on %s", self._action,
+                           self._namedef)
+                _log.error("Failure writing to the kvstore: %s", str(e))
+            except Exception as e:
+                fail = True
+                _log.error("Error when trying to %s on %s", self._action,
+                           self._namedef)
+                _log.exception("Generic action failure: %s", str(e))
+            else:
+                if sys.version_info[0] == 2:  # Python 2
+                    msg = msg.decode('utf-8')
+                print(msg)
+        if not fail:
+            self.announce()
+            return True
+        else:
+            return False
+
+
+class ToolCli(ToolCliBase):
+
+    def __init__(self, args):
+        super(ToolCli, self).__init__(args)
+        self._tags = self.args.taglist.split(',')
 
     @property
     def tags(self):
@@ -112,35 +158,6 @@ class ToolCli(object):
         self._action, self._namedef = unit
         return self._run_action()
 
-    def _run_action(self):
-        fail = False
-        for obj in self.host_list():
-            try:
-                a = action.Action(obj, self._action)
-                msg = a.run()
-            except action.ActionError as e:
-                fail = True
-                _log.error("Invalid action, reason: %s", str(e))
-            except BackendError as e:
-                fail = True
-                _log.error("Error when trying to %s on %s", self._action,
-                           self._namedef)
-                _log.error("Failure writing to the kvstore: %s", str(e))
-            except Exception as e:
-                fail = True
-                _log.error("Error when trying to %s on %s", self._action,
-                           self._namedef)
-                _log.exception("Generic action failure: %s", str(e))
-            else:
-                if sys.version_info[0] == 2:  # Python 2
-                    msg = msg.decode('utf-8')
-                print(msg)
-        if not fail:
-            self.announce()
-            return True
-        else:
-            return False
-
     @staticmethod
     def raise_warning():
         if not sys.stdin.isatty() or not sys.stdout.isatty():
@@ -158,30 +175,7 @@ class ToolCli(object):
         sys.exit(1)
 
 
-class ToolCliFind(ToolCli):
-    """Subclass used for the --find mode"""
-    def __init__(self, args):
-        self.args = args
-        self._load_schema()
-        self.irc = logging.getLogger('conftool.announce')
-
-    @property
-    def tags(self):
-        return []
-
-    def host_list(self):
-        for o in self.entity.find(self._namedef):
-            yield o
-
-    def announce(self):
-        if self._action != 'get' and not self.args.quiet:
-            self.irc.warning(
-                "conftool action : %s; selector: %s", self._action,
-                self._namedef
-            )
-
-
-class ToolCliByLabel(ToolCliFind):
+class ToolCliByLabel(ToolCliBase):
     """Subclass used for the select mode"""
     def __init__(self, args):
         super(ToolCliByLabel, self).__init__(args)
@@ -265,14 +259,11 @@ def parse_args(cmdline):
         'taglist',
         help="List of comma-separated tags; they need to "
         "match the base tags of the object type you chose.")
+    tags.add_argument('--action', action="append", metavar="ACTIONS",
+                      help="the action to take: "
+                      " [set/k1=v1:k2=v2...|get|delete]"
+                      " node|all|re:<regex>|find:node", nargs=2)
 
-    find = subparsers.add_parser('find',
-                                 help="Find all instances of the node by name")
-    for subparser in [tags, find]:
-        subparser.add_argument('--action', action="append", metavar="ACTIONS",
-                               help="the action to take: "
-                               " [set/k1=v1:k2=v2...|get|delete]"
-                               " node|all|re:<regex>|find:node", nargs=2)
     select = subparsers.add_parser('select',
                                    help="Select nodes via tag selectors")
     select.add_argument(
@@ -290,7 +281,7 @@ def mangle_argv(cmdline):
     """Basic mangling of the command line arguments"""
     # Backwards compatibility. Ugly but passable
     for i, arg in enumerate(cmdline):
-        if arg in ['--tags', '--find']:
+        if arg in ['--tags']:
             cmdline[i] = arg.replace('--', '')
     return cmdline
 
@@ -308,11 +299,8 @@ def main(cmdline=None):
         logging.basicConfig(level=logging.WARN)
 
     try:
-
         if args.mode == 'select':
             cli = ToolCliByLabel(args)
-        elif args.mode == 'find':
-            cli = ToolCliFind(args)
         else:
             cli = ToolCli(args)
     except ObjectTypeError:
