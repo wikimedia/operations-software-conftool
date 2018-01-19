@@ -65,7 +65,7 @@ class ToolCliBase(object):
         fail = False
         for obj in self.host_list():
             try:
-                a = action.Action(obj, self._action)
+                a = action.get_action(obj, self._action)
                 msg = a.run()
             except action.ActionError as e:
                 fail = True
