@@ -121,6 +121,19 @@ class KVObject(object):
             self._set_value(k, self._schema[k], {k: v}, set_defaults=False)
         self.write()
 
+    def validate(self, values):
+        """
+        Validate a set of proposed values against the schema.
+        Returns None on success, raises an exception otherwise
+        """
+        for k, v in values.items():
+            if k in self._schema:
+                validator = self._schema[k]
+                validator(v)
+            else:
+                if self.strict_schema:
+                    raise TypeError("Key %s not in the schema" % k)
+
     @classmethod
     def from_yaml(cls, data):
         if cls.static_values:
@@ -232,6 +245,7 @@ class Entity(KVObject):
     General-purpose entity with a strict schema
     """
     depends = []
+    strict_schema = True
 
     def __init__(self, *tags):
         if len(tags) != (len(self._tags) + 1):
@@ -266,6 +280,7 @@ class Entity(KVObject):
 
 
 class FreeSchemaEntity(Entity):
+    strict_schema = False
 
     def __init__(self, *tags, **kwargs):
         self._schemaless = kwargs

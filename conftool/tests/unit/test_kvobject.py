@@ -133,6 +133,11 @@ class TestKVObject(unittest.TestCase):
                                                   set_defaults=False)
         self.entity.write.assert_called_with()
 
+    def test_validate(self):
+        self.assertIsNone(self.entity.validate({'a': 1, 'b': 'testtest'}))
+        self.assertRaises(TypeError, self.entity.validate, {'a': 1, 'b': 'testtest', 'c': True})
+        self.assertRaises(ValueError, self.entity.validate, {'a': 'test'})
+
     def test_to_net(self):
         self.entity.a = 100
         self.entity.b = 'meoow'

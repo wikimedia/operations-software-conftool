@@ -8,6 +8,10 @@ class ActionError(Exception):
     pass
 
 
+class ActionValidationError(ActionError):
+    pass
+
+
 class Action(object):
 
     def __init__(self, obj, act):
@@ -80,6 +84,12 @@ class Action(object):
         elif self.action == 'set':
             if not self.entity.exists:
                 raise ActionError("Entity %s doesn't exist" % self.entity.name)
+            # Validate the new data *before* updating the object
+            try:
+                self.entity.validate(self.args)
+            except Exception as e:
+                raise ActionValidationError("The provided data is not valid: %s" % e)
+
             desc = []
             for (k, v) in self.args.items():
                 curval = getattr(self.entity, k)

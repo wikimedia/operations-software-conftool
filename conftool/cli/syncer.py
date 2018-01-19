@@ -135,6 +135,7 @@ class EntitySyncer(object):
             obj = self.cls(*tags)
             if obj.static_values:
                 _log.info("Syncing static object %s:%s", self.entity, key)
+                obj.validate(self.data[key])
                 obj.from_net(self.data[key])
             else:
                 if obj.exists:

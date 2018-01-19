@@ -60,6 +60,7 @@ class EtcdProcessHelper(object):
     def stop(self):
         self.proc.kill()
         self.proc = None
+        time.sleep(2)
 
 
 class IntegrationTestBase(unittest.TestCase):
