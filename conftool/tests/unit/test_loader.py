@@ -99,9 +99,7 @@ class SchemaTestCase(unittest.TestCase):
                                                       'broken_schema.yaml'))
         self.assertListEqual(sorted(schema.entities.keys()), ['node', 'pony', 'service', 'unicorn'])
         self.assertTrue(schema.has_errors)
-        # Case 3: generic exception
-        with mock.patch('yaml.load') as mocker:
+        # Case 3: generic exception is *not* handled
+        with mock.patch('conftool.yaml.safe_load') as mocker:
             mocker.side_effect = Exception('something unexpected')
-            schema = loader.Schema.from_file(self.schema_file)
-            self.assertListEqual(sorted(schema.entities.keys()), ['node', 'service'])
-            self.assertTrue(schema.has_errors)
+            self.assertRaises(Exception, loader.Schema.from_file, self.schema_file)

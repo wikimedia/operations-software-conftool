@@ -72,16 +72,16 @@ class TestAction(unittest.TestCase):
 
 
     @mock.patch('subprocess.call')
-    def test_edit(self, mocker):
+    @mock.patch('conftool.action.yaml_safe_load')
+    def test_edit(self, yaml_mock, mocker):
         a = get_action(self.entity, 'edit')
-        with  mock.patch('conftool.action.open', mock.mock_open(read_data="{a: 1, b: hello}")):
-            a.temp = 'test'
-            a._edit()
+        a.temp = 'test'
+        yaml_mock.return_value = {'a': 1, 'b': 'hello'}
+        a._edit()
         mocker.assert_called_with(['/usr/bin/editor', 'test'])
         self.assertEqual(a.edited, {'a': 1, 'b': 'hello'})
         os.environ['EDITOR'] = 'testmewell --verbose -t'
-        with  mock.patch('conftool.action.open', mock.mock_open()):
-            a._edit()
+        a._edit()
         mocker.assert_called_with(['testmewell', '--verbose', '-t', 'test'])
 
     def test_edit_to_file(self):

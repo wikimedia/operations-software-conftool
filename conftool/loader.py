@@ -1,6 +1,6 @@
-import yaml
+import os
 
-from conftool import _log, node, service
+from conftool import _log, node, service, yaml_safe_load
 from conftool.kvobject import Entity, FreeSchemaEntity
 from conftool.types import get_validator
 
@@ -54,29 +54,23 @@ class Schema(object):
         Load a yaml file
         """
         instance = cls()
-        try:
-            with open(filename, 'r') as f:
-                data = yaml.load(f)
-            for objname, defs in data.items():
-                try:
-                    _log.debug("Loading entity %s", objname)
-                    entity_name = objname.capitalize()
-                    entity = factory(entity_name, defs)
-                    instance.entities[objname] = entity
-                except Exception as e:
-                    _log.error("Could not load entity %s: %s", objname,
-                               e, exc_info=True)
-                    instance.has_errors = True
-        except IOError:
-            _log.info(
-                "Could not open %s - only standard entities will be available",
-                filename
-            )
-            # We do not signal we had an error here, as it might be a choice
-        except Exception as e:
-            _log.error("Unexpected error loading the schema: %s", e,
-                       exc_info=True)
+        if not os.path.isfile(filename):
+            return instance
+
+        data = yaml_safe_load(filename, default={})
+        if not data:
             instance.has_errors = True
+
+        for objname, defs in data.items():
+            try:
+                _log.debug("Loading entity %s", objname)
+                entity_name = objname.capitalize()
+                entity = factory(entity_name, defs)
+                instance.entities[objname] = entity
+            except Exception as e:
+                _log.error("Could not load entity %s: %s", objname,
+                           e, exc_info=True)
+                instance.has_errors = True
         return instance
 
     def _add_default_entities(self):

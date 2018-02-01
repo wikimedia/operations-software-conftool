@@ -5,9 +5,7 @@ import logging
 import os
 import sys
 
-import yaml
-
-from conftool import _log, configuration, loader
+from conftool import _log, configuration, loader, yaml_safe_load
 from conftool.kvobject import KVObject
 from conftool.drivers import BackendError
 
@@ -104,18 +102,20 @@ class EntitySyncer(object):
         entity_path = os.path.join(rootdir, self.entity)
         _log.info("Loading data for entity %s from %s", self.entity, rootdir)
         if not os.path.isdir(entity_path):
-            _log.error("Data dir %s does not exist, will NOT remove missing entities", entity_path)
+            _log.error(
+                "Data dir %s does not exist, will NOT remove missing entities",
+                entity_path
+            )
             self.skip_removal = True
         for filename in glob.glob(os.path.join(entity_path, '*.yaml')):
-            with open(filename, 'rb') as fh:
-                _log.info("Parsing file %s", filename)
-                try:
-                    filedata = yaml.load(fh)
-                except Exception:
-                    _log.critical("Malformed data in file %s",
-                                  filename)
-                    filedata = {}
-                    self.skip_removal = True
+            _log.info("Parsing file %s", filename)
+            filedata = yaml_safe_load(filename, default={})
+            if not filedata:
+                _log.error(
+                    "The file %s returned empty content, will NOT remove missing entities",
+                    filename
+                )
+                self.skip_removal = True
 
             try:
                 exp_data = self.cls.from_yaml(filedata)

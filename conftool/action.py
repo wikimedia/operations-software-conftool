@@ -6,6 +6,8 @@ import tempfile
 
 import yaml
 
+from conftool import yaml_safe_load
+
 if sys.version_info[0] == 2:  # Python 2
     from __builtin__ import raw_input as input
 
@@ -112,8 +114,7 @@ class EditAction(GetAction):
         editor_cmd = shlex.split(editor)
         editor_cmd.append(self.temp)
         subprocess.call(editor_cmd)
-        with open(self.temp, 'r') as f:
-            self.edited = yaml.load(f)
+        self.edited = yaml_safe_load(self.temp)
 
 
 class SetAction(object):
@@ -161,12 +162,11 @@ class SetAction(object):
 
     def _from_file(self, arg):
         filename = arg[1:]
-        with open(filename, 'r') as fh:
-            try:
-                values = yaml.load(fh.read())
-            except yaml.parser.ParserError as e:
-                raise ActionError("Invalid yaml file: {}".format(e))
 
+        try:
+            values = yaml_safe_load(filename)
+        except Exception as e:
+            raise ActionError(str(e))
         return values
 
     def run(self):

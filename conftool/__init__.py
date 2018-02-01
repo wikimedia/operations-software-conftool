@@ -3,6 +3,8 @@ import os
 import pwd
 import socket
 
+import yaml
+
 _log = logging.getLogger(__name__)
 
 
@@ -60,3 +62,30 @@ def setup_irc(config):
             config.tcpircbot_port
         )
     )
+
+
+def yaml_log_error(name, exc, critical):
+    if critical:
+        logger = _log.critical
+    else:
+        logger = _log.info
+    if type(exc) is IOError:
+        if exc.errno == 2:
+            logger("File %s not found", exc.filename)
+        else:
+            logger("I/O error while reading from %s", exc.filename)
+    else:
+        logger("Error parsing yaml file %s: %s", name, exc)
+
+
+def yaml_safe_load(filename, default=None):
+    try:
+        with open(filename, 'r') as f:
+            return yaml.safe_load(f)
+    except (IOError, yaml.YAMLError) as exc:
+        critical = (default is None)
+        yaml_log_error(filename, exc, critical)
+        if critical:
+            raise
+        else:
+            return default

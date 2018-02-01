@@ -3,9 +3,8 @@ import os
 
 import etcd
 import urllib3
-import yaml
 
-from conftool import drivers
+from conftool import drivers, yaml_safe_load
 """
 
 This driver will look at the following config files:
@@ -32,12 +31,8 @@ def get_config(configfile):
         configfiles.append(configfile)
 
     for filename in configfiles:
-        try:
-            with open(filename, 'r') as f:
-                c = yaml.load(f)
-                conf.update(c)
-        except Exception:
-            continue
+        c = yaml_safe_load(filename, default={})
+        conf.update(c)
     return conf
 
 

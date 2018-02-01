@@ -1,20 +1,12 @@
-import yaml
 import collections
-from conftool import _log
+from conftool import yaml_safe_load
 
 
 def get(configfile):
     """
     Loads the config from file
     """
-    try:
-        with open(configfile, 'rb') as fh:
-            config = yaml.load(fh.read())
-    except Exception as e:
-        _log.error('Could not load file %s: %s',
-                   configfile, e)
-        config = {}
-
+    config = yaml_safe_load(configfile, default={})
     return Config(**config)
 
 
