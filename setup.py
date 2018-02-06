@@ -9,7 +9,7 @@ setup(
     author='Joe',
     author_email='joe@wikimedia.org',
     url='https://github.com/wikimedia/operations-software-conftool',
-    install_requires=['python-etcd>=0.4.3', 'pyyaml'],
+    install_requires=['python-etcd>=0.4.3', 'pyyaml', 'jsonschema'],
     test_suite='nose.collector',
     tests_require=['mock', 'nose'],
     zip_safe=False,

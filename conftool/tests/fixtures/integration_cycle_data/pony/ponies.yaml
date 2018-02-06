@@ -1,0 +1,10 @@
+yellow:
+  neutral:
+    - "alpha"
+    - "beta"
+  female:
+    - "gamma"
+rainbow:
+  male:
+    - "delta"
+    - "epsilon"

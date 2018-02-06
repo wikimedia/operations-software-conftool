@@ -279,6 +279,25 @@ class Entity(KVObject):
         return os.path.join(cls.base_path(), *tags)
 
 
+class JsonSchemaEntity(Entity):
+    """
+    Specific class for json-schema based entities
+    """
+    def __init__(self, *tags):
+        super(JsonSchemaEntity, self).__init__(*tags)
+        self.rules = self.loader.rules_for(self.tags, self._name)
+
+    def validate(self, values):
+        # First dump our current value to a json output
+        current_values = self._to_net()
+        # no additional check is performed, intentionally.
+        # This will validate if the final object would respect its schemas
+        current_values.update(values)
+        for rule in self.rules:
+            rule.validate(current_values)
+        return True
+
+
 class FreeSchemaEntity(Entity):
     strict_schema = False
 

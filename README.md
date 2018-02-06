@@ -93,17 +93,11 @@ There are three ways to find objects:
   it's more optimized than the other ones (typically needs one query to the backend
   instead than doing expensive recursive queries).
 
-* via the node name, with the 'find' mode:
-
-        confctl find --action (get|set/k=v:k1=v1...,del) NAME
-
-  this will act on all the objects with name NAME independently of the
-  attached tags. This search mode is deprecated, and will be removed in some
-  future release.
-
 you can also set the values from a yaml file instead of the command line,
 which could be useful whenever you find yourself manipulating complex
-fields like dictionaries or lists, by just using the action `set/@filename`
+fields like dictionaries or lists, by just using the action `set/@filename`.
+
+Finally, you can edit a full record by using the action `edit`.
 
 Defining a schema
 -----------------
@@ -124,6 +118,15 @@ A schema can be defined in a yaml file, in the form
       depends:
         - OTHER_ENTITY
       free_form: false
+      json_schema:
+        base_path: PATH_ON_DISK
+        rules:
+          RULE1:
+            schema: sometype.schema
+            selector: TAG1=VAL1,TAG2=REGEX
+          RULE2:
+            schema: othertype.schema
+            selector: TAG1=VAL1,TAG2=REGEX
 
 here, ENTITY_NAME is the name of the object type, as indicated on the
 command line via the `--object-type ENTITY_NAME` switch. Every object
@@ -148,6 +151,39 @@ object types.
 Finally, `free_form` determines if only predefined fields are accepted
 (when `false`, the default) or if additional fields can be added to an
 object.
+
+It is also possible to define more fine-grained controls on the structure
+of an object by defining its structure via a json schema. If you want to do
+that, you will have to add a reference in your main schema to the additional
+validation you want to provide in the `json_schema` section. There you can
+declare rules in the form shown above - all the ones whose `selector` matches
+the current objects will be applied, and the schema indicated in the `schema`
+stanza will be used for validation.
+
+So for instance if you define
+
+    horse:
+      path: "horses"
+      tags:
+        - color
+        - breed
+      schema:
+        height:
+          default: 0
+        nick:
+          default: ''
+        custom:
+          default: null
+      json_schema:
+        base_path: "schemas"
+        rules:
+          running_horses:
+            schema: 'runner_horse.schema'
+            selector: "breed=runner"
+
+you will check any `horse` object with tag `breed=runner` with the JSON schema that
+can be found in `schemas/runner_horse.schema`. This allows for better granularity and precision of your data validation.
+
 
 
 Running tests

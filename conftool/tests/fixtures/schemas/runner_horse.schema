@@ -1,0 +1,17 @@
+{
+    "type": "object",
+    "properties": {
+        "height": {"type": "number"},
+        "nick": {"type": "string"},
+        "custom": {
+            "type": "object",
+            "properties": {
+                "wins": {"type": "number"},
+                "starts": {"type": "number"}
+            },
+            "required": ["wins", "starts"]
+        }
+    },
+    "required": ["height", "nick"],
+    "additionalProperties": false
+}

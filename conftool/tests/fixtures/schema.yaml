@@ -25,3 +25,21 @@ unicorn:
     magic:
       type: "enum:rainbows|confetti|stars|nyancats"
       default: "rainbows"
+horse:
+  path: "horses"
+  tags:
+    - color
+    - breed
+  json_schema:
+    base_path: "conftool/tests/fixtures/schemas"
+    rules:
+      running_horses:
+        schema: 'runner_horse.schema'
+        selector: "breed=runner"
+  schema:
+    height:
+      default: 0
+    nick:
+      default: ''
+    custom:
+      default: null

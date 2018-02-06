@@ -1,6 +1,6 @@
 from conftool import drivers
-from conftool.kvobject import Entity, FreeSchemaEntity
-from conftool.types import get_validator
+from conftool.kvobject import Entity, FreeSchemaEntity, JsonSchemaEntity
+from conftool.types import get_validator, JsonSchemaLoader
 
 class MockDriver(drivers.BaseDriver):
 
@@ -26,6 +26,26 @@ class MockEntity(Entity):
     def get_default(self, what):
         if what == 'a':
             return 1
+        else:
+            return 'FooBar'
+
+
+class MockJsonEntity(JsonSchemaEntity):
+    _tags = ['foo', 'bar']
+    _schema = {'val': get_validator('any')}
+    # load a catchall rule for a string
+    loader = JsonSchemaLoader(
+        base_path='conftool/tests/fixtures/schemas',
+        rules={'catchall': {'schema': 'val.schema', 'selector': 'name=.*'}}
+    )
+
+    @classmethod
+    def base_path(cls):
+        return 'Mock/entity'
+
+    def get_default(self, what):
+        if what == 'val':
+            return ''
         else:
             return 'FooBar'
 

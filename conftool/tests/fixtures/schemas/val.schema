@@ -1,0 +1,5 @@
+{
+    "type": "object",
+    "properties": {"val":{"type": "string"}},
+    "additionalProperties": false
+}

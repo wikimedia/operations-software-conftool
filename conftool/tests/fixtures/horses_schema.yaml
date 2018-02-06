@@ -1,0 +1,5 @@
+path: "conftool/tests/fixtures/schemas"
+rules:
+  running_horses:
+    schema: 'runner_horse.schema'
+    selector: "breed=runner"

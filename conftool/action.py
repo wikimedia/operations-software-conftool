@@ -6,7 +6,7 @@ import tempfile
 
 import yaml
 
-from conftool import yaml_safe_load
+from conftool import yaml_safe_load, kvobject
 
 if sys.version_info[0] == 2:  # Python 2
     from __builtin__ import raw_input as input
@@ -79,7 +79,10 @@ class EditAction(GetAction):
                     self.entity.validate(self.edited)
                     break
                 except Exception as e:
-                    print("The saved file is not valid, please check it!")
+                    if isinstance(self.entity, kvobject.JsonSchemaEntity):
+                        print("The modified object fails JSON validation, please check it!")
+                    else:
+                        print("The modified object is not valid, please check it!")
                     print("Reported reason: {}".format(e))
                     self._check_amend(e)
             self.entity.update(self.edited)

@@ -6,7 +6,7 @@ import mock
 
 from conftool import configuration, drivers
 from conftool.kvobject import KVObject
-from conftool.tests.unit import MockBackend, MockEntity, MockFreeEntity
+from conftool.tests.unit import MockBackend, MockEntity, MockFreeEntity, MockJsonEntity
 from conftool.types import get_validator
 
 class TestKVObject(unittest.TestCase):
@@ -207,3 +207,17 @@ class TestFreeSchemaObject(unittest.TestCase):
         self.assertFalse(a.changed(data))
         a.a = 2
         self.assertTrue(a.changed(data))
+
+class TestJsonSchemaObject(unittest.TestCase):
+
+    def setUp(self):
+        KVObject.backend = MockBackend({})
+        KVObject.config = configuration.Config(driver="")
+
+    def test_init(self):
+        a = MockJsonEntity('Foo', 'Bar', 'test')
+        self.assertEqual(a.val, '')
+
+    def test_validate(self):
+        a = MockJsonEntity('Foo', 'Bar', 'test')
+        self.assertTrue(a.validate({'val': 'testvalue'}))
