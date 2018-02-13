@@ -1,11 +1,13 @@
+import argparse
 import sys
 import unittest
+
 import mock
 
 from conftool.kvobject import KVObject
 from conftool import configuration
 from conftool import node
-from conftool.tests.unit import MockBackend
+from conftool.tests.unit import MockBackend, MockBasicEntity
 from conftool.cli import tool
 
 
@@ -140,3 +142,44 @@ class TestToolCli(unittest.TestCase):
         self.assertEqual(args.action, [['get', 'all']])
         # Check the subparser command is required
         self.assertRaises(SystemExit, tool.parse_args, [])
+
+
+class TestToolCliSimpleAction(unittest.TestCase):
+    def setUp(self):
+        KVObject.backend = MockBackend({})
+        KVObject.config = configuration.Config(driver="")
+
+    def _args(self):
+        args = argparse.Namespace()
+        args.mode = 'pool'
+        args.hostname = 'foobar'
+        args.debug = False
+        args.object_type = 'node'
+        args.schema = '/nonexistent'
+        return args
+
+    def test_init(self):
+        args = self._args()
+        with mock.patch('conftool.cli.tool.socket.getfqdn') as mocker:
+            mocker.return_value = 'FooBar'
+            t = tool.ToolCliSimpleAction(args)
+        self.assertEqual(t.args.selector, 'name=FooBar')
+        self.assertEqual(t.args.action, 'set/pooled=yes')
+        args = self._args()
+        args.service = 'Foo'
+        with mock.patch('conftool.cli.tool.socket.getfqdn') as mocker:
+            mocker.return_value = 'FooBar'
+            t = tool.ToolCliSimpleAction(args)
+            self.assertEqual(t.args.selector, 'name=FooBar,service=Foo')
+        args = self._args()
+        args.object_type = 'service'
+        self.assertRaises(SystemExit, tool.ToolCliSimpleAction, args)
+
+    def test_host_list(self):
+        mock_list = []
+        for i in range(10):
+            mock_list.append(node.Node('dcA', 'clusterA', 'service{}'.format(i), 'foobar'))
+        args = self._args()
+        t = tool.ToolCliSimpleAction(args)
+        t.entity.query = mock.MagicMock(return_value=mock_list)
+        self.assertEqual(t.host_list(), mock_list)

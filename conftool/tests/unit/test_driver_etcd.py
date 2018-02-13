@@ -16,7 +16,6 @@ class EtcdDriverTestCase(unittest.TestCase):
 
     def test_init(self):
         self.assertIsInstance(self.driver.client, etcd.Client)
-        self.assertEqual(self.driver.client.host, 'localhost')
 
     @mock.patch('etcd.Client.read')
     def test_is_dir(self, etcd_mock):

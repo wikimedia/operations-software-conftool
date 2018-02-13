@@ -8,6 +8,7 @@ import logging
 import json
 import os
 import re
+import socket
 import sys
 
 import yaml
@@ -226,6 +227,42 @@ class ToolCliByLabel(ToolCliBase):
             sys.exit(1)
 
 
+class ToolCliSimpleAction(ToolCliByLabel):
+    simple_actions = {
+        'pool': 'set/pooled=yes',
+        'depool': 'set/pooled=no',
+        'decommission': 'set/pooled=inactive',
+        'drain': 'set/weight=0',
+    }
+
+    def __init__(self, args):
+        if args.object_type != 'node':
+            _log.error('%s can only act on node objects', args.mode)
+            sys.exit(1)
+        args.selector = 'name={}'.format(socket.getfqdn())
+        if 'service' in args:
+            args.selector += ',service={}'.format(args.service)
+        args.action = self.simple_actions[args.mode]
+        args.mode = 'select'
+        super(ToolCliSimpleAction, self).__init__(args)
+
+    def host_list(self):
+        """Gets all the hosts matching our selectors"""
+        return [obj for obj in self.entity.query(self.selectors)]
+
+    @classmethod
+    def add_subparsers(cls, subparsers):
+        for simple in cls.simple_actions.keys():
+            act = subparsers.add_parser(
+                simple,
+                help="{} the current host in services".format(simple.capitalize())
+            )
+            act.add_argument(
+                '--service', help='The specific service to {} (if any)'.format(simple),
+                metavar="SERVICE", default=None
+            )
+
+
 def parse_args(cmdline):
     parser = argparse.ArgumentParser(
         description="Tool to interact with the WMF config store",
@@ -247,9 +284,10 @@ def parse_args(cmdline):
         help="Schema file that defines additional object types"
     )
 
-    # Subparsers for the three operating models
+    # Subparsers for the various operating models
+    simple_actions = '/'.join(ToolCliSimpleAction.simple_actions.keys())
     subparsers = parser.add_subparsers(
-        help='Program mode: tags, find or select', dest='mode')
+        help='Program mode: select, tags or {}'.format(simple_actions), dest='mode')
     subparsers.required = True
     # Tags mode
     tags = subparsers.add_parser(
@@ -273,7 +311,8 @@ def parse_args(cmdline):
     select.add_argument('action', action="append", metavar="ACTIONS",
                         help="the action to take: "
                         " [set/k1=v1:k2=v2...|get|delete]")
-
+    # POOL/DEPOOL/DRAIN/DECOMMISSION scripts
+    ToolCliSimpleAction.add_subparsers(subparsers)
     return parser.parse_args(cmdline)
 
 
@@ -301,8 +340,12 @@ def main(cmdline=None):
     try:
         if args.mode == 'select':
             cli = ToolCliByLabel(args)
-        else:
+        elif args.mode == 'tags':
             cli = ToolCli(args)
+        elif args.mode in ToolCliSimpleAction.simple_actions.keys():
+            cli = ToolCliSimpleAction(args)
+        else:
+            raise ValueError(args.mode)
     except ObjectTypeError:
         sys.exit(1)
 
