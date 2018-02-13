@@ -1,8 +1,13 @@
-python-conftool (0.4.1) UNRELEASED; urgency=medium
+python-conftool (1.0.0beta1-1) jessie-wikimedia; urgency=medium
 
+  * Python 3 support
   * Add a raw 'any' type to the schema
+  * Add json-schema based validation
+  * Add an edit action
+  * BREAKING: drop the `confctl find` action
+  * Added code coverage
 
- -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Mon, 10 Apr 2017 13:42:04 +0200
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 13 Feb 2018 18:53:06 +0100
 
 python-conftool (0.4.0) jessie-wikimedia; urgency=medium
 
