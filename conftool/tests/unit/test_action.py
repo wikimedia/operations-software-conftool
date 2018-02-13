@@ -4,7 +4,8 @@ import mock
 import unittest
 
 from conftool import action, configuration
-from conftool.action import get_action, ActionError, GetAction, DelAction, SetAction, EditAction
+from conftool.action import get_action, ActionError, GetAction, DelAction, \
+    SetAction, EditAction, ActionValidationError
 from conftool.kvobject import KVObject
 from conftool.tests.unit import MockBackend, MockEntity
 from conftool.types import get_validator
@@ -48,6 +49,8 @@ class TestAction(unittest.TestCase):
         self.assertEqual(a.DEFAULT_EDITOR, '/usr/bin/editor')
         self.assertEqual(a.edited, {})
         self.assertEqual(a.temp, None)
+        # Unknown
+        self.assertRaises(ActionError, get_action, self.entity, 'unicorns!')
 
     def test_from_cli(self):
         """
@@ -60,6 +63,11 @@ class TestAction(unittest.TestCase):
         a.entity._schema['bar'] = get_validator('bool')
         self.assertEqual(a._from_cli({'bar': 'false'}),
                          {'bar': False})
+        self.assertEqual(a._from_cli({'bar': 'true'}),
+                         {'bar': True})
+        self.assertRaises(ValueError, a._from_cli, {'bar': 'popcorn!'})
+        a.entity._schema['bar'] = get_validator('dict')
+        self.assertRaises(ValueError, a._from_cli, {'bar': 'popcorn!'})
         del a.entity._schema['bar']
 
     def test_run(self):
@@ -69,6 +77,13 @@ class TestAction(unittest.TestCase):
         self.assertEqual(a.run(), "test not found")
         a.entity.exists = True
         self.assertEqual(a.run()[2:6], 'test')
+        a = get_action(self.entity, 'delete')
+        a.entity.exists = True
+        self.assertEqual(a.run(), 'Deleted (\'MockEntity\',) test.')
+        # set action will fail if the data doesn't validate
+        a = get_action(self.entity, 'set/a=1')
+        self.entity.validate = mock.Mock(side_effect=ValueError)
+        self.assertRaises(ActionValidationError, a.run)
 
 
     @mock.patch('subprocess.call')
@@ -125,3 +140,12 @@ class TestAction(unittest.TestCase):
             self.assertEqual(a.run(), "Entity successfully updated")
             a._check_amend.assert_called_with(exception)
             unlinker.assert_called_with(a.temp)
+
+    def test_set_from_file(self):
+        a = get_action(self.entity, 'set/a=1')
+        with mock.patch('conftool.action.yaml_safe_load') as mocker:
+            mocker.return_value = {'a': 1}
+            self.assertEqual(a._from_file('@test'), {'a': 1})
+            mocker.assert_called_with('test')
+            mocker.side_effect = Exception('test')
+            self.assertRaises(ActionError, a._from_file, '@test')

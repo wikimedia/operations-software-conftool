@@ -2,7 +2,6 @@ import json
 import os
 
 from collections import OrderedDict
-from contextlib import contextmanager
 
 from conftool import _log, backend, drivers
 
@@ -20,12 +19,6 @@ class KVObject(object):
 
     def kvpath(self, *args):
         return os.path.join(self.base_path(), *args)
-
-    @classmethod
-    def find(cls, name):
-        """Generator of a list of objects for a given name"""
-        for tags in cls.backend.driver.find_in_path(cls.base_path(), name):
-            yield cls(*tags)
 
     @classmethod
     def query(cls, query):
@@ -88,13 +81,12 @@ class KVObject(object):
             values = self.backend.driver.read(self.key)
             if values:
                 self.exists = True
+            self.from_net(values)
         except drivers.NotFoundError:
-            return self.from_net(None)
+            self.from_net(None)
         except drivers.BackendError as e:
             _log.error("Backend error while fetching %s: %s", self.key, e)
             # TODO: maybe catch the backend errors separately
-            return None
-        self.from_net(values)
 
     def write(self):
         return self.backend.driver.write(self.key, self._to_net())
@@ -174,21 +166,6 @@ class KVObject(object):
                 dict([("%s/%s" % (tags, name), None) for name in names]))
         return tmpdict
 
-    @classmethod
-    @contextmanager
-    def lock(cls, path):
-        try:
-            lock = cls.backend.driver.get_lock(path)
-            yield lock
-            cls.backend.driver.release_lock(path)
-        except Exception as e:
-            _log.critical("Problems inside lock for %s: %s", path, e)
-            cls.backend.driver.release_lock(path)
-            raise
-        except (SystemExit, KeyboardInterrupt) as e:
-            _log.critical("Aborted.")
-            cls.backend.driver.release_lock(path)
-
     def from_net(self, values):
         """
         Fetch the values from the kvstore into the object
@@ -223,7 +200,7 @@ class KVObject(object):
                 _log.warn("Setting %s to the default value %s",
                           key, val)
                 setattr(self, key, val)
-            else:
+            else:  # pragma: no cover
                 _log.warn("Not setting a value")
 
     def __str__(self):

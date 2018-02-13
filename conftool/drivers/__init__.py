@@ -16,16 +16,18 @@ class BaseDriver(object):
         self.base_path = os.path.join(config.namespace, config.api_version)
 
     def abspath(self, path):
+        """
+        Returns an absolute path for the key
+        """
         if path.startswith('/'):
             return path
         else:
             return os.path.join(self.base_path, path)
 
     def is_dir(self, path):
-        pass
-
-    def find_in_path(self, path, name):
-        pass
+        """
+        Check if the path is a directory on the kv-store. Returns a boolean
+        """
 
     def all_keys(self, path):
         """
@@ -37,23 +39,28 @@ class BaseDriver(object):
             yield objclass(*args)
 
         """
-        pass
 
     def all_data(self, path):
         """
         Given a path, return a list of tuples for all the objects under that
         path in the form [(relative_path1, data1), (relative_path2, data2), ...]
         """
-        pass
 
     def write(self, key, value):
-        pass
+        """
+        Write the value `value` to key `key`.
+        Should return a dict with the key value written
+        """
 
     def delete(self, key):
-        pass
+        """
+        Delete the key at `key`. Raises an exception on failure
+        """
 
     def read(self, key):
-        pass
+        """
+        Read the value at `key` to a dict. Raises an exception on failure
+        """
 
     def ls(self, path):
         """
@@ -62,15 +69,6 @@ class BaseDriver(object):
         if not self.is_dir(path):
             raise ValueError(
                 "{} is not a directory".format(self.abspath(path)))
-
-    def get_lock(self, path):
-        pass
-
-    def lock_exists(self, path):
-        pass
-
-    def release_lock(self, path):
-        pass
 
 
 def wrap_exception(exc):

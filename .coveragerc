@@ -1,0 +1,8 @@
+[run]
+branch = False
+omit = conftool/tests/*
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    Python 2

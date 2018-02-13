@@ -72,6 +72,7 @@ class Schema(object):
         data = yaml_safe_load(filename, default={})
         if not data:
             instance.has_errors = True
+            return instance
 
         for objname, defs in data.items():
             try:

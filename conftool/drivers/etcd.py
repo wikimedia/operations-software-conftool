@@ -118,26 +118,11 @@ class Driver(drivers.BaseDriver):
         key = self.abspath(path)
         self.client.delete(key)
 
-    @drivers.wrap_exception(etcd.EtcdException)
-    def find_in_path(self, path, name):
-        """Find all subpaths that end with a given name"""
-        key = self.abspath(path)
-        r = self.client.read(key, recursive=True)
-        for obj in r.leaves:
-            if obj.dir:
-                continue
-            path, obj_name = os.path.split(obj.key)
-            if obj_name == name:
-                fullpath = key + '/'
-                path = obj.key.replace(fullpath, '').replace('//', '/')
-                yield path.split('/')
-
     def _fetch(self, key, **kwdargs):
         try:
             return self.client.read(key, **kwdargs)
         except etcd.EtcdKeyNotFound:
             raise drivers.NotFoundError()
-            return None
 
     def _data(self, etcdresult):
         if etcdresult is None or etcdresult.dir:
@@ -148,31 +133,3 @@ class Driver(drivers.BaseDriver):
             raise drivers.BackendError(
                 "The kvstore contains malformed data at key %s" %
                 etcdresult.key)
-
-    def get_lock(self, path):
-        name = path.replace('/', '-')
-        if name not in self.locks:
-            self.locks[name] = etcd.Lock(self.client, name)
-        self.locks[name].acquire(lock_ttl=self.lock_ttl)
-        if self.locks[name].is_acquired:
-            return self.locks[name]
-        else:
-            return False
-
-    def release_lock(self, path):
-        name = path.replace('/', '-')
-        # we can't remove a lock that was not set by us
-        if name not in self.locks:
-            return False
-        self.locks[name].release()
-        del self.locks[name]
-        return True
-
-    def watch_lock(self, path):
-        name = path.replace('/', '-')
-        lock = etcd.Lock(self.client, name)
-        try:
-            r = self.client.read(lock.path)
-            return bool(r._children)
-        except etcd.EtcdKeyNotFoundErrror:
-            return False

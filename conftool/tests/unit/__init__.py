@@ -1,5 +1,5 @@
 from conftool import drivers
-from conftool.kvobject import Entity, FreeSchemaEntity, JsonSchemaEntity
+from conftool.kvobject import KVObject, Entity, FreeSchemaEntity, JsonSchemaEntity
 from conftool.types import get_validator, JsonSchemaLoader
 
 class MockDriver(drivers.BaseDriver):
@@ -13,6 +13,23 @@ class MockBackend(object):
     def __init__(self, config):
         self.config = config
         self.driver = MockDriver(config)
+
+
+class MockBasicEntity(KVObject):
+    _tags = ['A', 'B', 'C', 'D']
+    _schema = {'val': get_validator ('any')}
+
+    @classmethod
+    def base_path(cls):
+        return 'base_path'
+
+    @property
+    def key(self):
+        return 'a/b/c/d/e'
+
+    @property
+    def dir(self):
+        return 'a'
 
 
 class MockEntity(Entity):

@@ -1,6 +1,9 @@
-import mock
 import os
 import unittest
+
+import mock
+import yaml
+
 from conftool import loader
 from conftool.kvobject import KVObject, Entity, FreeSchemaEntity
 from conftool import configuration
@@ -94,12 +97,17 @@ class SchemaTestCase(unittest.TestCase):
         schema = loader.Schema.from_file('doesnt.exists')
         self.assertListEqual(sorted(schema.entities.keys()), ['node', 'service'])
         self.assertFalse(schema.has_errors)
-        # Case 2: broken file
+        # Case 2: broken file (that means the file includes invalid data)
         schema = loader.Schema.from_file(os.path.join(test_base, 'fixtures',
                                                       'broken_schema.yaml'))
         self.assertListEqual(sorted(schema.entities.keys()), ['node', 'pony', 'service', 'unicorn'])
         self.assertTrue(schema.has_errors)
-        # Case 3: generic exception is *not* handled
+        # Case 3: invalid yaml
+        with mock.patch('conftool.yaml.safe_load') as mocker:
+            mocker.side_effect = yaml.YAMLError('something unexpected')
+            schema = loader.Schema.from_file(self.schema_file)
+            self.assertTrue(schema.has_errors)
+        # Case 4: generic exception is *not* handled
         with mock.patch('conftool.yaml.safe_load') as mocker:
             mocker.side_effect = Exception('something unexpected')
             self.assertRaises(Exception, loader.Schema.from_file, self.schema_file)

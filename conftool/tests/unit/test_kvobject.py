@@ -6,7 +6,7 @@ import mock
 
 from conftool import configuration, drivers
 from conftool.kvobject import KVObject
-from conftool.tests.unit import MockBackend, MockEntity, MockFreeEntity, MockJsonEntity
+from conftool.tests.unit import MockBackend, MockBasicEntity, MockEntity, MockFreeEntity, MockJsonEntity
 from conftool.types import get_validator
 
 class TestKVObject(unittest.TestCase):
@@ -16,42 +16,20 @@ class TestKVObject(unittest.TestCase):
         KVObject.config = configuration.Config(driver="")
         self.entity = MockEntity('Foo', 'Bar', 'test')
 
+    def test_tags(self):
+        """
+        test `KVObject.tags`
+        """
+        ent = MockBasicEntity()
+        self.assertEqual(ent.tags, {'A': 'a', 'B': 'b', 'C': 'c', 'D': 'd'})
+
+
     def test_kvpath(self):
         """
         Test `KVObject.kvpath`
         """
         self.assertEqual('Mock/entity/bar/baz',
                          self.entity.kvpath('bar', 'baz'))
-
-    def test_find_found(self):
-        """
-        Test `KVObject.find`
-        """
-        # Find returns an object if found
-        KVObject.backend.driver.find_in_path = mock.Mock(return_value=[('Foo', 'Bar', 'test')])
-        res = [ent for ent in MockEntity.find('test')]
-        KVObject.backend.driver.find_in_path.assert_called_with('Mock/entity', 'test')
-        self.assertEqual(len(res), 1)
-
-    def test_find_not_found(self):
-        """
-        Test `KVObject.find` returns an empty list if nothing is found
-        """
-        # Empty list of results if nothing found
-        KVObject.backend.driver.find_in_path = mock.Mock(return_value=[])
-        res = [ent for ent in MockEntity.find('test')]
-        self.assertEqual(res, [])
-
-    def test_find_bad_data(self):
-        """
-        Test `KvObject.find` if bad objects are returned, an exception will be
-        raised
-        """
-        MockEntity.backend.driver.find_in_path = mock.Mock(return_value=[('Foo',
-                                                                          'test')])
-        with self.assertRaises(ValueError):
-            for _ in MockEntity.find('test'):
-                pass
 
     def test_query_success(self):
         """
@@ -88,8 +66,14 @@ class TestKVObject(unittest.TestCase):
             mocker.assert_called_with({'a': 1, 'b': 'b-val'})
             # Non-existent key?
             MockEntity.backend.driver.read.side_effect = drivers.NotFoundError('test')
-            MockEntity('Foo', 'Bar', 'test')
+            a = MockEntity('Foo', 'Bar', 'test')
             mocker.assert_called_with(None)
+
+            MockEntity.backend.driver.read.side_effect = drivers.BackendError('testtest')
+            mocker.reset_mock()
+            a.fetch()
+            mocker.assert_not_called()
+
 
     def test_write(self):
         MockEntity.backend.driver.write = mock.Mock(return_value={'a': 5, 'b': 'meh'})
@@ -143,6 +127,9 @@ class TestKVObject(unittest.TestCase):
         self.entity.b = 'meoow'
         self.assertEqual(self.entity._to_net(), {'a': 100, 'b': 'meoow'})
         obj = MockEntity('a', 'b', 'c')
+        obj.b = 'fooBar'
+        self.assertEqual(obj._to_net(), {'a': 1, 'b': 'fooBar'})
+        del obj.b
         self.assertEqual(obj._to_net(), {'a': 1, 'b': 'FooBar'})
 
     def test_from_net(self):
@@ -176,6 +163,10 @@ class TestKVObject(unittest.TestCase):
         ent.a = 256
         self.assertNotEqual(ent, self.entity)
 
+    def test_from_yaml_no_tags(self):
+        KVObject._tags = mock.MagicMock(return_value=[])
+        self.assertEqual(KVObject._kv_from_yaml("test"), "test")
+        self.assertEqual({'a': None}, KVObject._from_yaml(['a']))
 
 class TestFreeSchemaObject(unittest.TestCase):
 
@@ -207,6 +198,7 @@ class TestFreeSchemaObject(unittest.TestCase):
         self.assertFalse(a.changed(data))
         a.a = 2
         self.assertTrue(a.changed(data))
+
 
 class TestJsonSchemaObject(unittest.TestCase):
 

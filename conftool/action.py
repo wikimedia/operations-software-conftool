@@ -78,7 +78,7 @@ class EditAction(GetAction):
                 try:
                     self.entity.validate(self.edited)
                     break
-                except Exception as e:
+                except Exception as e:  # pragma: no coverage
                     if isinstance(self.entity, kvobject.JsonSchemaEntity):
                         print("The modified object fails JSON validation, please check it!")
                     else:
@@ -90,7 +90,7 @@ class EditAction(GetAction):
         finally:
             os.unlink(self.temp)
 
-    def _check_amend(self, exception):
+    def _check_amend(self, exception):  # pragma: no coverage
         while True:
             answer = input('Continue editing? [y/n] ')
             lc_answer = answer.lower()
@@ -103,7 +103,7 @@ class EditAction(GetAction):
                 continue
 
     def _to_file(self):
-        if self.temp is None:
+        if self.temp is None:  # pragma: no coverage
             f = tempfile.NamedTemporaryFile(delete=False)
             self.temp = f.name
         else:
