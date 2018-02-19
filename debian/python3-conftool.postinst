@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]
+then
+    update-alternatives \
+        --install /usr/bin/confctl confctl /usr/share/python3-conftool/confctl 20
+    update-alternatives \
+        --install /usr/bin/conftool-sync conftool-sync /usr/share/python3-conftool/conftool-sync 20
+fi
+#DEBHELPER#

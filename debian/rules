@@ -1,11 +1,13 @@
 #!/usr/bin/make -f
-DPKG_EXPORT_BUILDFLAGS = 1
-include /usr/share/dpkg/default.mk
+
+export PYBUILD_NAME=conftool
 
 %:
-	dh $@ --with python2,python3 --buildsystem=python_distutils
+	dh $@ --with python2,python3 --buildsystem=pybuild
 
-clean:
-	dh_testdir
-	dh_auto_clean
-	dh_clean
+override_dh_auto_install:
+	PYBUILD_SYSTEM=custom PYBUILD_INSTALL_ARGS="{interpreter} setup.py install --root={destdir} --install-scripts=/usr/share/{package}" dh_auto_install
+
+
+override_dh_auto_test:
+	# no tests!
