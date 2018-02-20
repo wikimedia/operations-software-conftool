@@ -242,7 +242,7 @@ class ToolCliSimpleAction(ToolCliByLabel):
         args.selector = 'name={}'.format(socket.getfqdn())
         if 'service' in args and args.service is not None:
             args.selector += ',service={}'.format(args.service)
-        args.action = self.simple_actions[args.mode]
+        args.action = [self.simple_actions[args.mode]]
         args.mode = 'select'
         super(ToolCliSimpleAction, self).__init__(args)
 
