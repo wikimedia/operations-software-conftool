@@ -1,3 +1,9 @@
+conftool (1.0.0~beta2-1) jesse-wikimedia; urgency=medium
+
+  * New beta release with a couple of bugfixes
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 20 Feb 2018 11:24:53 +0100
+
 conftool (1.0.0~beta1-1) jessie-wikimedia; urgency=medium
 
   * Python 3 support

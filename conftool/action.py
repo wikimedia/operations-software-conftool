@@ -109,7 +109,7 @@ class EditAction(GetAction):
         else:
             f = open(self.temp, 'wb')
         self.entity.fetch()
-        yaml.dump(self.entity._to_net(), stream=f, encoding='utf-8')
+        yaml.safe_dump(self.entity._to_net(), stream=f, encoding='utf-8')
         f.close()
 
     def _edit(self):
