@@ -1,4 +1,4 @@
-conftool (1.0.0~beta2-1) jesse-wikimedia; urgency=medium
+conftool (1.0.0~beta2-1) jessie-wikimedia; urgency=medium
 
   * New beta release with a couple of bugfixes
 
