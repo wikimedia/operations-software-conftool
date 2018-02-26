@@ -239,7 +239,7 @@ class ToolCliSimpleAction(ToolCliByLabel):
         if args.object_type != 'node':
             _log.error('%s can only act on node objects', args.mode)
             sys.exit(1)
-        args.selector = 'name={}'.format(socket.getfqdn())
+        args.selector = 'name={}'.format(args.hostname)
         if 'service' in args and args.service is not None:
             args.selector += ',service={}'.format(args.service)
         args.action = [self.simple_actions[args.mode]]
@@ -260,6 +260,11 @@ class ToolCliSimpleAction(ToolCliByLabel):
             act.add_argument(
                 '--service', help='The specific service to {} (if any)'.format(simple),
                 metavar="SERVICE", default=None
+            )
+            act.add_argument(
+                '--hostname',
+                help='The specific host we\'re operating on (default: the current host)',
+                metavar="HOST", default=socket.getfqdn()
             )
 
 

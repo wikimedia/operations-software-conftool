@@ -142,7 +142,14 @@ class TestToolCli(unittest.TestCase):
         self.assertEqual(args.action, [['get', 'all']])
         # Check the subparser command is required
         self.assertRaises(SystemExit, tool.parse_args, [])
-
+        cmdline = ['pool']
+        with mock.patch('conftool.cli.tool.socket.getfqdn') as mocker:
+            mocker.return_value = 'FooBar'
+            args = tool.parse_args(cmdline)
+            self.assertEqual(args.hostname, 'FooBar')
+            cmdline = ['pool', '--hostname', 'pink.unicorn']
+            args = tool.parse_args(cmdline)
+            self.assertEqual(args.hostname, 'pink.unicorn')
 
 class TestToolCliSimpleAction(unittest.TestCase):
     def setUp(self):
@@ -160,17 +167,13 @@ class TestToolCliSimpleAction(unittest.TestCase):
 
     def test_init(self):
         args = self._args()
-        with mock.patch('conftool.cli.tool.socket.getfqdn') as mocker:
-            mocker.return_value = 'FooBar'
-            t = tool.ToolCliSimpleAction(args)
-        self.assertEqual(t.args.selector, 'name=FooBar')
-        self.assertEqual(t.args.action, 'set/pooled=yes')
+        t = tool.ToolCliSimpleAction(args)
+        self.assertEqual(t.args.selector, 'name=foobar')
+        self.assertEqual(t.args.action, ['set/pooled=yes'])
         args = self._args()
         args.service = 'Foo'
-        with mock.patch('conftool.cli.tool.socket.getfqdn') as mocker:
-            mocker.return_value = 'FooBar'
-            t = tool.ToolCliSimpleAction(args)
-            self.assertEqual(t.args.selector, 'name=FooBar,service=Foo')
+        t = tool.ToolCliSimpleAction(args)
+        self.assertEqual(t.args.selector, 'name=foobar,service=Foo')
         args = self._args()
         args.object_type = 'service'
         self.assertRaises(SystemExit, tool.ToolCliSimpleAction, args)
