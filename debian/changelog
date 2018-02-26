@@ -1,3 +1,11 @@
+conftool (1.0.0-1) jessie-wikimedia; urgency=medium
+
+  * Bump version to 1.0.0
+  * UX enhancements
+  * add --hostname to simple commands
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Mon, 26 Feb 2018 17:56:43 +0100
+
 conftool (1.0.0~beta2-1) jessie-wikimedia; urgency=medium
 
   * New beta release with a couple of bugfixes
