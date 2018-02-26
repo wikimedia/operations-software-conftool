@@ -247,6 +247,10 @@ class Entity(KVObject):
     def tags(self):
         return self._current_tags
 
+    def pprint(self):
+        tags_path = os.path.join(*[self._current_tags[tag] for tag in self._tags])
+        return os.path.join(tags_path, self._name)
+
     @classmethod
     def dir(cls, *tags):
         if len(tags) != len(cls._tags):

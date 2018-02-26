@@ -86,7 +86,7 @@ class EditAction(GetAction):
                     print("Reported reason: {}".format(e))
                     self._check_amend(e)
             self.entity.update(self.edited)
-            return "Entity successfully updated"
+            return "Entity {} successfully updated".format(self.entity.pprint())
         finally:
             os.unlink(self.temp)
 
@@ -108,6 +108,7 @@ class EditAction(GetAction):
             self.temp = f.name
         else:
             f = open(self.temp, 'wb')
+            f.write("# Editing object {}".format(self.entity.pprint()))
         self.entity.fetch()
         yaml.safe_dump(self.entity._to_net(), stream=f, encoding='utf-8')
         f.close()
@@ -184,7 +185,7 @@ class SetAction(object):
             curval = getattr(self.entity, k)
             if v != curval:
                 msg = "%s: %s changed %s => %s" % (
-                    self.entity.name, k,
+                    self.entity.pprint(), k,
                     curval, v)
                 desc.append(msg)
         self.entity.update(self.args)

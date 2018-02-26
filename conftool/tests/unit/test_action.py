@@ -128,7 +128,7 @@ class TestAction(unittest.TestCase):
         a.temp = 'testunlink'
         with mock.patch('conftool.action.os.unlink') as unlinker:
             self.entity.update = mock.MagicMock()
-            self.assertEqual(a.run(), "Entity successfully updated")
+            self.assertEqual(a.run(), "Entity Foo/Bar/test successfully updated")
             self.entity.update.assert_called_with(a.edited)
             a._edit.assert_called_once()
         exception = ValueError('test me')
@@ -137,7 +137,7 @@ class TestAction(unittest.TestCase):
         )
         a._check_amend = mock.MagicMock()
         with mock.patch('conftool.action.os.unlink') as unlinker:
-            self.assertEqual(a.run(), "Entity successfully updated")
+            self.assertEqual(a.run(), "Entity Foo/Bar/test successfully updated")
             a._check_amend.assert_called_with(exception)
             unlinker.assert_called_with(a.temp)
 

@@ -23,6 +23,8 @@ class TestKVObject(unittest.TestCase):
         ent = MockBasicEntity()
         self.assertEqual(ent.tags, {'A': 'a', 'B': 'b', 'C': 'c', 'D': 'd'})
 
+    def test_pprint(self):
+        self.assertEqual(self.entity.pprint(), 'Foo/Bar/test')
 
     def test_kvpath(self):
         """
