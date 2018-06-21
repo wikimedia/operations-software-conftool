@@ -1,0 +1,8 @@
+dcA:
+  - sectionLoads
+  - groupLoadsBySection
+  - readOnlyBySection
+dcB:
+  - sectionLoads
+  - groupLoadsBySection
+  - readOnlyBySection

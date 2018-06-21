@@ -1,5 +1,9 @@
 import logging
-import mock
+try:
+    import mock
+except ModuleNotFoundError:
+    from unittest import mock
+# TODO: drop mock as 3rd-party deps and use unittest.mock everywhere
 import os
 import shutil
 import subprocess

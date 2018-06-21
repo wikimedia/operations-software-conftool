@@ -75,20 +75,31 @@ class EditAction(GetAction):
             self._to_file()
             while True:
                 self._edit()
-                try:
-                    self.entity.validate(self.edited)
+                # TODO: seems Golangish; a more Pythonic way is to have _validate_edit throw a
+                # custom exception, and here catch it & run _check_amend.
+                valid, err = self._validate_edit()
+                if valid:
                     break
-                except Exception as e:  # pragma: no coverage
-                    if isinstance(self.entity, kvobject.JsonSchemaEntity):
-                        print("The modified object fails JSON validation, please check it!")
-                    else:
-                        print("The modified object is not valid, please check it!")
-                    print("Reported reason: {}".format(e))
-                    self._check_amend(e)
+                else:
+                    self._check_amend(err)
             self.entity.update(self.edited)
             return "Entity {} successfully updated".format(self.entity.pprint())
         finally:
             os.unlink(self.temp)
+
+    def _validate_edit(self):
+        try:
+            self.entity.validate(self.edited)
+            return (True, None)
+        except Exception as e:  # pragma: no coverage
+            # TODO: why no coverage here?
+            if isinstance(self.entity, kvobject.JsonSchemaEntity):
+                print("The modified object fails JSON validation, please check it!")
+                print("Reported reason: {}".format(e))
+            else:
+                print("The modified object is not valid, please check it!")
+                print("Reported reason: {}".format(e))
+            return (False, e)
 
     def _check_amend(self, exception):  # pragma: no coverage
         while True:

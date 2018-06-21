@@ -18,6 +18,7 @@ setup(
         'console_scripts': [
             'conftool-sync = conftool.cli.syncer:main',
             'confctl = conftool.cli.tool:main',
+            'dbctl = conftool.extensions.dbconfig:main'
         ],
     },
     classifiers=(

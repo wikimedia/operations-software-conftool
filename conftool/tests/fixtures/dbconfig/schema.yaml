@@ -1,0 +1,55 @@
+"dbconfig-instance":
+  path: "dbconfig-instance"
+  tags:
+    - datacenter
+  json_schema:
+    base_path: "conftool/tests/fixtures/dbconfig/schemas"
+    rules:
+      catchall:
+        selector: 'name=.*'
+        schema: 'instance.schema'
+  schema:
+    hostname:
+      default: "PLACEHOLDER"
+    host_ip:
+      default: "0.0.0.0"
+    port:
+      default: 3306
+    sections:
+      default: {}
+"dbconfig-section":
+  path: "dbconfig-section"
+  tags:
+    - datacenter
+  json_schema:
+    base_path: "conftool/tests/fixtures/dbconfig/schemas"
+    rules:
+      catchall:
+        selector: 'name=.*'
+        schema: 'section.schema'
+  schema:
+    master:
+      default: "PLACEHOLDER"
+    min_slaves:
+      default: 0
+    readonly:
+      default: false
+    reason:
+      default: "PLACEHOLDER"
+"mwconfig":
+  path: "mediawiki-config"
+  tags:
+    - scope
+  json_schema:
+    base_path: "conftool/tests/fixtures/dbconfig/schemas"
+    rules:
+      sectionLoads:
+        selector: 'name=sectionLoads'
+        schema: 'sectionLoads.schema'
+      groupLoadsBySection:
+        selector: 'name=groupLoadsBySection'
+        schema: 'groupLoadsBySection.schema'
+      # TODO: this is missing readOnlyBySection
+  schema:
+    val:
+      default: null
