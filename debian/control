@@ -11,15 +11,6 @@ X-Python3-Version: >= 3.4
 #Vcs-Browser: https://anonscm.debian.org/cgit/python-modules/packages/conftool.git/
 #Testsuite: autopkgtest-pkg-python
 
-Package: python-conftool
-Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}
-Description: Set of tools to configure the WMF kv config store.
- Conftool provides a couple of tools: conftool-sync that allows
- syncing objects from a series of yaml files.
- .
- This package installs the library for Python 2.
-
 Package: python3-conftool
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}
