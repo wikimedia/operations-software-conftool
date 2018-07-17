@@ -2,6 +2,7 @@ import logging
 import os
 import pwd
 import socket
+import sys
 
 import yaml
 
@@ -39,6 +40,10 @@ class IRCSocketHandler(logging.Handler):
             self.user,
             socket.gethostname(),
             record.getMessage())
+
+        if sys.version_info[0] != 2:  # Python 3+
+            message = message.encode('utf-8')
+
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(self.timeout)
