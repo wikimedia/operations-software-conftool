@@ -1,2 +1,2 @@
 import logging
-logging.basicConfig(level=logging.DEBUG, name=__name__)
+logging.basicConfig(level=logging.DEBUG)
