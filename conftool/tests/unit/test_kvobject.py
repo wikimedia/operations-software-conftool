@@ -23,9 +23,6 @@ class TestKVObject(unittest.TestCase):
         ent = MockBasicEntity()
         self.assertEqual(ent.tags, {'A': 'a', 'B': 'b', 'C': 'c', 'D': 'd'})
 
-    def test_pprint(self):
-        self.assertEqual(self.entity.pprint(), 'Foo/Bar/test')
-
     def test_kvpath(self):
         """
         Test `KVObject.kvpath`
@@ -169,6 +166,25 @@ class TestKVObject(unittest.TestCase):
         KVObject._tags = mock.MagicMock(return_value=[])
         self.assertEqual(KVObject._kv_from_yaml("test"), "test")
         self.assertEqual({'a': None}, KVObject._from_yaml(['a']))
+
+class TestEntity(unittest.TestCase):
+    def setUp(self):
+        KVObject.backend = MockBackend({})
+        KVObject.config = configuration.Config(driver="")
+        self.entity = MockEntity('Foo', 'Bar', 'test')
+
+    def test_init(self):
+        self.assertEqual(self.entity.tags, {'foo': 'Foo', 'bar': 'Bar'})
+        self.assertEqual(self.entity.name, 'test')
+        # Now let's pass some wrong tags
+        self.assertRaises(ValueError, MockEntity, 'Foo', 'Bar', 'Baz', 'test')
+
+    def test_pprint(self):
+        self.assertEqual(self.entity.pprint(), 'Foo/Bar/test')
+
+    def test_dir(self):
+        self.assertEqual(MockEntity.dir('Foo', 'Bar'), 'Mock/entity/Foo/Bar')
+        self.assertRaises(ValueError, MockEntity.dir, 'Foo')
 
 class TestFreeSchemaObject(unittest.TestCase):
 

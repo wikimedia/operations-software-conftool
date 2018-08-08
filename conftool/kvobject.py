@@ -227,10 +227,8 @@ class Entity(KVObject):
     def __init__(self, *tags):
         if len(tags) != (len(self._tags) + 1):
             raise ValueError(
-                "Need %s as tags, %s provided",
-                ",".join(self._tags),
-                ",".join(tags[:-1]))
-
+                "Need %s as tags, %s provided" % (",".join(self._tags), ",".join(tags[:-1]))
+            )
         self._name = tags[-1]
         self._key = self.kvpath(*tags)
         self._current_tags = {}
@@ -254,9 +252,9 @@ class Entity(KVObject):
     @classmethod
     def dir(cls, *tags):
         if len(tags) != len(cls._tags):
-            raise ValueError("Need %s as tags, %s provided",
-                             ",".join(cls._tags),
-                             ",".join(tags))
+            raise ValueError(
+                "Need %s as tags, %s provided" % (",".join(cls._tags), ",".join(tags))
+            )
         return os.path.join(cls.base_path(), *tags)
 
 
