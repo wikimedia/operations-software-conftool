@@ -1,3 +1,10 @@
+conftool (1.0.2-1) jessie-wikimedia; urgency=medium
+
+  * Fix bug in raised exceptions in kvobject.py
+  * Fix logging declaration in tests
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Wed, 08 Aug 2018 11:32:13 +0200
+
 conftool (1.0.1-1) jessie-wikimedia; urgency=medium
 
   * Bump version to 1.0.1
