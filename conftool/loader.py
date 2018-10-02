@@ -1,4 +1,5 @@
 import os
+import re
 
 from conftool import _log, node, service, yaml_safe_load
 from conftool.kvobject import Entity, FreeSchemaEntity, JsonSchemaEntity
@@ -77,7 +78,7 @@ class Schema(object):
         for objname, defs in data.items():
             try:
                 _log.debug('Loading entity %s', objname)
-                entity_name = objname.capitalize()
+                entity_name = re.sub('\W', '_', objname.capitalize())
                 entity = factory(entity_name, defs)
                 instance.entities[objname] = entity
             except Exception as e:
