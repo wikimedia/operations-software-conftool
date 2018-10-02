@@ -3,7 +3,7 @@
 export PYBUILD_NAME=conftool
 
 %:
-	dh $@ --with python2,python3 --buildsystem=pybuild
+	dh $@ --with python3 --buildsystem=pybuild
 
 override_dh_auto_install:
 	PYBUILD_SYSTEM=custom PYBUILD_INSTALL_ARGS="{interpreter} setup.py install --root={destdir} --install-scripts=/usr/share/{package}" dh_auto_install
