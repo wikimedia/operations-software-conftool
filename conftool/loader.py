@@ -78,7 +78,7 @@ class Schema(object):
         for objname, defs in data.items():
             try:
                 _log.debug('Loading entity %s', objname)
-                entity_name = re.sub('\W', '_', objname.capitalize())
+                entity_name = re.sub(r'\W', '_', objname.capitalize())
                 entity = factory(entity_name, defs)
                 instance.entities[objname] = entity
             except Exception as e:

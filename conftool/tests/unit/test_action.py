@@ -113,9 +113,10 @@ class TestAction(unittest.TestCase):
             self.entity.fetch.assert_called_with()
             file_handle = mockopen.return_value.__enter__.return_value
             file_handle.write.assert_has_calls([
-                mock.call("["),
+                mock.call(b"# Editing object Foo/Bar/test\n"),
+                mock.call("-"),
+                mock.call(" "),
                 mock.call("test"),
-                mock.call("]"),
                 mock.call("\n")
             ])
 

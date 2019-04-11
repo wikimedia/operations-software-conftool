@@ -108,7 +108,7 @@ class EditAction(GetAction):
             self.temp = f.name
         else:
             f = open(self.temp, 'wb')
-            f.write("# Editing object {}".format(self.entity.pprint()))
+        f.write("# Editing object {}\n".format(self.entity.pprint()).encode('utf-8'))
         self.entity.fetch()
         yaml.safe_dump(self.entity._to_net(), stream=f, encoding='utf-8')
         f.close()
