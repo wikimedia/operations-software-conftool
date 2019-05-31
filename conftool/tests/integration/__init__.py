@@ -45,12 +45,15 @@ class EtcdProcessHelper(object):
         if self.proc is not None:
             raise Exception("etcd already running with pid %d", self.proc.pid)
         client = '%s127.0.0.1:%d' % (self.schema, self.port)
+        peers = '%s127.0.0.1:%d' % (self.schema, self.internal_port)
         daemon_args = [
             self.proc_name,
             '-data-dir', self.base_directory,
             '-name', 'test-node',
             '-advertise-client-urls', client,
-            '-listen-client-urls', client
+            '-listen-client-urls', client,
+            '-listen-peer-urls', peers,
+            '-initial-advertise-peer-urls', peers,
         ]
         if proc_args:
             daemon_args.extend(proc_args)
@@ -78,7 +81,7 @@ class IntegrationTestBase(unittest.TestCase):
         cls.directory = tempfile.mkdtemp(prefix='conftool')
         cls.processHelper = EtcdProcessHelper(
             cls.directory,
-            proc_name=program, port=2379)
+            proc_name=program, port=23790, internal_port=23800)
         cls.processHelper.run()
         cls.fixture_dir = os.path.join(test_base, 'fixtures')
         config_file = os.path.join(cls.fixture_dir, 'etcd_testrc')
