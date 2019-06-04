@@ -1,8 +1,7 @@
 import json
 import re
-import unittest
 
-import mock
+from unittest import mock, TestCase
 
 from conftool import configuration, drivers
 from conftool.kvobject import KVObject
@@ -10,7 +9,8 @@ from conftool.tests.unit import MockBackend, MockBasicEntity, MockEntity, MockFr
 from conftool.tests.unit import MockJsonEntity
 from conftool.types import get_validator
 
-class TestKVObject(unittest.TestCase):
+
+class TestKVObject(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -62,10 +62,12 @@ class TestKVObject(unittest.TestCase):
     def test_fetch(self):
         MockEntity.backend.driver.read = mock.Mock(return_value={'a': 1, 'b': 'b-val'})
         with mock.patch('conftool.tests.unit.MockEntity.from_net') as mocker:
-            obj = MockEntity('Foo', 'Bar', 'test')
+            MockEntity('Foo', 'Bar', 'test')
             mocker.assert_called_with({'a': 1, 'b': 'b-val'})
+
             # Non-existent key?
             MockEntity.backend.driver.read.side_effect = drivers.NotFoundError('test')
+            mocker.reset_mock()
             a = MockEntity('Foo', 'Bar', 'test')
             mocker.assert_called_with(None)
 
@@ -167,7 +169,8 @@ class TestKVObject(unittest.TestCase):
         self.assertEqual(KVObject._kv_from_yaml("test"), "test")
         self.assertEqual({'a': None}, KVObject._from_yaml(['a']))
 
-class TestEntity(unittest.TestCase):
+
+class TestEntity(TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
@@ -186,7 +189,8 @@ class TestEntity(unittest.TestCase):
         self.assertEqual(MockEntity.dir('Foo', 'Bar'), 'Mock/entity/Foo/Bar')
         self.assertRaises(ValueError, MockEntity.dir, 'Foo')
 
-class TestFreeSchemaObject(unittest.TestCase):
+
+class TestFreeSchemaObject(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -218,7 +222,7 @@ class TestFreeSchemaObject(unittest.TestCase):
         self.assertTrue(a.changed(data))
 
 
-class TestJsonSchemaObject(unittest.TestCase):
+class TestJsonSchemaObject(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})

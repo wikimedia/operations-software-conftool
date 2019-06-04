@@ -1,15 +1,11 @@
 import logging
-try:
-    import mock
-except ModuleNotFoundError:
-    from unittest import mock
-# TODO: drop mock as 3rd-party deps and use unittest.mock everywhere
 import os
 import shutil
 import subprocess
 import tempfile
 import time
-import unittest
+
+from unittest import mock, TestCase
 
 from conftool import configuration, setup_irc, IRCSocketHandler
 from conftool.kvobject import KVObject
@@ -70,7 +66,7 @@ class EtcdProcessHelper(object):
         time.sleep(2)
 
 
-class IntegrationTestBase(unittest.TestCase):
+class IntegrationTestBase(TestCase):
 
     log = logging.getLogger(__name__)
 

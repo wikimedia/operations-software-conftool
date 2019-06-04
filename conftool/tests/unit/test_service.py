@@ -1,12 +1,12 @@
-import unittest
-import mock
+from unittest import mock, TestCase
+
 from conftool.kvobject import KVObject
 from conftool import service, drivers
 from conftool import configuration
 from conftool.tests.unit import MockBackend
 
 
-class TestService(unittest.TestCase):
+class TestService(TestCase):
 
     def _mock_read(self, values):
         if values is None:

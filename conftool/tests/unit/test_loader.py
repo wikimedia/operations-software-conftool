@@ -1,7 +1,7 @@
 import os
-import unittest
 
-import mock
+from unittest import mock, TestCase
+
 import yaml
 
 from conftool import loader
@@ -14,7 +14,7 @@ test_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), os.path.pardir))
 
 
-class FactoryTestCase(unittest.TestCase):
+class FactoryTestCase(TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
@@ -73,7 +73,7 @@ class FactoryTestCase(unittest.TestCase):
         self.assertEqual(Test.depends, ['a', 'b'])
 
 
-class SchemaTestCase(unittest.TestCase):
+class SchemaTestCase(TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")

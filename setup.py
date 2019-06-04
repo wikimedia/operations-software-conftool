@@ -11,7 +11,7 @@ setup(
     url='https://github.com/wikimedia/operations-software-conftool',
     install_requires=['python-etcd>=0.4.3', 'pyyaml', 'jsonschema'],
     test_suite='nose.collector',
-    tests_require=['mock', 'nose'],
+    tests_require=['nose'],
     zip_safe=False,
     packages=find_packages(),
     entry_points={

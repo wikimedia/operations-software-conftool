@@ -1,9 +1,10 @@
 from contextlib import contextmanager
 import json
-import mock
 import os
 import sys
+
 from io import StringIO
+from unittest import mock
 
 from conftool.cli import syncer, tool
 from conftool.tests.integration import IntegrationTestBase, test_base

@@ -1,17 +1,16 @@
 import argparse
 import sys
-import unittest
 
-import mock
+from unittest import mock, TestCase
 
 from conftool.kvobject import KVObject
 from conftool import configuration
 from conftool import node
-from conftool.tests.unit import MockBackend, MockBasicEntity
+from conftool.tests.unit import MockBackend
 from conftool.cli import tool
 
 
-class TestToolCli(unittest.TestCase):
+class TestToolCli(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -110,17 +109,17 @@ class TestToolCli(unittest.TestCase):
         cli.entity.query = mock.MagicMock(return_value=query_result)
 
         # With args.host=False we expect input question, answering yes
-        with mock.patch('conftool.cli.tool.input', return_value='y') as _raw:
+        with mock.patch('builtins.input', return_value='y') as _raw:
             cli.host_list()
             _raw.assert_called_once_with('confctl>')
 
         # With args.host=False we expect input question, answering no
-        with mock.patch('conftool.cli.tool.input', return_value='n') as _raw:
+        with mock.patch('builtins.input', return_value='n') as _raw:
             self.assertRaises(SystemExit, cli.host_list)
 
         # With args.host=True we do not expect input questions
         cli.args.host = True
-        with mock.patch('conftool.cli.tool.input') as _raw:
+        with mock.patch('builtins.input') as _raw:
             cli.host_list()
             self.assertEqual(_raw.call_args_list, [])
 
@@ -129,7 +128,7 @@ class TestToolCli(unittest.TestCase):
         cli.entity.query = mock.MagicMock(return_value=query_result)
 
         # With args.host=True we expect input question, answering y
-        with mock.patch('conftool.cli.tool.input', return_value='y') as _raw:
+        with mock.patch('builtins.input', return_value='y') as _raw:
             cli.host_list()
             _raw.assert_called_once_with('confctl>')
 
@@ -151,7 +150,8 @@ class TestToolCli(unittest.TestCase):
             args = tool.parse_args(cmdline)
             self.assertEqual(args.hostname, 'pink.unicorn')
 
-class TestToolCliSimpleAction(unittest.TestCase):
+
+class TestToolCliSimpleAction(TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")

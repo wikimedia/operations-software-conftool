@@ -1,13 +1,11 @@
-import unittest
-
-import mock
+from unittest import mock, TestCase
 
 from conftool import types, configuration
 from conftool.kvobject import KVObject
 from conftool.tests.unit import MockEntity, MockBackend
 
 
-class FieldValidatorsTestCase(unittest.TestCase):
+class FieldValidatorsTestCase(TestCase):
 
     def test_str_validator(self):
         validator = types.get_validator('string')
@@ -53,7 +51,7 @@ class FieldValidatorsTestCase(unittest.TestCase):
         self.assertRaises(ValueError, validator, Foo())
 
 
-class SchemaRuleTestCase(unittest.TestCase):
+class SchemaRuleTestCase(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -103,7 +101,7 @@ class SchemaRuleTestCase(unittest.TestCase):
         self.assertRaises(ValueError, t.validate, invalid_data)
 
 
-class JsonSchemaLoaderTestCase(unittest.TestCase):
+class JsonSchemaLoaderTestCase(TestCase):
     @mock.patch('conftool.types.SchemaRule', autospec=True)
     def test_init(self, rule):
         instance = mock.MagicMock()

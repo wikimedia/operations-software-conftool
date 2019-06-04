@@ -1,11 +1,8 @@
 import os
 import re
-import unittest
 
 from collections import defaultdict, OrderedDict
-
-
-import mock
+from unittest import mock, TestCase
 
 import conftool.extensions.dbconfig as dbconfig
 from conftool.extensions.dbconfig.cli import DbConfigCli
@@ -19,7 +16,8 @@ from conftool.kvobject import KVObject
 from conftool.tests.integration import test_base
 from conftool.tests.unit import MockBackend
 
-class TestParseArgs(unittest.TestCase):
+
+class TestParseArgs(TestCase):
 
     def test_parse_args(self):
         args = dbconfig.parse_args(['instance', 'db1', 'get'])
@@ -62,8 +60,7 @@ class TestParseArgs(unittest.TestCase):
         self.assertFalse(args.batch)
 
 
-
-class TestDbInstance(unittest.TestCase):
+class TestDbInstance(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -172,12 +169,12 @@ class TestDbInstance(unittest.TestCase):
         self.assertEqual(instance.depool('db1', section='s1'), (True, None))
         self.assertFalse(obj.sections['s1']['pooled'])
         self.assertTrue(obj.sections['s2']['pooled'])
-        obj.write.assert_called()
+        assert obj.write.called
         # No section selected
         obj.write.reset_mock()
         self.assertEqual(instance.depool('db1'), (True, None))
         self.assertFalse(obj.sections['s2']['pooled'])
-        obj.write.assert_called()
+        assert obj.write.called
         # Bad params: no section, but group is passed
         obj.write.reset_mock()
         self.assertEqual(instance.depool('db3', None, 'vslow'),
@@ -207,7 +204,7 @@ class TestDbInstance(unittest.TestCase):
         self.assertEqual(instance.pool('db1', section='s1'), (True, None))
         self.assertTrue(obj.sections['s1']['pooled'])
         self.assertFalse(obj.sections['s2']['pooled'])
-        obj.write.assert_called()
+        assert obj.write.called
         instance.pool('db1', percentage=10)
         self.assertTrue(obj.sections['s2']['pooled'])
         self.assertEqual(obj.sections['s1']['percentage'], 10)
@@ -272,7 +269,7 @@ class TestDbInstance(unittest.TestCase):
         instance._update.return_value = []
         # Case 5: _update works
         self.assertEqual(instance.write_callback(cb, ('foo', )), (True, None))
-        obj.write.assert_called()
+        assert obj.write.called
         # Case 6: Backend error is raised
         obj.write.side_effect = BackendError('Fail')
         self.assertEqual(instance.write_callback(cb, ('foo', )), (False, ['Fail']))
@@ -280,7 +277,8 @@ class TestDbInstance(unittest.TestCase):
         obj.write.side_effect = ValueError('test')
         self.assertRaises(ValueError, instance.write_callback, cb, ('foo', ))
 
-class TestDbSection(unittest.TestCase):
+
+class TestDbSection(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -324,7 +322,7 @@ class TestDbSection(unittest.TestCase):
                          ['Callback failed!', 'FAIL!'])
 
 
-class TestDbConfig(unittest.TestCase):
+class TestDbConfig(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -483,7 +481,7 @@ class TestDbConfig(unittest.TestCase):
         self.assertEqual(err[:2], ['Object mocked failed to validate:', 'test'])
 
 
-class TestDbConfigCli(unittest.TestCase):
+class TestDbConfigCli(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -504,17 +502,17 @@ class TestDbConfigCli(unittest.TestCase):
         cli = self.get_cli(['instance', 'db1', 'get'])
         cli._run_on_instance = mock.MagicMock(return_value=(True, None))
         self.assertTrue(cli.run_action())
-        cli._run_on_instance.assert_called()
+        assert cli._run_on_instance.called
         # Check section call, and what happens in a failure
         cli = self.get_cli(['section', 's1', 'ro', 'PANIC'])
         cli._run_on_section = mock.MagicMock(return_value=(False, ['test']))
         self.assertFalse(cli.run_action())
-        cli._run_on_section.assert_called()
+        assert cli._run_on_section.called
         # Finally, config
         cli = self.get_cli(['config', 'commit'])
         cli._run_on_config = mock.MagicMock(return_value=(True, None))
         self.assertTrue(cli.run_action())
-        cli._run_on_config.assert_called()
+        assert cli._run_on_config.called
 
     def test_run_on_instance(self):
         # Case 1: get
@@ -592,7 +590,7 @@ class TestDbConfigCli(unittest.TestCase):
                         new_callable=mock.PropertyMock) as mocker:
             mocker.return_value = {}
             self.assertEqual(cli._run_on_config(), (True, None))
-            mocker.assert_called()
+            assert mocker.called
         cli = self.get_cli(['config', 'commit'])
         cli.db_config.commit = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_config(), (True, None))

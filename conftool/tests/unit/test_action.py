@@ -1,16 +1,16 @@
 import os
 
-import mock
-import unittest
+from unittest import mock, TestCase
 
-from conftool import action, configuration
+from conftool import configuration
 from conftool.action import get_action, ActionError, GetAction, DelAction, \
     SetAction, EditAction, ActionValidationError
 from conftool.kvobject import KVObject
 from conftool.tests.unit import MockBackend, MockEntity
 from conftool.types import get_validator
 
-class TestAction(unittest.TestCase):
+
+class TestAction(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})
@@ -103,10 +103,7 @@ class TestAction(unittest.TestCase):
         self.entity._to_net = mock.MagicMock(return_value=["test"])
         a = get_action(self.entity, 'edit')
         a.temp = 'test'
-        with mock.patch(
-                'conftool.action.open',
-                mock.mock_open(read_data='')
-        ) as mockopen:
+        with mock.patch('builtins.open', mock.mock_open(read_data='')) as mockopen:
             a._to_file()
             mockopen.assert_called_with('test', 'wb')
             self.entity.fetch.assert_called_with()
@@ -129,7 +126,7 @@ class TestAction(unittest.TestCase):
             self.entity.update = mock.MagicMock()
             self.assertEqual(a.run(), "Entity Foo/Bar/test successfully updated")
             self.entity.update.assert_called_with(a.edited)
-            a._edit.assert_called_once()
+            assert a._edit.call_count == 1
         exception = ValueError('test me')
         self.entity.validate = mock.MagicMock(
             side_effect=[exception, None]

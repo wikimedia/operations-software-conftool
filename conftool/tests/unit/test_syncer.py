@@ -1,6 +1,6 @@
-import mock
 import os
-import unittest
+
+from unittest import mock, TestCase
 
 from conftool import configuration, loader
 from conftool.cli.syncer import Syncer, EntitySyncer
@@ -12,7 +12,7 @@ test_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), os.path.pardir))
 
 
-class EntitySyncerTestCase(unittest.TestCase):
+class EntitySyncerTestCase(TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
@@ -119,7 +119,8 @@ class EntitySyncerTestCase(unittest.TestCase):
         e.load()
         obj.from_net.assert_called_with(e.data['dc1/clusterA/https/serv1'])
 
-class SyncerTestCase(unittest.TestCase):
+
+class SyncerTestCase(TestCase):
 
     def setUp(self):
         KVObject.backend = MockBackend({})

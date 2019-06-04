@@ -1,13 +1,13 @@
-import unittest
+from unittest import mock, TestCase
 
 import etcd
-import mock
 
 from conftool import configuration
 from conftool.drivers import BackendError
 from conftool import backend
 
-class EtcdDriverTestCase(unittest.TestCase):
+
+class EtcdDriverTestCase(TestCase):
 
     def setUp(self):
         c = configuration.Config(driver="etcd")
