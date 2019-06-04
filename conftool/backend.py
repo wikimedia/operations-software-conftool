@@ -7,9 +7,9 @@ class Backend(object):
 
     def __init__(self, config):
         self.config = config
-        dir = os.path.dirname(__file__)
+        curr_dir = os.path.dirname(__file__)
         driver_file = os.path.join(
-            dir, "drivers/{}.py".format(self.config.driver))
+            curr_dir, "drivers/{}.py".format(self.config.driver))
         ctx = {}
         try:
             exec(compile(open(driver_file).read(), driver_file, 'exec'), ctx)
