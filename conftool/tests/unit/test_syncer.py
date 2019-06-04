@@ -7,6 +7,7 @@ from conftool.cli.syncer import Syncer, EntitySyncer
 from conftool.tests.unit import MockBackend
 from conftool.kvobject import KVObject
 
+
 test_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), os.path.pardir))
 
@@ -61,8 +62,7 @@ class EntitySyncerTestCase(unittest.TestCase):
         KVObject.backend.driver.all_data.side_effect = KeyError()
         self.assertRaises(KeyError, e.get_changes, exp_data)
         # Test all list are as expected
-        KVObject.backend.driver.all_data = mock.Mock(
-            return_value = current_data)
+        KVObject.backend.driver.all_data = mock.Mock(return_value=current_data)
         to_add, to_remove = e.get_changes(exp_data)
         self.assertSetEqual(set(['dc1/clusterA/https/serv3']), to_add)
         self.assertSetEqual(set(['dc1/clusterA/https/serv4', 'dc1/clusterA/apache/serv3']),
@@ -89,8 +89,7 @@ class EntitySyncerTestCase(unittest.TestCase):
             }
         }
         e = EntitySyncer('service', self.schema.entities['service'])
-        KVObject.backend.driver.all_data = mock.Mock(
-            return_value = live_data)
+        KVObject.backend.driver.all_data = mock.Mock(return_value=live_data)
         to_add, to_remove = e.get_changes(exp_data)
         self.assertSetEqual(to_remove, set())
         self.assertSetEqual(to_add, set(['clusterA/apache2']))
@@ -100,7 +99,7 @@ class EntitySyncerTestCase(unittest.TestCase):
         e.get_changes = mock.Mock(
             return_value=(set(['dc1/clusterA/https/serv1', 'dc2/clusterB/https/serv2']),
                           set(['dc1/clusterA/https/serv2'])))
-        obj   = mock.Mock()
+        obj = mock.Mock()
         obj.exists = False
         obj.static_values = False
         e.cls = mock.Mock(return_value=obj)
@@ -115,8 +114,8 @@ class EntitySyncerTestCase(unittest.TestCase):
         # Now let's test a static value object
         obj.static_values = True
         e.get_changes.return_value = (set(['dc1/clusterA/https/serv1']), set())
-        e.data = {'dc1/clusterA/https/serv1': {'weight':2, 'pooled': 'yes'},
-                  'dc2/clusterB/https/serv2': {'weight':2, 'pooled': 'yes'}}
+        e.data = {'dc1/clusterA/https/serv1': {'weight': 2, 'pooled': 'yes'},
+                  'dc2/clusterB/https/serv2': {'weight': 2, 'pooled': 'yes'}}
         e.load()
         obj.from_net.assert_called_with(e.data['dc1/clusterA/https/serv1'])
 

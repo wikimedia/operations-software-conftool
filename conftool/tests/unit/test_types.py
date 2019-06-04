@@ -26,7 +26,7 @@ class FieldValidatorsTestCase(unittest.TestCase):
 
     def test_list_validator(self):
         validator = types.get_validator("list")
-        self.assertEqual(['abc', 1, 'may'], validator(['abc',1,'may']))
+        self.assertEqual(['abc', 1, 'may'], validator(['abc', 1, 'may']))
         self.assertEqual([], validator('abcdesf'))
         self.assertEqual([], validator(''))
 
@@ -99,7 +99,7 @@ class SchemaRuleTestCase(unittest.TestCase):
         # Empty data will raise an exception
         empty = {}
         self.assertRaises(ValueError, t.validate, empty)
-        invalid_data = { "height": 1, "nick": "bogus", "wins": 62}
+        invalid_data = {"height": 1, "nick": "bogus", "wins": 62}
         self.assertRaises(ValueError, t.validate, invalid_data)
 
 
@@ -112,7 +112,8 @@ class JsonSchemaLoaderTestCase(unittest.TestCase):
             base_path='conftool/tests/fixtures/schemas',
             rules={'catchall': {'schema': 'test.schema', 'selector': 'name=.*'}}
         )
-        rule.assert_called_with('catchall', 'name=.*', 'conftool/tests/fixtures/schemas/test.schema')
+        rule.assert_called_with('catchall', 'name=.*',
+                                'conftool/tests/fixtures/schemas/test.schema')
         self.assertEqual(s.rules, [instance])
 
     @mock.patch('conftool.types.SchemaRule', autospec=True)

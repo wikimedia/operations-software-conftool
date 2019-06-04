@@ -70,23 +70,23 @@ class TestToolCli(unittest.TestCase):
             return [el for el in t._tagged_host_list()]
 
         # Getting a single node
-        l = tagged(args, 'a_node_name', 'get')
-        self.assertEqual(l, ['a_node_name'])
+        elements = tagged(args, 'a_node_name', 'get')
+        self.assertEqual(elements, ['a_node_name'])
 
         # Getting all nodes
-        l = tagged(args, 'all', 'dummy')
+        elements = tagged(args, 'all', 'dummy')
         if sys.version_info[0] == 2:
-            self.assertItemsEqual(l, [k for (k, v) in host_dir])
+            self.assertItemsEqual(elements, [k for (k, v) in host_dir])
         else:
-            self.assertCountEqual(l, [k for (k, v) in host_dir])
+            self.assertCountEqual(elements, [k for (k, v) in host_dir])
 
         # GET of all nodes is a special case
-        l = tagged(args, 'all', 'get')
-        self.assertEqual(l, [])
+        elements = tagged(args, 'all', 'get')
+        self.assertEqual(elements, [])
 
         # Regex matching
-        l = tagged(args, 're:.*\.local', 'get')
-        self.assertEqual(l, ['cp1014.local'])
+        elements = tagged(args, r're:.*\.local', 'get')
+        self.assertEqual(elements, ['cp1014.local'])
 
         # All nodes set raise a system exit
         with self.assertRaises(SystemExit):
@@ -94,7 +94,7 @@ class TestToolCli(unittest.TestCase):
 
         # Majority of nodes via a regex will raise a system exit
         with self.assertRaises(SystemExit):
-            tagged(args, 're:cp10(11|20)\.example\.com', 'set')
+            tagged(args, r're:cp10(11|20)\.example\.com', 'set')
 
     def test_host_multiple_services(self):
         """Set all services in a single host w/ and w/o the --host flag"""

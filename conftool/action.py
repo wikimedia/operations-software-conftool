@@ -40,6 +40,7 @@ def get_action(obj, act):
 
 class GetAction(object):
     """Action to perform when a get request is involved"""
+
     def __init__(self, obj):
         self.entity = obj
 
@@ -53,6 +54,7 @@ class GetAction(object):
 
 class DelAction(GetAction):
     """Action to perform when deleting an object"""
+
     def run(self):
         self.entity.delete()
         entity_type = self.entity.__class__.__name__,

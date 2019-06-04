@@ -10,15 +10,14 @@ import mock
 import conftool.extensions.dbconfig as dbconfig
 from conftool.extensions.dbconfig.cli import DbConfigCli
 from conftool.extensions.dbconfig.config import DbConfig
-from conftool.extensions.dbconfig.entities import DbObjBase, Instance, Section
+from conftool.extensions.dbconfig.entities import Instance, Section
 import conftool.configuration as configuration
 
 from conftool import loader
 from conftool.drivers import BackendError
-from conftool.kvobject import KVObject, JsonSchemaEntity
+from conftool.kvobject import KVObject
 from conftool.tests.integration import test_base
-from conftool.tests.unit import MockBackend, MockDriver
-from conftool.types import get_validator, JsonSchemaLoader
+from conftool.tests.unit import MockBackend
 
 class TestParseArgs(unittest.TestCase):
 
@@ -69,7 +68,8 @@ class TestDbInstance(unittest.TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
-        self.schema = loader.Schema.from_file(os.path.join(test_base, 'fixtures', 'dbconfig', 'schema.yaml'))
+        self.schema = loader.Schema.from_file(
+            os.path.join(test_base, 'fixtures', 'dbconfig', 'schema.yaml'))
 
     def test_init(self):
         """Test initialization of the object"""
@@ -109,11 +109,11 @@ class TestDbInstance(unittest.TestCase):
         checker = mock.MagicMock()
         instance = Instance(self.schema, checker.check_instance)
         obj = instance.entity('dcA', 'db1')
-        instance.get = mock.MagicMock(return_value = obj)
+        instance.get = mock.MagicMock(return_value=obj)
         self.assertEqual(instance.edit('db1'), (True, None))
         dbedit.assert_called_with(obj, checker.check_instance)
         # What if object doesn't exist
-        instance.get = mock.MagicMock(return_value = None)
+        instance.get = mock.MagicMock(return_value=None)
         obj = instance.entity('dcB', 'db4')
         self.assertEqual(
             instance.edit('db4'),
@@ -144,8 +144,7 @@ class TestDbInstance(unittest.TestCase):
         self.assertEqual(instance._update(obj, mock_callback, section=None, group=None), [])
         mock_callback.assert_has_calls([mock.call(obj, 's1', None),
                                         mock.call(obj, 's2', None)],
-                                       any_order=True
-        )
+                                       any_order=True)
         # We actively ignore additional arguments
         instance._update(obj, mock_callback, section='s1', group=1, test=120)
         mock_callback.assert_called_with(obj, 's1', 1)
@@ -196,7 +195,7 @@ class TestDbInstance(unittest.TestCase):
                          (False, ['Group "foobar" is not configured in section "s1"']))
 
     def test_pool(self):
-        # This test is going to be simpler as it's basically the same as depooling with a small twist
+        # This test is going to be simpler as it's basically the same as depooling with a twist
         # Let's assume a successful check.
         instance, obj = self._mock_object()
         instance.checker.return_value = []
@@ -257,8 +256,11 @@ class TestDbInstance(unittest.TestCase):
         instance, obj = self._mock_object()
         instance.get = mock.MagicMock(return_value=None)
         instance._update = mock.MagicMock(return_value=[])
+
+        def cb(x):
+            return x
+
         # Case 1: check_state returns an error
-        cb = lambda x: x
         self.assertEqual(instance.write_callback(cb, ('foo', )), (False, ['instance not found']))
         assert instance._update.call_count == 0
         instance.get.return_value = obj
@@ -283,16 +285,16 @@ class TestDbSection(unittest.TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
-        self.schema = loader.Schema.from_file(os.path.join(test_base, 'fixtures', 'dbconfig', 'schema.yaml'))
+        self.schema = loader.Schema.from_file(
+            os.path.join(test_base, 'fixtures', 'dbconfig', 'schema.yaml'))
         checker = mock.MagicMock()
         checker.return_value = []
         self.section = Section(self.schema, checker)
-        obj =  self.section.entity('extra', 'x1')
+        obj = self.section.entity('extra', 'x1')
         obj.master = 'db1'
         obj.min_slaves = 3
         obj.write = mock.MagicMock()
         self.section.get = mock.MagicMock(return_value=obj)
-
 
     def test_set_master(self):
         obj = self.section.get('x1')
@@ -327,7 +329,8 @@ class TestDbConfig(unittest.TestCase):
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
-        self.schema = loader.Schema.from_file(os.path.join(test_base, 'fixtures', 'dbconfig', 'schema.yaml'))
+        self.schema = loader.Schema.from_file(
+            os.path.join(test_base, 'fixtures', 'dbconfig', 'schema.yaml'))
         self.instance = mock.MagicMock()
         self.section = mock.MagicMock()
         self.config = DbConfig(self.schema, self.instance, self.section)
@@ -361,7 +364,6 @@ class TestDbConfig(unittest.TestCase):
         s4.min_slaves = 1
         return ([db1, db2, db3], [s1, s3, s4])
 
-
     def test_init(self):
         self.assertEqual(self.config.entity.__name__, 'Mwconfig')
         self.assertEqual(self.config.section, self.section)
@@ -380,7 +382,7 @@ class TestDbConfig(unittest.TestCase):
         )
 
     def test_config_from_dbstore(self):
-        self.config.compute_config  = mock.MagicMock(return_value = [])
+        self.config.compute_config = mock.MagicMock(return_value=[])
         self.assertEqual(self.config.config_from_dbstore, [])
         self.config.compute_config.assert_called_with(self.section.get_all.return_value,
                                                       self.instance.get_all.return_value)
@@ -389,7 +391,7 @@ class TestDbConfig(unittest.TestCase):
         instances, sections = self._mock_objects()
         expected = {
             'test':
-            {'sectionLoads':{
+            {'sectionLoads': {
                 's1': OrderedDict([('db1', 5)]),
                 'DEFAULT': OrderedDict([('db3', 10), ('db1', 10), ('db2', 10)]),
                 's4': OrderedDict([('db2', 10)])
@@ -426,7 +428,7 @@ class TestDbConfig(unittest.TestCase):
                          ['Section s3 is supposed to have master db3 but had None instead'])
         config['test']['sectionLoads']['s3'] = OrderedDict([('db3', 0), ('db1', 5)])
         # Add an unknown section
-        s4 = sections.pop()
+        sections.pop()  # Will pop s4
         self.assertEqual(self.config.check_config(config, sections),
                          ['Section s4 is not configured'])
 
@@ -458,14 +460,12 @@ class TestDbConfig(unittest.TestCase):
         new_sections[2].min_slaves = 0
         self.assertEqual(self.config.check_section(new_sections[2]), [])
 
-
     def test_commit(self):
         instances, sections = self._mock_objects()
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
         self.assertEqual(self.config.commit(),
                          (False, ['Section s4 is supposed to have minimum 1 slaves, found 0']))
-
 
         instances[0].sections['s4']['pooled'] = True
         obj = mock.MagicMock()

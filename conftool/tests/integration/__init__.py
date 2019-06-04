@@ -99,8 +99,8 @@ class IntegrationTestBase(unittest.TestCase):
 
     def setUp(self):
         # Intercept IRC messages
-        l = logging.getLogger('conftool.announce')
-        self.irc = l.handlers[0]
+        logger = logging.getLogger('conftool.announce')
+        self.irc = logger.handlers[0]
         self.irc.emit = mock.MagicMock(spec=IRCSocketHandler.emit)
         if self.init_failed:
             self.fail("Failed to initialize %s" % __name__)
@@ -133,5 +133,5 @@ class IntegrationTestBase(unittest.TestCase):
         try:
             KVObject.backend.driver.client.delete(
                 path, recursive=True, dir=True)
-        except:
+        except Exception:
             pass

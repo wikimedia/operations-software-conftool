@@ -9,6 +9,7 @@ from conftool.kvobject import KVObject, Entity, FreeSchemaEntity
 from conftool import configuration
 from conftool.tests.unit import MockBackend
 
+
 test_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), os.path.pardir))
 
@@ -81,7 +82,7 @@ class SchemaTestCase(unittest.TestCase):
     def test_load_schema(self):
         schema = loader.Schema.from_file(self.schema_file)
         self.assertEqual(set(schema.entities.keys()),
-                          set(['node', 'pony', 'service', 'unicorn', 'horse']))
+                         set(['node', 'pony', 'service', 'unicorn', 'horse']))
         n = schema.entities['pony']('violet', 'female', 'foobar')
         n.hair_color = "violet"
         self.assertEqual(n.accessories, [])

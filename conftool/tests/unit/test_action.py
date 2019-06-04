@@ -85,7 +85,6 @@ class TestAction(unittest.TestCase):
         self.entity.validate = mock.Mock(side_effect=ValueError)
         self.assertRaises(ActionValidationError, a.run)
 
-
     @mock.patch('subprocess.call')
     @mock.patch('conftool.action.yaml_safe_load')
     def test_edit(self, yaml_mock, mocker):
@@ -119,7 +118,6 @@ class TestAction(unittest.TestCase):
                 mock.call("test"),
                 mock.call("\n")
             ])
-
 
     def test_edit_run(self):
         a = get_action(self.entity, 'edit')

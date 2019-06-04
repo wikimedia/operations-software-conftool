@@ -6,7 +6,8 @@ import mock
 
 from conftool import configuration, drivers
 from conftool.kvobject import KVObject
-from conftool.tests.unit import MockBackend, MockBasicEntity, MockEntity, MockFreeEntity, MockJsonEntity
+from conftool.tests.unit import MockBackend, MockBasicEntity, MockEntity, MockFreeEntity
+from conftool.tests.unit import MockJsonEntity
 from conftool.types import get_validator
 
 class TestKVObject(unittest.TestCase):
@@ -72,7 +73,6 @@ class TestKVObject(unittest.TestCase):
             mocker.reset_mock()
             a.fetch()
             mocker.assert_not_called()
-
 
     def test_write(self):
         MockEntity.backend.driver.write = mock.Mock(return_value={'a': 5, 'b': 'meh'})
