@@ -69,6 +69,7 @@ def parse_args(cmdline):
                          help='The label of the section. Use "all" to select all sections')
     # TODO: validation on the section_name?
     commands = section.add_subparsers(help='Command to execute', dest='command')
+    commands.required = True
 
     get = commands.add_parser('get', help='Get information about the database instance')
     get.add_argument('-m', '--mediawiki', action='store_true',
@@ -90,6 +91,7 @@ def parse_args(cmdline):
     # dbconfig config
     # Possible actions are commit, get
     commands = config.add_subparsers(help='Command to execute', dest='command')
+    commands.required = True
     commit = commands.add_parser('commit',
                                  help='Commit the configuration for consumption by MediaWiki')
     commit.add_argument('-b', '--batch', action='store_true',
