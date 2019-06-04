@@ -8,8 +8,8 @@ before_install:
 
 install:
     - pip install tox
-    - pip install "python-etcd>=0.4.3" pyyaml
-    - pip install mock nose
+    - pip install "python-etcd>=0.4.3" pyyaml jsonschema
+    - pip install nose
     - pip install coveralls
 script: PATH=$PATH:bin coverage run --source=conftool --omit="conftool/tests/*" setup.py test
 after_success: coveralls
