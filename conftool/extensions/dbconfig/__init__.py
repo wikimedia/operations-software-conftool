@@ -7,19 +7,15 @@ from conftool.extensions.dbconfig.cli import DbConfigCli
 
 def parse_args(cmdline):
     parser = argparse.ArgumentParser(
-        description="Tool to perform simple operations of configuration for databases in mediawiki",
+        description='Tool to perform simple operations of configuration for databases in mediawiki',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # TODO: mixed single/double quotes in this file
-    parser.add_argument('--config', help="Config file", default="/etc/conftool/config.yaml")
-    parser.add_argument('--debug', action="store_true",
-                        default=False, help="print debug info")
+    parser.add_argument('--config', help='Config file', default='/etc/conftool/config.yaml')
+    parser.add_argument('--debug', action='store_true', default=False, help='print debug info')
     # TODO: how necessary / safe is this option?
-    parser.add_argument('--quiet', action="store_true", dest='quiet',
-                        default=False, help="Do not announce the change to IRC")
-    parser.add_argument(
-        '--schema', default="/etc/conftool/schema.yaml",
-        help="Schema file that defines additional object types"
-    )
+    parser.add_argument('--quiet', action='store_true', dest='quiet',
+                        default=False, help='Do not announce the change to IRC')
+    parser.add_argument('--schema', default='/etc/conftool/schema.yaml',
+                        help='Schema file that defines additional object types')
     # Hidden argument, needed for subclassing `conftool.cli.tool.ToolCli`
     parser.add_argument('--object_type', default='mwconfig', help=argparse.SUPPRESS)
     subparsers = parser.add_subparsers(
@@ -65,7 +61,7 @@ def parse_args(cmdline):
     weight.add_argument('--section',
                         help='If you want to indicate a specific section', required=True)
     weight.add_argument('--group', help='If within a section you want to pick one group')
-    weight.add_argument('weight', help="The new weight", type=int)
+    weight.add_argument('weight', help='The new weight', type=int)
 
     # dbconfig section
     # Possible actions are get, edit, set-master, ro, rw
