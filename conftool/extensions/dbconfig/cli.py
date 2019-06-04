@@ -9,6 +9,7 @@ class DbConfigCli(ToolCliBase):
     """
     CLI for dbconfig.
     """
+
     def __init__(self, args):
         super().__init__(args)
         self.db_config = DbConfig(self._schema, Instance(self._schema), Section(self._schema))

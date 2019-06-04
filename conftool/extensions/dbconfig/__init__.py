@@ -112,9 +112,12 @@ def main(cmdline=None):
 
     cli = DbConfigCli(args)
     cli.setup()
-    cli.run_action()
+    success = cli.run_action()
+    if success:
+        return 0
+
+    return 1
 
 
 if __name__ == '__main__':
-    main()
-# TODO: non-zero exit codes on error?
+    sys.exit(main())
