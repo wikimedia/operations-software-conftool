@@ -39,18 +39,12 @@ class TestToolCli(TestCase):
         args = self._mock_args(taglist="a=b,b=c,d=2")
         t = tool.ToolCli(args)
         self.assertEqual(t.args.mode, 'tags')
-        if sys.version_info[0] == 2:
-            self.assertItemsEqual(t._tags, ['a=b', 'b=c', 'd=2'])
-        else:
-            self.assertCountEqual(t._tags, ['a=b', 'b=c', 'd=2'])
+        self.assertCountEqual(t._tags, ['a=b', 'b=c', 'd=2'])
 
     def test_tags(self):
         args = self._mock_args(taglist="dc=a,cluster=b,service=apache2")
         t = tool.ToolCli(args)
-        if sys.version_info[0] == 2:
-            self.assertItemsEqual(t.tags, ['a', 'b', 'apache2'])
-        else:
-            self.assertCountEqual(t.tags, ['a', 'b', 'apache2'])
+        self.assertCountEqual(t.tags, ['a', 'b', 'apache2'])
 
     def test_hosts_list_tags(self):
         """Tests getting the host list"""
@@ -74,10 +68,7 @@ class TestToolCli(TestCase):
 
         # Getting all nodes
         elements = tagged(args, 'all', 'dummy')
-        if sys.version_info[0] == 2:
-            self.assertItemsEqual(elements, [k for (k, v) in host_dir])
-        else:
-            self.assertCountEqual(elements, [k for (k, v) in host_dir])
+        self.assertCountEqual(elements, [k for (k, v) in host_dir])
 
         # GET of all nodes is a special case
         elements = tagged(args, 'all', 'get')

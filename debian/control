@@ -5,7 +5,6 @@ Maintainer: Giuseppe Lavagetto <glavagetto@wikimedia.org>
 Build-Depends: debhelper (>= 9), dh-python, python-all, python-setuptools, python3-all, python3-setuptools
 Standards-Version: 4.1.2
 Homepage: https://github.com/wikimedia/operations-software-conftool
-X-Python-Version: >= 2.7
 X-Python3-Version: >= 3.4
 #Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/conftool.git
 #Vcs-Browser: https://anonscm.debian.org/cgit/python-modules/packages/conftool.git/

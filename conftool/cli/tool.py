@@ -17,9 +17,6 @@ from conftool import _log, action, configuration, loader, setup_irc
 from conftool.kvobject import KVObject
 from conftool.drivers import BackendError
 
-if sys.version_info[0] == 2:  # Python 2
-    from __builtin__ import raw_input as input
-
 
 class ObjectTypeError(Exception):
     """
@@ -82,8 +79,6 @@ class ToolCliBase(object):
                            self._namedef)
                 _log.exception("Generic action failure: %s", str(e))
             else:
-                if sys.version_info[0] == 2:  # Python 2
-                    msg = msg.decode('utf-8')
                 print(msg)
         if not fail:
             self.announce()

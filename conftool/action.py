@@ -1,15 +1,12 @@
 import os
 import shlex
 import subprocess
-import sys
 import tempfile
 
 import yaml
 
 from conftool import yaml_safe_load, kvobject
 
-if sys.version_info[0] == 2:  # Python 2
-    from __builtin__ import raw_input as input
 
 config = {}
 backend = None
