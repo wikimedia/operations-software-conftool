@@ -68,8 +68,9 @@ class DbObjBase(ABC):
         results = list(self.get_all(name, dc=dc))
         count = len(results)
         if count > 1:
-            raise ValueError("Error: more than one {} found for query '{}'".format(
-                self.label, name))
+            raise ValueError(
+                "{count} {label}s found for query '{query}' and scope '{dc}', expected 1.".format(
+                    count=count, label=self.label, query=name, dc=dc))
         elif count == 1:
             return results[0]
         else:

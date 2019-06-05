@@ -67,7 +67,11 @@ class DbConfigCli(ToolCliBase):
         cmd = self.args.command
         datacenter = self.args.scope
         if cmd == 'get':
-            res = self.section.get(name, datacenter)
+            try:
+                res = self.section.get(name, datacenter)
+            except ValueError as e:
+                return (False, [str(e)])
+
             if res is None:
                 return (False, ["DB section '{}' not found".format(name)])
             else:

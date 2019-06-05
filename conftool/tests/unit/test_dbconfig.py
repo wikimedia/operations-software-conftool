@@ -561,6 +561,9 @@ class TestDbConfigCli(TestCase):
         cli.section.get.assert_called_with('s1', 'test')
         cli.section.get.return_value = cli.section.entity('test', 's1')
         self.assertEqual(cli._run_on_section(), (True, None))
+        cli.section.get.side_effect = ValueError('error')
+        self.assertEqual(cli._run_on_section(), (False, ['error']))
+
         # Case 2: edit
         cli = self.get_cli(['-s', 'test', 'section', 's1', 'edit'])
         cli.section.edit = mock.MagicMock(return_value=(True, None))
