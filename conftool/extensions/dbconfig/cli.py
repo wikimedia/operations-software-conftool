@@ -5,6 +5,9 @@ from conftool.extensions.dbconfig.config import DbConfig
 from conftool.extensions.dbconfig.entities import Instance, Section
 
 
+ALL_SECTIONS = 'all'
+
+
 class DbConfigCli(ToolCliBase):
     """
     CLI for dbconfig.
@@ -67,6 +70,12 @@ class DbConfigCli(ToolCliBase):
         cmd = self.args.command
         datacenter = self.args.scope
         if cmd == 'get':
+            if name == ALL_SECTIONS:
+                all_sections = [s.asdict() for s in self.section.get_all(dc=datacenter)]
+                for section in sorted(all_sections, key=lambda d: (d['tags'], sorted(d.keys()))):
+                    print(json.dumps(section))
+                return (True, None)
+
             try:
                 res = self.section.get(name, datacenter)
             except ValueError as e:

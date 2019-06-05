@@ -62,6 +62,9 @@ To get the content of a section object, you can simply do
 
     dbctl --scope dc1 section s1 get
 
+The special section `all` can be used to show all sections at once, with or
+without specifying the `-s/--scope` parameter.
+
 #### Changing the master
 
 When you change the master, the new instance reference needs to be a valid,

@@ -9,6 +9,7 @@ from conftool.drivers import BackendError
 
 class DbEditAction(EditAction):
     """Specific derived action for editing db objects"""
+
     def __init__(self, obj, checker):
         super().__init__(obj)
         self.checker = checker

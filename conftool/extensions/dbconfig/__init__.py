@@ -61,7 +61,8 @@ def parse_args(cmdline):
     # dbconfig section
     # Possible actions are get, edit, set-master, ro, rw
     section.add_argument('section_name', metavar='LABEL',
-                         help='The label of the section. Use "all" to select all sections')
+                         help=('The label of the section. Exclusively with the "get" action, the '
+                               'special label "all" can be used to select all sections'))
     # TODO: validation on the section_name?
     commands = section.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
