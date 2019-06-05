@@ -369,7 +369,7 @@ class TestDbConfig(TestCase):
     def test_live_config(self):
         self.mwconfig.query = mock.MagicMock()
         obj1 = self.mwconfig('eqiad', 'sectionLoads')
-        obj1.val = {'s1': {'db1': 0, 'db2': 10}, 'DEFAULT': {'db3': 0, 'db4': 10}}
+        obj1.val = {'s1': [{'db1': 0}, {'db2': 10}], 'DEFAULT': [{'db3': 0}, {'db4': 10}]}
         obj2 = self.mwconfig('eqiad', 'groupLoadsBySection')
         obj2.val = {'s1': {'vslow': {'db2': 10}, 'recentChanges': {'db14:3307': 4}}}
         self.mwconfig.query.return_value = [obj1, obj2]
@@ -385,17 +385,16 @@ class TestDbConfig(TestCase):
                                                       self.instance.get_all.return_value)
 
     def test_compute_config(self):
+        self.maxDiff = None
         instances, sections = self._mock_objects()
         expected = {
             'test':
             {'sectionLoads': {
-                's1': OrderedDict([('db1', 5)]),
-                'DEFAULT': OrderedDict([('db3', 10), ('db1', 10), ('db2', 10)]),
-                's4': OrderedDict([('db2', 10)])
-            },
+                's1': [{'db1': 5}, {}],
+                'DEFAULT': [{'db3': 10}, {'db1': 10, 'db2': 10}],
+                's4': [{'db2': 10}, {}]},
              'groupLoadsBySection': {},
-             'readOnlyBySection': {'s3': 'Some reason.'}
-            }
+             'readOnlyBySection': {'s3': 'Some reason.'}}
         }
         res1 = self.config.compute_config(sections, instances)
         self.assertEqual(res1, expected)
@@ -417,13 +416,21 @@ class TestDbConfig(TestCase):
             self.config.check_config(config, sections),
             ['Section s4 is supposed to have minimum 1 slaves, found 0'])
         # Let's add one slave for s4. Config should be now ok
-        config['test']['sectionLoads']['s4']['db1'] = 1
+        config['test']['sectionLoads']['s4'][1]['db1'] = 1
         self.assertEqual(self.config.check_config(config, sections), [])
         # Let's remove the master from s3
-        config['test']['sectionLoads']['s3'] = OrderedDict([(None, None), ('db1', 5)])
+        config['test']['sectionLoads']['DEFAULT'][0] = {}
+        self.assertEqual(self.config.check_config(config, sections), ['Section s3 has no master'])
+        # Let's try with two masters
+        config['test']['sectionLoads']['DEFAULT'] = [{'db3': 0, 'db1': 5}, {}]
         self.assertEqual(self.config.check_config(config, sections),
-                         ['Section s3 is supposed to have master db3 but had None instead'])
-        config['test']['sectionLoads']['s3'] = OrderedDict([('db3', 0), ('db1', 5)])
+                         ["Section s3 has multiple masters: ['db1', 'db3']"])
+        # And now with a master that doesn't belong to the section
+        config['test']['sectionLoads']['DEFAULT'] = [{'db4': 0}, {'db1': 5}]
+        self.assertEqual(self.config.check_config(config, sections),
+                         ['Section s3 is supposed to have master db3 but had db4 instead'])
+        # Reset it to normal state
+        config['test']['sectionLoads']['DEFAULT'] = [{'db3': 0}, {'db1': 5}]
         # Add an unknown section
         sections.pop()  # Will pop s4
         self.assertEqual(self.config.check_config(config, sections),

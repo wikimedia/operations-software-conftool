@@ -33,7 +33,10 @@ class DbConfig:
         dc:
           sectionLoads:
             s1:
-              db1: 0
+              [
+                {db1: 0},  # master
+                {db2: 50, db3: 150, ...}  # slaves
+              ]
             ...
           groupLoadsBySection:
             s1:
@@ -71,7 +74,7 @@ class DbConfig:
         config = {}
         # Let's initialize the variables
         for dc in section_masters.keys():
-            config[dc] = {'sectionLoads': {}, 'groupLoadsBySection': {},
+            config[dc] = {'sectionLoads': defaultdict(lambda: [{}, {}]), 'groupLoadsBySection': {},
                           'readOnlyBySection': {}}
 
         # Fill in the readonlybysection data
@@ -103,11 +106,12 @@ class DbConfig:
                     section_key = section_name
 
                 main_weight = int(section['weight'] * fraction)
+                section_load_index = 1
+                if instance.name == masters[section_name]:
+                    section_load_index = 0
+                section_load = config[datacenter]['sectionLoads'][section_key]
+                section_load[section_load_index][instance.name] = main_weight
 
-                self._add_main(
-                    config[datacenter]['sectionLoads'], section_key, instance.name, main_weight,
-                    is_master=(instance.name == masters[section_name])
-                )
                 if 'groups' not in section:
                     continue
                 for group_name, group in section['groups'].items():
@@ -124,18 +128,6 @@ class DbConfig:
             config[section] = defaultdict(OrderedDict)
         config[section][group][instance] = weight
 
-    def _add_main(self, config, section, instance, weight, is_master=False):
-        """Add sectionloads info from an instance into the configuration"""
-        # If the section is not present, add it to the config
-        # First element of the dict must be the master, so order matters.
-        if section not in config:
-            config[section] = OrderedDict([(instance, weight)])
-        else:
-            config[section][instance] = weight
-        if is_master:
-            # Master to the front!
-            config[section].move_to_end(instance, last=False)
-
     def check_config(self, config, sections):
         """
         Checks the validity of a configuration
@@ -148,7 +140,17 @@ class DbConfig:
             for name, section in mwconfig['sectionLoads'].items():
                 if name == 'DEFAULT':
                     name = self.default_section
-                master = list(section)[0]
+
+                if not section[0]:
+                    errors.append('Section {} has no master'.format(name))
+                    continue
+
+                if len(section[0]) != 1:
+                    errors.append('Section {name} has multiple masters: {masters}'.format(
+                        name=name, masters=sorted(section[0].keys())))
+                    continue
+
+                master = next(iter(section[0]))
                 my_sections = [s for s in sections if name == s.name
                                and s.tags['datacenter'] == dc]
                 if not my_sections:
@@ -164,7 +166,7 @@ class DbConfig:
                         )
                     )
                 min_pooled = my_section.min_slaves
-                num_slaves = len(section) - 1
+                num_slaves = len(section[1])
                 if num_slaves < min_pooled:
                     errors.append(
                         'Section {section} is supposed to have '

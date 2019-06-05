@@ -13,6 +13,7 @@ fixtures_base = os.path.realpath(os.path.join(
 def parse_args(*args):
     return dbconfig.parse_args(args)
 
+
 class ConftoolTestCase(IntegrationTestBase):
     def setUp(self):
         self.schema_file = os.path.join(fixtures_base, 'schema.yaml')
@@ -56,8 +57,7 @@ class ConftoolTestCase(IntegrationTestBase):
         dbA2.hostname = 'dbA2.example.com'
         dbA2.sections = {
             's1': {'weight': 10, 'pooled': True, 'percentage': 100,
-                   'groups': {'recentChanges': {'pooled': True, 'weight': 1}}
-            },
+                   'groups': {'recentChanges': {'pooled': True, 'weight': 1}}},
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
             's2': {'weight': 10, 'pooled': True, 'percentage': 100},
         }
@@ -73,7 +73,7 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertEqual(cli.run_action(), True)
         # Let's verify that the live config contains s1
         lc = cli.db_config.live_config
-        self.assertEqual(lc['dcA']['sectionLoads']['s1'], OrderedDict([('dba1', 5), ('dba2', 10)]))
+        self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba1': 5}, {'dba2': 10}])
         # Let's try setting s2's master to dba1, which is not a replica of s2; this should fail.
         cli = self.get_cli('section', 's2', 'set-master', 'dba1')
         self.assertEqual(cli.run_action(), False)
@@ -89,7 +89,7 @@ class ConftoolTestCase(IntegrationTestBase):
         dba21 = cli.instance.get('dba2:3307')
         dba21.hostname = 'dbA2.example.com'
         dba21.sections = {
-            's1': {'weight': 0, 'pooled': True, 'percentage': 100,},
+            's1': {'weight': 0, 'pooled': True, 'percentage': 100},
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
             's2': {'weight': 10, 'pooled': True, 'percentage': 100},
         }
@@ -105,5 +105,4 @@ class ConftoolTestCase(IntegrationTestBase):
         cli = self.get_cli('config', 'commit')
         self.assertEqual(cli.run_action(), True)
         lc = cli.db_config.live_config
-        self.assertEqual(lc['dcA']['sectionLoads']['s1'], OrderedDict([('dba2:3307', 0),
-                                                                       ('dba2', 10)]))
+        self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba2:3307': 0}, {'dba2': 10}])

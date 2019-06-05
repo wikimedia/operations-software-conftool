@@ -1,11 +1,30 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "definitions": {
-        "section": {
+        "master": {
             "type": "object",
             "patternProperties": {
                 "^([a-z]+[0-9]+)(:[0-9]+)?$": {"type": "integer"}
             },
+            "minProperties": 1,
+            "maxProperties": 1,
+            "additionalProperties": false
+        },
+        "slaves": {
+            "type": "object",
+            "patternProperties": {
+                "^([a-z]+[0-9]+)(:[0-9]+)?$": {"type": "integer"}
+            },
+            "additionalProperties": false
+        },
+        "section": {
+            "type": "array",
+            "items": [
+                {"$ref": "#/definitions/master"},
+                {"$ref": "#/definitions/slaves"}
+            ],
+            "minItems": 2,
+            "maxItems": 2,
             "additionalProperties": false
         },
         "variable": {
