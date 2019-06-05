@@ -85,7 +85,7 @@ class ConftoolTestCase(IntegrationTestBase):
         dba21.host_ip = '192.168.1.12'
         dba21.port = 3307
         dba21.write()
-        cli = self.get_cli('section', 's1', '-s', 'dcA', 'set-master', 'dba2:3307')
+        cli = self.get_cli('-s', 'dcA', 'section', 's1', 'set-master', 'dba2:3307')
         self.assertEqual(cli.run_action(), True)
         # Now we can depool dba1 safely
         cli = self.get_cli('instance', 'dba1', 'depool')

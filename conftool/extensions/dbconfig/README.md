@@ -60,7 +60,7 @@ You can interact with section objects with `dbctl` as follows:
 
 To get the content of a section object, you can simply do
 
-    dbctl section s1 --scope dc1 get
+    dbctl --scope dc1 section s1 get
 
 #### Changing the master
 
@@ -70,7 +70,7 @@ the master database. In the future, more checks could be added (like only
 allowing changing the master if the section is already in readonly
 mode). Assuming `db1:3309` is an instance object, a typical syntax will be:
 
-    dbctl section s1 --scope dc1 set-master db1:3309
+    dbctl --scope dc1 section s1 set-master db1:3309
 
 as usual, the new configuration will not take effect until you commit it.
 
@@ -78,11 +78,11 @@ as usual, the new configuration will not take effect until you commit it.
 
 Read-only:
 
-    dbctl section s1 --scope dc2 ro "Some reason"
+    dbctl --scope dc2 section s1 ro "Some reason"
 
 Read-write:
 
-    dbctl section s1 --scope dc2 rw
+    dbctl --scope dc2 section s1 rw
 
 #### Editing a new record
 
@@ -93,7 +93,7 @@ When you need to edit the full record of a section, the `edit` subcommand shall
 be used. You can override the editor to use by setting the EDITOR environment
 variable
 
-    dbctl section s1 --scope dc3 edit
+    dbctl --scope dc3 section s1 edit
 
 
 ### Instance objects

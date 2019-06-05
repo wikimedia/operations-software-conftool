@@ -16,6 +16,7 @@ def parse_args(cmdline):
                         default=False, help='Do not announce the change to IRC')
     parser.add_argument('--schema', default='/etc/conftool/schema.yaml',
                         help='Schema file that defines additional object types')
+    parser.add_argument('-s', '--scope', help='Refer any action to this datacenter.')
     # Hidden argument, needed for subclassing `conftool.cli.tool.ToolCli`
     parser.add_argument('--object_type', default='mwconfig', help=argparse.SUPPRESS)
     subparsers = parser.add_subparsers(
@@ -23,15 +24,9 @@ def parse_args(cmdline):
         dest='object_name'
     )
     subparsers.required = True
-    instance = subparsers.add_parser(
-        'instance',
-        help='Act on a database instance')
-    instance.add_argument('-s', '--scope', help='Datacenter in which to add the entity if new.')
-    section = subparsers.add_parser(
-        'section',
-        help='Act on a database section')
-    section.add_argument('-s', '--scope',
-                         help='Datacenter in which to add the entity if new.')
+
+    instance = subparsers.add_parser('instance', help='Act on a database instance')
+    section = subparsers.add_parser('section', help='Act on a database section')
     config = subparsers.add_parser('config', help='Interact with the proper MediaWiki config')
 
     # dbconfig instance
@@ -39,9 +34,9 @@ def parse_args(cmdline):
     instance.add_argument('instance_name', metavar='LABEL', help='The label of the instance')
     commands = instance.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
-    get = commands.add_parser('get', help='Get information about the database instance')
 
-    edit = commands.add_parser('edit', help='Edit information about the database instance')
+    commands.add_parser('get', help='Get information about the database instance')
+    commands.add_parser('edit', help='Edit information about the database instance')
 
     depool = commands.add_parser(
         'depool',
@@ -75,9 +70,7 @@ def parse_args(cmdline):
     get.add_argument('-m', '--mediawiki', action='store_true',
                      help='Print the information in PHP format')
 
-    edit = commands.add_parser('edit', help='Edit information about the database instance')
-    edit.add_argument('-s', '--scope', help='Datacenter in which to add the entity if new.')
-    # TODO: possible error: section already has a -s/--scope defined, isn't this redundant?
+    commands.add_parser('edit', help='Edit information about the database instance')
 
     master = commands.add_parser('set-master', help='Set a new master for the specified section')
     master.add_argument('instance_name', metavar='INSTANCE',

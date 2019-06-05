@@ -556,28 +556,28 @@ class TestDbConfigCli(TestCase):
 
     def test_run_on_section(self):
         # Case 1: get
-        cli = self.get_cli(['section', 's1', '-s', 'test', 'get'])
+        cli = self.get_cli(['-s', 'test', 'section', 's1', 'get'])
         cli.section.get = mock.MagicMock(return_value=None)
         self.assertEqual(cli._run_on_section(), (False, ["Db section 's1' not found"]))
         cli.section.get.assert_called_with('s1', 'test')
         cli.section.get.return_value = cli.section.entity('test', 's1')
         self.assertEqual(cli._run_on_section(), (True, None))
         # Case 2: edit
-        cli = self.get_cli(['section', 's1', 'edit', '-s', 'test'])
+        cli = self.get_cli(['-s', 'test', 'section', 's1', 'edit'])
         cli.section.edit = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_section(), (True, None))
         cli.section.edit.assert_called_with('s1', 'test')
         # Case 3: set-master
-        cli = self.get_cli(['section', 's1', '-s', 'test', 'set-master', 'db-test'])
+        cli = self.get_cli(['-s', 'test', 'section', 's1', 'set-master', 'db-test'])
         cli.section.set_master = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_section(), (True, None))
         cli.section.set_master.assert_called_with('s1', 'test', 'db-test')
         # Case 4: ro/rw
-        cli = self.get_cli(['section', 's1', '-s', 'dc1', 'ro', 'test'])
+        cli = self.get_cli(['-s', 'dc1', 'section', 's1', 'ro', 'test'])
         cli.section.set_readonly = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_section(), (True, None))
         cli.section.set_readonly.assert_called_with('s1', 'dc1', True, 'test')
-        cli = self.get_cli(['section', 's1', '-s', 'dc3', 'rw', 'test'])
+        cli = self.get_cli(['-s', 'dc3', 'section', 's1', 'rw', 'test'])
         cli.section.set_readonly = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_section(), (True, None))
         cli.section.set_readonly.assert_called_with('s1', 'dc3', False, 'test')
