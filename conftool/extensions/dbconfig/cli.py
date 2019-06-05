@@ -1,4 +1,5 @@
 import json
+import sys
 
 from conftool.cli.tool import ToolCliBase
 from conftool.extensions.dbconfig.config import DbConfig
@@ -33,11 +34,9 @@ class DbConfigCli(ToolCliBase):
             success, err = self._run_on_config()
         # TODO: could perhaps be cleaner by building a dict of name->method, or
         # by dynamically getting methods based on object_name
-        if success:
-            print("Execution successful")
-        else:
-            print("Execution FAILED")
-            print("Reported errors:\n{}".format("\n".join(err)))
+        if not success:
+            print("Execution FAILED", file=sys.stderr)
+            print("Reported errors:\n{}".format("\n".join(err)), file=sys.stderr)
         return success
 
     def _run_on_instance(self):
