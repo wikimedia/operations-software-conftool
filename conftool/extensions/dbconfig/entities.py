@@ -26,7 +26,7 @@ class DbEditAction(EditAction):
             return (len(errors) == 0, errors)
         except Exception as e:
             print("The modified object fails validation: {}".format(e))
-            return (False, [str(e)])
+            return (False, e)
 
 
 class DbObjBase(ABC):
