@@ -63,7 +63,6 @@ class DbConfigCli(ToolCliBase):
                                       self.args.section, self.args.group)
         elif cmd == 'set-weight':
             return self.instance.weight(name, self.args.weight, self.args.section, self.args.group)
-        return (False, ['Unknown command {}'.format(cmd)])
 
     def _run_on_section(self):
         name = self.args.section_name
