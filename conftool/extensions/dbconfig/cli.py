@@ -47,7 +47,7 @@ class DbConfigCli(ToolCliBase):
             except Exception as e:
                 return(False, ['Unexpected error:', str(e)])
             if res is None:
-                return (False, ["Db instance '{}' not found".format(name)])
+                return (False, ["DB instance '{}' not found".format(name)])
             else:
                 print(str(res))
                 return (True, None)
@@ -69,7 +69,7 @@ class DbConfigCli(ToolCliBase):
         if cmd == 'get':
             res = self.section.get(name, datacenter)
             if res is None:
-                return (False, ["Db section '{}' not found".format(name)])
+                return (False, ["DB section '{}' not found".format(name)])
             else:
                 print(str(res))
                 return (True, None)

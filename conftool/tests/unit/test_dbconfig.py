@@ -517,7 +517,7 @@ class TestDbConfigCli(TestCase):
         # Case 1: get
         cli = self.get_cli(['instance', 'db1', 'get'])
         cli.instance.get = mock.MagicMock(return_value=None)
-        self.assertEqual(cli._run_on_instance(), (False, ["Db instance 'db1' not found"]))
+        self.assertEqual(cli._run_on_instance(), (False, ["DB instance 'db1' not found"]))
         cli.instance.get.assert_called_with('db1', None)
         cli.instance.get.return_value = cli.instance.entity('test', 'db1')
         self.assertEqual(cli._run_on_instance(), (True, None))
@@ -557,7 +557,7 @@ class TestDbConfigCli(TestCase):
         # Case 1: get
         cli = self.get_cli(['-s', 'test', 'section', 's1', 'get'])
         cli.section.get = mock.MagicMock(return_value=None)
-        self.assertEqual(cli._run_on_section(), (False, ["Db section 's1' not found"]))
+        self.assertEqual(cli._run_on_section(), (False, ["DB section 's1' not found"]))
         cli.section.get.assert_called_with('s1', 'test')
         cli.section.get.return_value = cli.section.entity('test', 's1')
         self.assertEqual(cli._run_on_section(), (True, None))

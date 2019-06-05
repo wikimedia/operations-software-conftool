@@ -35,7 +35,7 @@ class DbObjBase(ABC):
 
     def __init__(self, schema, checker=None):
         """
-        Spawns a Db object.
+        Spawns a DB object.
         Parameters:
 
         * schema: a conftool schema object
