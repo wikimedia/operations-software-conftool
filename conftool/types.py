@@ -80,7 +80,7 @@ class SchemaRule(object):
         for tag in selector.split(','):
             k, expr = tag.split('=', 1)
             # All our selector are anchored regexes
-            self.selectors[k] = re.compile('^%s$' % expr)
+            self.selectors[k] = '^{}$'.format(expr)
         self.path = schemaname
         # This will be lazy-loaded if the rule gets ever invoked
         self._schema = None
@@ -102,11 +102,11 @@ class SchemaRule(object):
             if tag not in self.selectors:
                 # if the tag is not in the selector, assume it's ok
                 continue
-            if not self.selectors[tag].search(value):
+            if not re.search(self.selectors[tag], value):
                 match = False
                 break
         if match and 'name' in self.selectors:
-            match = (self.selectors['name'].search(name) is not None)
+            match = (re.search(self.selectors['name'], name) is not None)
 
         return match
 
