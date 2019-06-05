@@ -203,12 +203,15 @@ class KVObject(object):
             else:  # pragma: no cover
                 _log.warn("Not setting a value")
 
-    def __str__(self):
+    def asdict(self):
         d = OrderedDict()
         d[self.name] = self._to_net()
         tags = self.tags
         d['tags'] = ','.join(["%s=%s" % (k, tags[k]) for k in self._tags])
-        return json.dumps(d)
+        return d
+
+    def __str__(self):
+        return json.dumps(self.asdict())
 
     def __eq__(self, obj):
         return (self.__class__ == obj.__class__ and

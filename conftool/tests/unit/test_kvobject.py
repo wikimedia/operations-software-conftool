@@ -1,6 +1,7 @@
 import json
 import re
 
+from collections import OrderedDict
 from unittest import mock, TestCase
 
 from conftool import configuration, drivers
@@ -148,11 +149,15 @@ class TestKVObject(TestCase):
         obj._set_value('c', get_validator('string'), {})
         self.assertEqual(obj.c, 'FooBar')
 
+    def test_asdict(self):
+        asdict = self.entity.asdict()
+        self.assertIsInstance(asdict, OrderedDict)
+        self.assertListEqual(sorted(list(asdict.keys())), ['tags', 'test'])
+        self.assertEqual(asdict['tags'], 'foo=Foo,bar=Bar')
+        self.assertEqual(asdict['test']['a'], 1)
+
     def test_str(self):
-        teststr = json.loads(str(self.entity))
-        self.assertEqual(sorted(teststr.keys()), ['tags', 'test'])
-        self.assertEqual(teststr['tags'], 'foo=Foo,bar=Bar')
-        self.assertEqual(teststr['test']['a'], 1)
+        self.assertEqual(str(self.entity), json.dumps(self.entity.asdict()))
 
     def test_eq(self):
         ent = MockEntity('Foo', 'Bar', 'test')
