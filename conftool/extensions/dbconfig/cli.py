@@ -80,7 +80,7 @@ class DbConfigCli(ToolCliBase):
         elif cmd == 'ro':
             return self.section.set_readonly(name, datacenter, True, self.args.reason)
         elif cmd == 'rw':
-            return self.section.set_readonly(name, datacenter, False, self.args.reason)
+            return self.section.set_readonly(name, datacenter, False)
 
     def _run_on_config(self):
         cmd = self.args.command

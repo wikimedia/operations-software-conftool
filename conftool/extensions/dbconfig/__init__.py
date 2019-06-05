@@ -78,8 +78,7 @@ def parse_args(cmdline):
 
     ro = commands.add_parser('ro', help='Set the section to read-only')
     ro.add_argument('reason', help='Message to show to the users for the read-only phase')
-    rw = commands.add_parser('rw', help='Set the section to read-write')
-    rw.add_argument('reason', help='Message to show to the users for the read-only phase')
+    commands.add_parser('rw', help='Set the section to read-write')
 
     # dbconfig config
     # Possible actions are commit, get

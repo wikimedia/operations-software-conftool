@@ -49,9 +49,8 @@ class TestParseArgs(TestCase):
         args = dbconfig.parse_args(['section', 's1', 'ro', 'under construction'])
         self.assertEqual(args.command, 'ro')
         self.assertEqual(args.reason, 'under construction')
-        args = dbconfig.parse_args(['section', 's1', 'rw', 'Not under construction'])
+        args = dbconfig.parse_args(['section', 's1', 'rw'])
         self.assertEqual(args.command, 'rw')
-        self.assertEqual(args.reason, 'Not under construction')
         args = dbconfig.parse_args(['config', 'get'])
         self.assertEqual(args.object_name, 'config')
         self.assertEqual(args.command, 'get')
@@ -577,10 +576,10 @@ class TestDbConfigCli(TestCase):
         cli.section.set_readonly = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_section(), (True, None))
         cli.section.set_readonly.assert_called_with('s1', 'dc1', True, 'test')
-        cli = self.get_cli(['-s', 'dc3', 'section', 's1', 'rw', 'test'])
+        cli = self.get_cli(['-s', 'dc3', 'section', 's1', 'rw'])
         cli.section.set_readonly = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_section(), (True, None))
-        cli.section.set_readonly.assert_called_with('s1', 'dc3', False, 'test')
+        cli.section.set_readonly.assert_called_with('s1', 'dc3', False)
 
     def test_run_on_config(self):
         # Case 1: get
