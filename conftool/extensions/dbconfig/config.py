@@ -46,7 +46,6 @@ class DbConfig:
         config = defaultdict(dict)
         for obj in self.entity.query(selector):
             dc = obj.tags['scope']
-            # config[dc][sectionLoads]
             config[dc][obj.name] = obj.val
         return config
 
