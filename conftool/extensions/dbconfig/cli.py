@@ -51,7 +51,7 @@ class DbConfigCli(ToolCliBase):
             if res is None:
                 return (False, ["DB instance '{}' not found".format(name)])
             else:
-                print(str(res))
+                print(json.dumps(res.asdict(), indent=4, sort_keys=True))
                 return (True, None)
         elif cmd == 'edit':
             return self.instance.edit(name, datacenter=datacenter)
@@ -82,7 +82,7 @@ class DbConfigCli(ToolCliBase):
             if res is None:
                 return (False, ["DB section '{}' not found".format(name)])
             else:
-                print(str(res))
+                print(json.dumps(res.asdict(), indent=4, sort_keys=True))
                 return (True, None)
         elif cmd == 'edit':
             return self.section.edit(name, datacenter)
@@ -107,5 +107,5 @@ class DbConfigCli(ToolCliBase):
         if cmd == 'commit':
             return self.db_config.commit()
         elif cmd == 'get':
-            print(json.dumps(self.db_config.live_config))
+            print(json.dumps(self.db_config.live_config, indent=4, sort_keys=True))
             return (True, None)
