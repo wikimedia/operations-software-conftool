@@ -82,7 +82,7 @@ def parse_args(cmdline):
     commands.add_parser('rw', help='Set the section to read-write')
 
     # dbconfig config
-    # Possible actions are commit, get
+    # Possible actions are commit, get, restore
     commands = config.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
     commit = commands.add_parser('commit',
@@ -90,6 +90,10 @@ def parse_args(cmdline):
     commit.add_argument('-b', '--batch', action='store_true',
                         help='Do not ask for visual diff confirmation')
     commands.add_parser('get', help='Get the configuration from mediawiki-config')
+    restore = commands.add_parser('restore', help=('Restore the configuration for consumption by '
+                                                   'MediaWiki from a file or stdin'))
+    restore.add_argument('file', type=argparse.FileType('r'),
+                         help='File path with the configuration to restore. Use "-" for stdin.')
     return parser.parse_args(cmdline)
 
 

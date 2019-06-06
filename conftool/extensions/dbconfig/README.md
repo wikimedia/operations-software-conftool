@@ -220,4 +220,18 @@ What will happen once you call commit is what follows:
 * All instances and sections are read from the datastore.
 * A configuration based on those data is computed.
 * This configuration gets sanity-checked according to rules we implemented: at the time of this writing, we just verify there is a master, and that the minimum number of slaves is present.
+* A backup copy of the previous configuration is saved locally to disk and the rollback command printed to stderr.
 * Once the new configuration is considered valid, it is atomically written to the datastore and is available for MediaWiki to consume.
+
+
+#### Rollback a change
+
+In case a new configuration causes issues and a quick rollback is needed, just execute the rollback
+command printed to stderr when committing.
+
+    # Restore the configuration from file
+    dbctl config restore /path/to/previous_config.json
+
+The file will be read, validated and writted to the datastore to make it available for MediaWiki to consume.
+The internal section and instance objects will not be touched, so a new `dbctl config commit` whould re-apply
+the configuration from before the restore.

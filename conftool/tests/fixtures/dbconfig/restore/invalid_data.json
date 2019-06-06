@@ -1,0 +1,31 @@
+{
+    "dcA": {
+        "groupLoadsBySection": {
+            "s1": {
+                "recentChanges": {
+                    "dba2": 1
+                }
+            }
+        },
+        "readOnlyBySection": {},
+        "sectionLoads": {
+            "s1": [
+                {
+                    "dba2:3307": 0,
+                    "dba3": 0
+                },
+                {
+                    "dba2": 10
+                }
+            ],
+            "s2": [
+                {
+                    "dba2": 10
+                },
+                {
+                    "dba2:3307": 10
+                }
+            ]
+        }
+    }
+}

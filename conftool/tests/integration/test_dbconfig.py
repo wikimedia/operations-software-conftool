@@ -103,3 +103,7 @@ class ConftoolTestCase(IntegrationTestBase):
         # TODO: check that cached files are properly saved (issue with the tmpdir)
         lc = cli.db_config.live_config
         self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba2:3307': 0}, {'dba2': 10}])
+        # Restore
+        restore_file = os.path.join(fixtures_base, 'restore', 'valid.json')
+        cli = self.get_cli('config', 'restore', restore_file)
+        self.assertEqual(cli.run_action(), True)

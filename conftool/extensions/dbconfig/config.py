@@ -149,13 +149,9 @@ class DbConfig:
                 if name == 'DEFAULT':
                     name = self.default_section
 
-                if not section[0]:
-                    errors.append('Section {} has no master'.format(name))
-                    continue
-
-                if len(section[0]) != 1:
-                    errors.append('Section {name} has multiple masters: {masters}'.format(
-                        name=name, masters=sorted(section[0].keys())))
+                section_errors = self._check_section(name, section)
+                if section_errors:
+                    errors += section_errors
                     continue
 
                 master = next(iter(section[0]))
@@ -259,23 +255,63 @@ class DbConfig:
                 rollback_message = ('Unable to backup previous configuration. Failed to save it: '
                                     '{e}').format(e=e)
             else:
-                rollback_message = 'Previous configuration saved in {path}'.format(path=cache_file)
+                rollback_message = ('Previous configuration saved. To restore it run: '
+                                    'dbctl config restore {path}').format(path=cache_file)
 
+        return self._write(config, rollback_message=rollback_message)
+
+    def restore(self, file_object):
+        """Restore the configuration from the given file object."""
+        # TODO: add a locking mechanism
+        # TODO: show a visual diff and ask for confirmation
+        errors = []
+        try:
+            config = json.load(file_object)
+        except ValueError as e:  # TODO: Python 3.4 doesn't have json.JSONDecodeError
+            errors.append('Invalid JSON configuration: {e}'.format(e=e))
+            return (False, errors)
+
+        for dc, mwconfig in config.items():
+            for name, section in mwconfig['sectionLoads'].items():
+                errors += self._check_section(name, section)
+
+        if errors:
+            return (False, errors)
+
+        return self._write(config)
+
+    def _write(self, config, *, rollback_message=None):
+        """Write the given config, if valid, to the datastore."""
         for dc, data in config.items():
             for name, value in data.items():
                 obj = self.entity(dc, name)
-                # verify we conform to the json schema
-                try:
+                try:  # verify we conform to the json schema
                     obj.validate({'val': value})
                 except ValueError as e:
                     # TODO: should any other object already written be rolled-back?
-                    return (False, [
-                        rollback_message,
-                        'Object {} failed to validate:'.format(obj.name),
-                        str(e),
-                        'The actual value was: {}'.format(value)
-                    ])
+                    errors = ['Object {} failed to validate:'.format(obj.name),
+                              str(e),
+                              'The actual value was: {}'.format(value)]
+                    if rollback_message is not None:
+                        errors.insert(0, rollback_message)
+                    return (False, errors)
+
                 obj.val = value
                 obj.write()
 
-        return (True, [rollback_message])
+        messages = None
+        if rollback_message is not None:
+            messages = [rollback_message]
+
+        return (True, messages)
+
+    def _check_section(self, name, section):
+        """Checks the validity of a section in sectionLoads."""
+        errors = []
+        if not section[0]:
+            errors.append('Section {} has no master'.format(name))
+        elif len(section[0]) != 1:
+            errors.append('Section {name} has multiple masters: {masters}'.format(
+                name=name, masters=sorted(section[0].keys())))
+
+        return errors

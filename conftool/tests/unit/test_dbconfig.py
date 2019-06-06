@@ -332,6 +332,7 @@ class TestDbConfig(TestCase):
         self.section = mock.MagicMock()
         self.config = DbConfig(self.schema, self.instance, self.section)
         self.mwconfig = self.config.entity
+        self.restore_path = os.path.join(test_base, 'fixtures', 'dbconfig', 'restore')
 
     def _mock_objects(self):
         db1 = self.schema.entities['dbconfig-instance']('test', 'db1')
@@ -480,7 +481,7 @@ class TestDbConfig(TestCase):
         self.config.entity.config.cache_path = '/cache/path'
         res, messages = self.config.commit()
         self.assertTrue(res)
-        self.assertRegexpMatches(messages[0], '^Previous configuration saved in')
+        self.assertRegexpMatches(messages[0], '^Previous configuration saved. To restore it run')
         self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
                                  '^/cache/path/mwconfig/[0-9-]{15}-.+.json')
         mocked_mkdir.assert_called_with(mode=0o755, parents=True)
@@ -510,6 +511,29 @@ class TestDbConfig(TestCase):
         self.assertTrue(res)
         self.assertRegexpMatches(messages[0],
                                  '^Unable to backup previous configuration. Failed to save it')
+
+    def test_restore_valid(self):
+        with open(os.path.join(self.restore_path, 'valid.json'), 'r') as f:
+            self.assertEqual(self.config.restore(f), (True, None))
+
+    def test_restore_invalid_json(self):
+        with open(os.path.join(self.restore_path, 'invalid_json.json'), 'r') as f:
+            success, errors = self.config.restore(f)
+
+        self.assertFalse(success)
+        self.assertRegexpMatches(errors[0], r'^Invalid JSON configuration')
+
+    def test_restore_invalid_data(self):
+        with open(os.path.join(self.restore_path, 'invalid_data.json'), 'r') as f:
+            self.assertEqual(self.config.restore(f),
+                             (False, ["Section s1 has multiple masters: ['dba2:3307', 'dba3']"]))
+
+    def test_restore_invalid_schema(self):
+        with open(os.path.join(self.restore_path, 'invalid_schema.json'), 'r') as f:
+            success, errors = self.config.restore(f)
+
+        self.assertFalse(success)
+        self.assertEqual(errors[0], 'Object sectionLoads failed to validate:')
 
 
 class TestDbConfigCli(TestCase):

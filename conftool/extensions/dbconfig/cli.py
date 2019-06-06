@@ -110,3 +110,5 @@ class DbConfigCli(ToolCliBase):
         elif cmd == 'get':
             print(json.dumps(self.db_config.live_config, indent=4, sort_keys=True))
             return (True, None)
+        elif cmd == 'restore':
+            return self.db_config.restore(self.args.file)
