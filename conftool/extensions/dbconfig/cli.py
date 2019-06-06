@@ -35,8 +35,9 @@ class DbConfigCli(ToolCliBase):
         # TODO: could perhaps be cleaner by building a dict of name->method, or
         # by dynamically getting methods based on object_name
         if not success:
-            print("Execution FAILED", file=sys.stderr)
-            print("Reported errors:\n{}".format("\n".join(err)), file=sys.stderr)
+            print('Execution FAILED\nReported errors:', file=sys.stderr)
+        if err:  # Print messages also on success, if any
+            print('\n'.join(err), file=sys.stderr)
         return success
 
     def _run_on_instance(self):

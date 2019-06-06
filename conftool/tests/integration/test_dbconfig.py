@@ -1,20 +1,16 @@
 import os
 
-from collections import OrderedDict
-
 from conftool.cli import syncer
 from conftool.tests.integration import IntegrationTestBase
 from conftool.extensions import dbconfig
+
 
 fixtures_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), os.path.pardir, 'fixtures', 'dbconfig'))
 
 
-def parse_args(*args):
-    return dbconfig.parse_args(args)
-
-
 class ConftoolTestCase(IntegrationTestBase):
+
     def setUp(self):
         self.schema_file = os.path.join(fixtures_base, 'schema.yaml')
 
@@ -104,5 +100,6 @@ class ConftoolTestCase(IntegrationTestBase):
         # And the config is valid again
         cli = self.get_cli('config', 'commit')
         self.assertEqual(cli.run_action(), True)
+        # TODO: check that cached files are properly saved (issue with the tmpdir)
         lc = cli.db_config.live_config
         self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba2:3307': 0}, {'dba2': 10}])

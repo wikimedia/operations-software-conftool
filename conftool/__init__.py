@@ -91,3 +91,23 @@ def yaml_safe_load(filename, default=None):
             raise
         else:
             return default
+
+
+def get_username():
+    """Detect and return the name of the effective running user even if run as root.
+
+    Returns:
+        str: the name of the effective running user or ``-`` if unable to detect it.
+
+    """
+    # TODO: add test coverage, although the same code is fully tested in Spicerack
+    user = os.getenv('USER')
+    sudo_user = os.getenv('SUDO_USER')
+
+    if sudo_user is not None and sudo_user != 'root':
+        return sudo_user
+
+    if user is not None:
+        return user
+
+    return '-'

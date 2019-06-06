@@ -48,6 +48,9 @@ switch, `--config`. The following configurations can be changed:
 * `tcpircbot_port` port to connect to to announce to the IRC bot what
   we're doing
 
+* `cache_dir` path to the directory where to save cache or backup objects
+  (default: `/var/cache/conftool`).
+
 Usage
 -----
 

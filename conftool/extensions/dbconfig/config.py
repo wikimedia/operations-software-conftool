@@ -1,6 +1,11 @@
+import json
 import re
 
 from collections import defaultdict, OrderedDict
+from datetime import datetime
+from pathlib import Path
+
+from conftool import get_username
 
 
 class DbConfig:
@@ -14,10 +19,13 @@ class DbConfig:
     # in WMF's Mediawiki deploy, 's3' is a special 'DEFAULT' section with
     # wikis that pre-date the section-izing of databases.
     default_section = 's3'
+    object_identifier = 'mwconfig'
+    cache_file_suffix = '.json'
+    cache_file_datetime_format = '%Y%m%d-%H%M%S'
 
     def __init__(self, schema, instance, section):
         # TODO: we don't actually use schema, only schema.entities; maybe take that as arg instead?
-        self.entity = schema.entities['mwconfig']
+        self.entity = schema.entities[DbConfig.object_identifier]
         self.section = section
         self.instance = instance
 
@@ -211,6 +219,13 @@ class DbConfig:
         to the one read by MediaWiki, validates it and writes the objects to
         the datastore.
         """
+        try:
+            previous_config = self.live_config
+        except Exception as e:
+            previous_config = None
+            rollback_message = ('Unable to backup previous configuration. Failed to fetch it: '
+                                '{e}').format(e=e)
+
         # TODO: add a locking mechanism
         # TODO: show a visual diff and ask for confirmation
         sections = [s for s in self.section.get_all(initialized_only=True)]
@@ -221,6 +236,31 @@ class DbConfig:
         errors = self.check_config(config, sections)
         if errors:
             return (False, errors)
+
+        # Save current config for easy rollback
+        if previous_config is not None:
+            cache_file_name = '{date}-{user}{suffix}'.format(
+                date=datetime.now().strftime(DbConfig.cache_file_datetime_format),
+                user=get_username(),
+                suffix=DbConfig.cache_file_suffix)
+            cache_file_path = Path(self.entity.config.cache_path).joinpath(
+                DbConfig.object_identifier)
+            try:  # TODO Python3.4 doesn't accept exist_ok=True
+                Path(cache_file_path).mkdir(mode=0o755, parents=True)
+            except FileExistsError:
+                pass
+
+            # TODO: when Python3.4 and 3.5 support is removed, remove the str()
+            cache_file = cache_file_path.joinpath(cache_file_name)
+            try:
+                with open(str(cache_file), 'w') as f:
+                    json.dump(previous_config, f, indent=4, sort_keys=True)
+            except Exception as e:
+                rollback_message = ('Unable to backup previous configuration. Failed to save it: '
+                                    '{e}').format(e=e)
+            else:
+                rollback_message = 'Previous configuration saved in {path}'.format(path=cache_file)
+
         for dc, data in config.items():
             for name, value in data.items():
                 obj = self.entity(dc, name)
@@ -228,11 +268,14 @@ class DbConfig:
                 try:
                     obj.validate({'val': value})
                 except ValueError as e:
+                    # TODO: should any other object already written be rolled-back?
                     return (False, [
+                        rollback_message,
                         'Object {} failed to validate:'.format(obj.name),
                         str(e),
                         'The actual value was: {}'.format(value)
                     ])
                 obj.val = value
                 obj.write()
-        return (True, None)
+
+        return (True, [rollback_message])

@@ -464,7 +464,9 @@ class TestDbConfig(TestCase):
         new_sections[2].min_slaves = 0
         self.assertEqual(self.config.check_section(new_sections[2]), [])
 
-    def test_commit(self):
+    @mock.patch('builtins.open')
+    @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
+    def test_commit(self, mocked_mkdir, mocked_open):
         instances, sections = self._mock_objects()
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
@@ -475,16 +477,39 @@ class TestDbConfig(TestCase):
         obj = mock.MagicMock()
         obj.name = 'mocked'
         self.config.entity = mock.MagicMock(return_value=obj)
-        self.assertEqual(self.config.commit(), (True, None))
+        self.config.entity.config.cache_path = '/cache/path'
+        res, messages = self.config.commit()
+        self.assertTrue(res)
+        self.assertRegexpMatches(messages[0], '^Previous configuration saved in')
+        self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
+                                 '^/cache/path/mwconfig/[0-9-]{15}-.+.json')
+        mocked_mkdir.assert_called_with(mode=0o755, parents=True)
         self.config.entity.assert_has_calls([
             mock.call('test', 'sectionLoads'),
             mock.call('test', 'groupLoadsBySection')
         ], any_order=True)
-        # Validation error is catched and an error is shown to the userB
+        # Validation error is catched and an error is shown to the user
         obj.validate.side_effect = ValueError('test')
         res, err = self.config.commit()
         self.assertFalse(res)
-        self.assertEqual(err[:2], ['Object mocked failed to validate:', 'test'])
+        self.assertEqual(err[1:3], ['Object mocked failed to validate:', 'test'])
+
+    @mock.patch('builtins.open')
+    @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
+    def test_commit_fail_write_backup(self, mocked_mkdir, mocked_open):
+        instances, sections = self._mock_objects()
+        self.config.instance.get_all.return_value = instances
+        self.config.section.get_all.return_value = sections
+        instances[0].sections['s4']['pooled'] = True
+        obj = mock.MagicMock()
+        obj.name = 'mocked'
+        self.config.entity = mock.MagicMock(return_value=obj)
+        self.config.entity.config.cache_path = '/cache/path'
+        mocked_open.side_effect = OSError
+        res, messages = self.config.commit()
+        self.assertTrue(res)
+        self.assertRegexpMatches(messages[0],
+                                 '^Unable to backup previous configuration. Failed to save it')
 
 
 class TestDbConfigCli(TestCase):
