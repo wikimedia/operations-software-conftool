@@ -87,7 +87,16 @@ class DbConfigCli(ToolCliBase):
         elif cmd == 'edit':
             return self.section.edit(name, datacenter)
         elif cmd == 'set-master':
-            return self.section.set_master(name, datacenter, self.args.instance_name)
+            instance_name = self.args.instance_name
+            candidate_master = self.instance.get(instance_name, dc=self.args.scope)
+            if candidate_master is None:
+                return (False, ["DB instance '{}' not found".format(instance_name)])
+
+            if name not in candidate_master.sections:
+                return (False, ["DB instance '{}' is not configured for section '{}'".format(
+                    instance_name, name)])
+
+            return self.section.set_master(name, datacenter, instance_name)
         elif cmd == 'ro':
             return self.section.set_readonly(name, datacenter, True, self.args.reason)
         elif cmd == 'rw':

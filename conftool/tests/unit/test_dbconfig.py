@@ -578,8 +578,12 @@ class TestDbConfigCli(TestCase):
         cli.section.edit.assert_called_with('s1', 'test')
         # Case 3: set-master
         cli = self.get_cli(['-s', 'test', 'section', 's1', 'set-master', 'db-test'])
+        instance = cli.instance.entity('test', 'db-test')
+        instance.sections['s1'] = {'weight': 100, 'pooled': True}
+        cli.instance.get = mock.MagicMock(return_value=instance)
         cli.section.set_master = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_section(), (True, None))
+        cli.instance.get.assert_called_with('db-test', dc='test')
         cli.section.set_master.assert_called_with('s1', 'test', 'db-test')
         # Case 4: ro/rw
         cli = self.get_cli(['-s', 'dc1', 'section', 's1', 'ro', 'test'])

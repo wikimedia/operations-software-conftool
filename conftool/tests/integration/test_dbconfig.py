@@ -64,11 +64,22 @@ class ConftoolTestCase(IntegrationTestBase):
         dbA2.host_ip = '192.168.1.12'
         dbA2.port = 3306
         dbA2.write()
+        s2 = cli.section.get('s2', 'dcA')
+        s2.master = 'dba2'
+        s2.min_slaves = 0
+        s2.reason = ''
+        s2.write()
         # Now it should work
         self.assertEqual(cli.run_action(), True)
         # Let's verify that the live config contains s1
         lc = cli.db_config.live_config
         self.assertEqual(lc['dcA']['sectionLoads']['s1'], OrderedDict([('dba1', 5), ('dba2', 10)]))
+        # Let's try setting s2's master to dba1, which is not a replica of s2; this should fail.
+        cli = self.get_cli('section', 's2', 'set-master', 'dba1')
+        self.assertEqual(cli.run_action(), False)
+        # Let's try setting s2's master to a non-existent instance; this should fail.
+        cli = self.get_cli('section', 's2', 'set-master', 'garbage1')
+        self.assertEqual(cli.run_action(), False)
         # Let's depool the master, this should be impossible and return false
         cli = self.get_cli('instance', 'dba1', 'depool')
         self.assertEqual(cli.run_action(), False)
