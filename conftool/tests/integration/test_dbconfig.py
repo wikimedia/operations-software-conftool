@@ -1,5 +1,8 @@
 import os
 
+from io import StringIO
+from unittest.mock import patch
+
 from conftool.cli import syncer
 from conftool.tests.integration import IntegrationTestBase
 from conftool.extensions import dbconfig
@@ -45,8 +48,14 @@ class ConftoolTestCase(IntegrationTestBase):
         dbA1.port = 3306
         dbA1.write()
         # Now let's try to commit this config
-        cli = self.get_cli('config', 'commit')
+        cli = self.get_cli('config', 'commit', '--batch')
         # We won't be able to commit, as we don't have the minimum number of slaves
+        self.assertEqual(cli.run_action(), False)
+        # Let's try to generate this config; similarly, this should return an error
+        cli = self.get_cli('config', 'generate')
+        self.assertEqual(cli.run_action(), False)
+        # and same for diffing
+        cli = self.get_cli('config', 'diff')
         self.assertEqual(cli.run_action(), False)
         # let's add a slave, with some groups too
         dbA2 = cli.instance.get('dba2')
@@ -65,8 +74,17 @@ class ConftoolTestCase(IntegrationTestBase):
         s2.min_slaves = 0
         s2.reason = ''
         s2.write()
-        # Now it should work
+        # Now generate and commit should work
+        cli = self.get_cli('config', 'generate')
         self.assertEqual(cli.run_action(), True)
+        cli = self.get_cli('config', 'commit', '--batch')
+        self.assertEqual(cli.run_action(), True)
+        # Limiting scope to a datacenter should work.
+        cli = self.get_cli('-s', 'dcA', 'config', 'generate')
+        self.assertEqual(cli.run_action(), True)
+        # But limiting scope to a nonexistent datacenter should fail.
+        cli = self.get_cli('-s', 'nonexistent', 'config', 'generate')
+        self.assertEqual(cli.run_action(), False)
         # Let's verify that the live config contains s1
         lc = cli.db_config.live_config
         self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba1': 5}, {'dba2': 10}])
@@ -94,11 +112,22 @@ class ConftoolTestCase(IntegrationTestBase):
         dba21.write()
         cli = self.get_cli('-s', 'dcA', 'section', 's1', 'set-master', 'dba2:3307')
         self.assertEqual(cli.run_action(), True)
+        # Do a cursory test of our diff we've built up.
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            cli = self.get_cli('config', 'diff')
+            self.assertEqual(cli.run_action(), True)
+            # We should see a diff header indicating changes in dcA/sectionLoads
+            self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\+\+ dcA/sectionLoads generated$')
+            # and the addition of a 0 weight for the new master
+            self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\s+ "dba2:3307": 0$')
+            # and the addition of a 5 weight for the old master, with the trailing comma subtly
+            # indicating it is no longer the master
+            self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\s+ "dba1": 5,$')
         # Now we can depool dba1 safely
         cli = self.get_cli('instance', 'dba1', 'depool')
         self.assertEqual(cli.run_action(), True)
         # And the config is valid again
-        cli = self.get_cli('config', 'commit')
+        cli = self.get_cli('config', 'commit', '--batch')
         self.assertEqual(cli.run_action(), True)
         # TODO: check that cached files are properly saved (issue with the tmpdir)
         lc = cli.db_config.live_config

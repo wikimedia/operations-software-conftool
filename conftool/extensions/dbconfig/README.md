@@ -201,12 +201,30 @@ MediaWiki can fetch configuration variables from a specific etcd path; dbctl int
 * `groupLoadsBySection` which contains the same information for specific usage groups
 * `readOnlyBySection` which contains all sections (if any) which are supposed to be in read-only mode
 
-#### Reading your current configuration
+#### Reading your current live configuration
 
-To see all variables defined for MediaWiki, just do:
+To see the currently-live configuration used by MediaWiki, just do:
 
     dbctl config get
 
+#### Displaying the configuration computed from scratch
+
+To see the configuration as it would be generated from the underlying instance and section objects:
+
+    dbctl config generate
+
+This will print the generated configuration to stdout, print any errors in validating the configuration to stderr,
+and exit with 0 on no errors.
+
+#### Diff between currently-live and computed-from-scratch configuration
+
+To show the diff between the configuration that is live, and what would be generated from the underlying instance and section objects:
+
+    dbctl config diff
+
+TODO: In the future, this will exit with status code 0 on identical configurations, exit code 1 on diffs, and other codes on error.
+
+This command also accepts a `-q`/`--quiet` argument, which suppresses diff output, useful in scripts or conditionals.
 
 #### Synchronizing your changes
 
@@ -219,7 +237,8 @@ What will happen once you call commit is what follows:
 
 * All instances and sections are read from the datastore.
 * A configuration based on those data is computed.
-* This configuration gets sanity-checked according to rules we implemented: at the time of this writing, we just verify there is a master, and that the minimum number of slaves is present.
+* This configuration gets sanity-checked according to rules we implemented: at the time of this writing, we just verify there is a master, and that the minimum number of slaves is present.  (These three steps are also the `generate` command.)
+* A diff is shown, and the user is prompted for confirmation.
 * A backup copy of the previous configuration is saved locally to disk and the rollback command printed to stderr.
 * Once the new configuration is considered valid, it is atomically written to the datastore and is available for MediaWiki to consume.
 

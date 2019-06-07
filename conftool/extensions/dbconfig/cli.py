@@ -106,13 +106,40 @@ class DbConfigCli(ToolCliBase):
     def _run_on_config(self):
         cmd = self.args.command
         if cmd == 'commit':
-            return self.db_config.commit()
+            # TODO: look at --scope
+            return self.db_config.commit(batch=self.args.batch)
+        elif cmd == 'diff':
+            # TODO: look at --scope
+            config, errors = self.db_config.compute_and_check_config()
+            if errors:
+                return (False, ['Could not generate configuration:'] + errors)
+
+            if not self.args.quiet:
+                sys.stdout.writelines(self.db_config.diff_configs(
+                    self.db_config.live_config, config))
+
+            # TODO: we'd like to plumb through a nonzero exit status but the current interface
+            # doesn't make it very easy to indicate "operation successful, but exit nonzero"
+            return (True, None)
+        elif cmd == 'generate':
+            dc = self.args.scope
+            (config, errors) = self.db_config.compute_and_check_config()
+            if dc is not None:
+                if dc not in config:
+                    return (False,
+                            ['Datacenter {} not found in generated configuration'.format(dc)]
+                            + errors)
+                config = config[dc]
+
+            print(json.dumps(config, indent=4, sort_keys=True))
+            success = errors is None or len(errors) == 0
+            return(success, errors)
         elif cmd == 'get':
             dc = self.args.scope
             config = self.db_config.live_config
             if dc is not None:
                 if dc not in config:
-                    return (False, ['Datacenter {} not found in configuration'.format(dc)])
+                    return (False, ['Datacenter {} not found in live configuration'.format(dc)])
                 config = config[dc]
 
             print(json.dumps(config, indent=4, sort_keys=True))

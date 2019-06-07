@@ -1,5 +1,8 @@
+import difflib
 import json
+import itertools
 import re
+import sys
 
 from collections import defaultdict, OrderedDict
 from datetime import datetime
@@ -209,7 +212,66 @@ class DbConfig:
         new_config = self.compute_config(sections, instances)
         return self.check_config(new_config, sections)
 
-    def commit(self):
+    def compute_and_check_config(self):
+        """
+        Returns a tuple of (configuration dict, list of errors).
+        """
+        sections = [s for s in self.section.get_all(initialized_only=True)]
+        config = self.compute_config(
+            sections,
+            self.instance.get_all(initialized_only=True))
+
+        errors = self.check_config(config, sections)
+
+        return (config, errors)
+
+    def diff_configs(self, a, b, *, a_name='live', b_name='generated'):
+        """
+        Returns a generator that yields unified diff lines of the deltas between configs a and b.
+        The generator returned is akin to the ones returned by difflib.unified_diff, but with
+        newlines already included, suitable for passing directly to sys.stdout.writelines().
+
+        The input configs should be formatted like those returned by live_config.
+        """
+        # TODO: add support for limiting --scope
+
+        def _get(tree, branches, default=None):
+            """
+            Multi-level dict.get().  branches is an iterable of keys to traverse in tree.
+            """
+            if default is None:
+                default = {}
+            subtree = tree
+            for b in branches:
+                if b not in subtree:
+                    return default
+                subtree = subtree[b]
+            return subtree
+
+        def _to_json_lines(tree):
+            return json.dumps(tree, indent=4, sort_keys=True).splitlines()
+
+        # While it is unlikely that a and b have non-overlapping datacenters,
+        # and because of the schema it should be impossible for a[dc] and b[dc] to have
+        # non-overlapping sub-keys (e.g. sectionLoads), we should handle both possibilities anyway.
+        # We also take care to order sections deterministically in the output.
+        rv = []
+        for dc in sorted(a.keys() | b.keys()):
+            for stanza in sorted(_get(a, [dc]).keys() | _get(b, [dc]).keys()):
+                path = '{}/{}'.format(dc, stanza)  # e.g. 'eqiad/sectionLoads'
+                # When generating diffs we ask for extra context lines, so that output
+                # for sectionLoads is helpful.  It may be necessary to instead recurse
+                # into each section of sectionLoads -- so then we'd emit diffs for e.g.
+                # eqiad/sectionLoads/s1.
+                rv.append((line + '\n' for line in difflib.unified_diff(
+                    _to_json_lines(_get(a, [dc, stanza])),
+                    _to_json_lines(_get(b, [dc, stanza])),
+                    n=10, lineterm='',
+                    fromfile=' '.join([path, a_name]),
+                    tofile=' '.join([path, b_name]))))
+        return itertools.chain(*rv)
+
+    def commit(self, *, batch=False):
         """
         Translates the current configuration from the db objects
         to the one read by MediaWiki, validates it and writes the objects to
@@ -223,15 +285,17 @@ class DbConfig:
                                 '{e}').format(e=e)
 
         # TODO: add a locking mechanism
-        # TODO: show a visual diff and ask for confirmation
-        sections = [s for s in self.section.get_all(initialized_only=True)]
-        config = self.compute_config(
-            sections,
-            self.instance.get_all(initialized_only=True))
-
-        errors = self.check_config(config, sections)
+        # TODO: call out to diff generation here, and ask for confirmation, unless --batch
+        config, errors = self.compute_and_check_config()
         if errors:
             return (False, errors)
+
+        if not batch:
+            # TODO: exit early if we have a null diff.
+            diff = self.diff_configs(previous_config, config)
+            confirmed, errors = self._ask_confirmation(''.join(diff))
+            if not confirmed:
+                return (False, errors)
 
         # Save current config for easy rollback
         if previous_config is not None:
@@ -304,6 +368,23 @@ class DbConfig:
             messages = [rollback_message]
 
         return (True, messages)
+
+    def _ask_confirmation(self, message, *, yes_response='y'):
+        """Display message to the user and prompt for confirmation, expecting yes_response.
+
+        Returns (success, errors) where success is a boolean and errors is a list of strings.
+        """
+        if not sys.stdout.isatty():
+            return (False, 'Could not prompt for confirmation, stdin not a TTY.')
+
+        print(message)
+        prompt = 'Enter {} to confirm: '.format(yes_response)
+        resp = input(prompt)
+
+        if resp != yes_response:
+            return (False, ['User did not confirm'])
+
+        return (True, [])
 
     def _check_section(self, name, section):
         """Checks the validity of a section in sectionLoads."""

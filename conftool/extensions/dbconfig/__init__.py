@@ -82,14 +82,20 @@ def parse_args(cmdline):
     commands.add_parser('rw', help='Set the section to read-write')
 
     # dbconfig config
-    # Possible actions are commit, get, restore
+    # Possible actions are commit, diff, generate, get, restore
     commands = config.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
     commit = commands.add_parser('commit',
                                  help='Commit the configuration for consumption by MediaWiki')
     commit.add_argument('-b', '--batch', action='store_true',
                         help='Do not ask for visual diff confirmation')
-    commands.add_parser('get', help='Get the configuration from mediawiki-config')
+    diff = commands.add_parser('diff',
+                               help='Show deltas between the live config and the generated config')
+    diff.add_argument('-q', '--quiet', action='store_true',
+                      help='Suppress diff output')
+    commands.add_parser('generate',
+                        help='Compute and show the would-be-committed configuration')
+    commands.add_parser('get', help='Get the live configuration as seen by MediaWiki')
     restore = commands.add_parser('restore', help=('Restore the configuration for consumption by '
                                                    'MediaWiki from a file or stdin'))
     restore.add_argument('file', type=argparse.FileType('r'),

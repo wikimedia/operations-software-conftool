@@ -51,9 +51,15 @@ class TestParseArgs(TestCase):
         self.assertEqual(args.reason, 'under construction')
         args = dbconfig.parse_args(['section', 's1', 'rw'])
         self.assertEqual(args.command, 'rw')
+        args = dbconfig.parse_args(['config', 'diff'])
+        self.assertEqual(args.object_name, 'config')
+        self.assertEqual(args.command, 'diff')
         args = dbconfig.parse_args(['config', 'get'])
         self.assertEqual(args.object_name, 'config')
         self.assertEqual(args.command, 'get')
+        args = dbconfig.parse_args(['config', 'generate'])
+        self.assertEqual(args.object_name, 'config')
+        self.assertEqual(args.command, 'generate')
         args = dbconfig.parse_args(['config', 'commit'])
         self.assertEqual(args.command, 'commit')
         self.assertFalse(args.batch)
@@ -465,13 +471,29 @@ class TestDbConfig(TestCase):
         new_sections[2].min_slaves = 0
         self.assertEqual(self.config.check_section(new_sections[2]), [])
 
+    def test_diff(self):
+        instances, sections = self._mock_objects()
+        a = self.config.compute_config(sections, instances)
+        # Identical input should yield empty diff output.
+        diff = list(self.config.diff_configs(a, a))
+        self.assertEqual(diff, [])
+
+        # Changing the weight of an instance should yield a diff.
+        instances[1].sections['s3']['percentage'] = 10
+        b = self.config.compute_config(sections, instances)
+        diff = list(self.config.diff_configs(a, b))
+        self.assertIn('+++ test/sectionLoads generated\n', diff)
+        self.assertIn('-            "db2": 10\n', diff)
+        self.assertIn('+            "db2": 1\n', diff)
+
+
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
     def test_commit(self, mocked_mkdir, mocked_open):
         instances, sections = self._mock_objects()
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
-        self.assertEqual(self.config.commit(),
+        self.assertEqual(self.config.commit(batch=True),
                          (False, ['Section s4 is supposed to have minimum 1 slaves, found 0']))
 
         instances[0].sections['s4']['pooled'] = True
@@ -479,7 +501,7 @@ class TestDbConfig(TestCase):
         obj.name = 'mocked'
         self.config.entity = mock.MagicMock(return_value=obj)
         self.config.entity.config.cache_path = '/cache/path'
-        res, messages = self.config.commit()
+        res, messages = self.config.commit(batch=True)
         self.assertTrue(res)
         self.assertRegexpMatches(messages[0], '^Previous configuration saved. To restore it run')
         self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
@@ -491,7 +513,7 @@ class TestDbConfig(TestCase):
         ], any_order=True)
         # Validation error is catched and an error is shown to the user
         obj.validate.side_effect = ValueError('test')
-        res, err = self.config.commit()
+        res, err = self.config.commit(batch=True)
         self.assertFalse(res)
         self.assertEqual(err[1:3], ['Object mocked failed to validate:', 'test'])
 
@@ -507,7 +529,7 @@ class TestDbConfig(TestCase):
         self.config.entity = mock.MagicMock(return_value=obj)
         self.config.entity.config.cache_path = '/cache/path'
         mocked_open.side_effect = OSError
-        res, messages = self.config.commit()
+        res, messages = self.config.commit(batch=True)
         self.assertTrue(res)
         self.assertRegexpMatches(messages[0],
                                  '^Unable to backup previous configuration. Failed to save it')
@@ -668,10 +690,10 @@ class TestDbConfigCli(TestCase):
         mocked_live_config.reset_mock()
         cli = self.get_cli(['-s', 'missing', 'config', 'get'])
         self.assertEqual(cli._run_on_config(),
-                         (False, ['Datacenter missing not found in configuration']))
+                         (False, ['Datacenter missing not found in live configuration']))
         assert mocked_live_config.called
 
         cli = self.get_cli(['config', 'commit'])
         cli.db_config.commit = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_config(), (True, None))
-        cli.db_config.commit.assert_called_with()
+        cli.db_config.commit.assert_called_with(batch=False)
