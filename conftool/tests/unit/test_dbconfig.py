@@ -651,15 +651,26 @@ class TestDbConfigCli(TestCase):
         self.assertEqual(cli._run_on_section(), (True, None))
         cli.section.set_readonly.assert_called_with('s1', 'dc3', False)
 
-    def test_run_on_config(self):
+    @mock.patch('conftool.extensions.dbconfig.config.DbConfig.live_config',
+                new_callable=mock.PropertyMock)
+    def test_run_on_config(self, mocked_live_config):
+        mocked_live_config.return_value = {'dc1': {}}
         # Case 1: get
         cli = self.get_cli(['config', 'get'])
+        self.assertEqual(cli._run_on_config(), (True, None))
+        assert mocked_live_config.called
 
-        with mock.patch('conftool.extensions.dbconfig.config.DbConfig.live_config',
-                        new_callable=mock.PropertyMock) as mocker:
-            mocker.return_value = {}
-            self.assertEqual(cli._run_on_config(), (True, None))
-            assert mocker.called
+        mocked_live_config.reset_mock()
+        cli = self.get_cli(['-s', 'dc1', 'config', 'get'])
+        self.assertEqual(cli._run_on_config(), (True, None))
+        assert mocked_live_config.called
+
+        mocked_live_config.reset_mock()
+        cli = self.get_cli(['-s', 'missing', 'config', 'get'])
+        self.assertEqual(cli._run_on_config(),
+                         (False, ['Datacenter missing not found in configuration']))
+        assert mocked_live_config.called
+
         cli = self.get_cli(['config', 'commit'])
         cli.db_config.commit = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_config(), (True, None))

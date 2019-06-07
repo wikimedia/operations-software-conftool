@@ -108,7 +108,14 @@ class DbConfigCli(ToolCliBase):
         if cmd == 'commit':
             return self.db_config.commit()
         elif cmd == 'get':
-            print(json.dumps(self.db_config.live_config, indent=4, sort_keys=True))
+            dc = self.args.scope
+            config = self.db_config.live_config
+            if dc is not None:
+                if dc not in config:
+                    return (False, ['Datacenter {} not found in configuration'.format(dc)])
+                config = config[dc]
+
+            print(json.dumps(config, indent=4, sort_keys=True))
             return (True, None)
         elif cmd == 'restore':
             return self.db_config.restore(self.args.file)
