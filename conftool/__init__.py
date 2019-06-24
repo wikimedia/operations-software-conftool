@@ -25,7 +25,7 @@ class IRCSocketHandler(logging.Handler):
         :param timeout: timeout for sending message
         :type timeout: float
         """
-        super(IRCSocketHandler, self).__init__()
+        super().__init__()
         self.addr = (host, port)
         self.level = logging.INFO
         self.timeout = timeout

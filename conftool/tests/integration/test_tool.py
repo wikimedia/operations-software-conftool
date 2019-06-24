@@ -26,7 +26,7 @@ def captured_output():
 class ToolIntegration(IntegrationTestBase):
 
     def setUp(self):
-        super(ToolIntegration, self).setUp()
+        super().setUp()
         args = ['--directory', os.path.join(test_base, 'fixtures')]
         syncer.main(arguments=args)
 

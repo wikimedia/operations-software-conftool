@@ -34,7 +34,7 @@ class Node(Entity):
 
     def __init__(self, datacenter, cluster, servname, host):
         self.service = ServiceCache.get(cluster, servname)
-        super(Node, self).__init__(datacenter, cluster, servname, host)
+        super().__init__(datacenter, cluster, servname, host)
 
     @classmethod
     def base_path(cls):
@@ -63,4 +63,4 @@ class Node(Entity):
                 for host, services in hosts.items():
                     for service in services:
                         transformed[dc][cluster][service].append(host)
-        return super(Node, cls).from_yaml(transformed)
+        return super().from_yaml(transformed)

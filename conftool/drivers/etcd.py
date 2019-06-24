@@ -40,7 +40,7 @@ class Driver(drivers.BaseDriver):
     lock_ttl = 60
 
     def __init__(self, config):
-        super(Driver, self).__init__(config)
+        super().__init__(config)
         self.locks = {}
         configfile = config.driver_options.get(
             'etcd_config_file',
@@ -49,7 +49,7 @@ class Driver(drivers.BaseDriver):
         if config.driver_options.get('suppress_san_warnings', True):
             urllib3.disable_warnings(category=urllib3.exceptions.SubjectAltNameWarning)
         self.client = etcd.Client(**driver_config)
-        super(Driver, self).__init__(config)
+        super().__init__(config)
 
     @drivers.wrap_exception(etcd.EtcdException)
     def is_dir(self, path):

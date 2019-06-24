@@ -43,7 +43,7 @@ class Config(ConfigBase):
         if services_path.startswith('/'):
             raise ValueError("services_path must be a relative path.")
 
-        return super(Config, cls).__new__(
+        return super().__new__(
             cls,
             driver=driver,
             hosts=hosts,

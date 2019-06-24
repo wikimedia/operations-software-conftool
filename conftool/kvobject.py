@@ -266,7 +266,7 @@ class JsonSchemaEntity(Entity):
     Specific class for json-schema based entities
     """
     def __init__(self, *tags):
-        super(JsonSchemaEntity, self).__init__(*tags)
+        super().__init__(*tags)
         self.rules = self.loader.rules_for(self.tags, self._name)
 
     def validate(self, values):
@@ -285,16 +285,16 @@ class FreeSchemaEntity(Entity):
 
     def __init__(self, *tags, **kwargs):
         self._schemaless = kwargs
-        super(FreeSchemaEntity, self).__init__(*tags)
+        super().__init__(*tags)
 
     def _to_net(self):
-        values = super(FreeSchemaEntity, self)._to_net()
+        values = super()._to_net()
         for k, v in self._schemaless.items():
             values[k] = v
         return values
 
     def from_net(self, values):
-        super(FreeSchemaEntity, self).from_net(values)
+        super().from_net(values)
         if values is None:
             return
         for key, value in values.items():

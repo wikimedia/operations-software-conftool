@@ -90,7 +90,7 @@ class ToolCliBase(object):
 class ToolCli(ToolCliBase):
 
     def __init__(self, args):
-        super(ToolCli, self).__init__(args)
+        super().__init__(args)
         self._tags = self.args.taglist.split(',')
 
     @property
@@ -174,7 +174,7 @@ class ToolCli(ToolCliBase):
 class ToolCliByLabel(ToolCliBase):
     """Subclass used for the select mode"""
     def __init__(self, args):
-        super(ToolCliByLabel, self).__init__(args)
+        super().__init__(args)
         self.selectors = {}
         self.parse_selectors()
 
@@ -239,7 +239,7 @@ class ToolCliSimpleAction(ToolCliByLabel):
             args.selector += ',service={}'.format(args.service)
         args.action = [self.simple_actions[args.mode]]
         args.mode = 'select'
-        super(ToolCliSimpleAction, self).__init__(args)
+        super().__init__(args)
 
     def host_list(self):
         """Gets all the hosts matching our selectors"""
