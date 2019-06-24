@@ -67,9 +67,7 @@ def parse_args(cmdline):
     commands = section.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
 
-    get = commands.add_parser('get', help='Get information about the database instance')
-    get.add_argument('-m', '--mediawiki', action='store_true',
-                     help='Print the information in PHP format')
+    commands.add_parser('get', help='Get information about the database instance')
 
     commands.add_parser('edit', help='Edit information about the database instance')
 
