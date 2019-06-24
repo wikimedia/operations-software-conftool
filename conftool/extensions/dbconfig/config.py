@@ -92,7 +92,7 @@ class DbConfig:
         for obj in sections:
             if not obj.readonly:
                 continue
-            config[obj.tags['datacenter']]['readOnlyBySection'][obj.name] = obj.reason
+            config[obj.tags['datacenter']]['readOnlyBySection'][obj.name] = obj.ro_reason
 
         # now fill them with the content of instances
         for instance in instances:

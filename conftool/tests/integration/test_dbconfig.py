@@ -35,7 +35,7 @@ class ConftoolTestCase(IntegrationTestBase):
         s1 = cli.section.get('s1', 'dcA')
         s1.master = 'dba1'
         s1.min_replicas = 1
-        s1.reason = ''
+        s1.ro_reason = ''
         s1.write()
         dbA1 = cli.instance.get('dba1')
         dbA1.hostname = 'dbA1.example.com'
@@ -72,7 +72,7 @@ class ConftoolTestCase(IntegrationTestBase):
         s2 = cli.section.get('s2', 'dcA')
         s2.master = 'dba2'
         s2.min_replicas = 0
-        s2.reason = ''
+        s2.ro_reason = ''
         s2.write()
         # Now generate and commit should work
         cli = self.get_cli('config', 'generate')

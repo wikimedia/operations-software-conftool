@@ -34,7 +34,7 @@
       default: 0
     readonly:
       default: false
-    reason:
+    ro_reason:
       default: "PLACEHOLDER"
 "mwconfig":
   path: "mediawiki-config"

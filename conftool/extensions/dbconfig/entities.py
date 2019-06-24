@@ -293,7 +293,7 @@ class Section(DbObjBase):
         def cb_set_readonly(obj):
             obj.readonly = readonly
             if reason is not None:
-                obj.reason = reason
+                obj.ro_reason = reason
         return self.write_callback(cb_set_readonly, (section, datacenter))
 
     def _update(self, obj, callback, **args):

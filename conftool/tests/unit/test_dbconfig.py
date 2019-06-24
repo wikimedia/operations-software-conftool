@@ -308,7 +308,7 @@ class TestDbSection(TestCase):
     def test_set_readonly(self):
         obj = self.section.get('x1', dc='dc3')
         self.section.set_readonly('x1', 'dc3', True, 'test')
-        self.assertEqual(obj.reason, 'test')
+        self.assertEqual(obj.ro_reason, 'test')
         self.assertTrue(obj.readonly)
         obj.write.assert_called_with()
         self.section.checker.assert_called_with(obj)
@@ -361,7 +361,7 @@ class TestDbConfig(TestCase):
         s3 = self.schema.entities['dbconfig-section']('test', 's3')
         s3.master = 'db3'
         s3.readonly = True
-        s3.reason = 'Some reason.'
+        s3.ro_reason = 'Some reason.'
         s4 = self.schema.entities['dbconfig-section']('test', 's4')
         s4.master = 'db2'
         s4.min_replicas = 1
