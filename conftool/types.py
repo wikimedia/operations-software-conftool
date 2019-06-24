@@ -47,7 +47,7 @@ validators = {
 }
 
 
-class Validator(object):
+class Validator:
     """Validator container"""
 
     def __init__(self, expected_type, callback):
@@ -73,7 +73,7 @@ def get_validator(validation_string):
     return Validator(validator, callback)
 
 
-class SchemaRule(object):
+class SchemaRule:
     def __init__(self, name, selector, schemaname):
         self.name = name
         self.selectors = {}
@@ -118,7 +118,7 @@ class SchemaRule(object):
             raise ValueError(exc.message)
 
 
-class JsonSchemaLoader(object):
+class JsonSchemaLoader:
 
     def __init__(self, base_path='schemas', rules=None):
         self.base_path = base_path

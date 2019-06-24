@@ -28,7 +28,7 @@ def catch_and_log(log_msg):
     return actual_wrapper
 
 
-class Syncer(object):
+class Syncer:
 
     def __init__(self, schema_file, base_path):
         self.load_order = []
@@ -89,7 +89,7 @@ class Syncer(object):
             syncers[name].cleanup()
 
 
-class EntitySyncer(object):
+class EntitySyncer:
 
     def __init__(self, name, cls):
         self.entity = name

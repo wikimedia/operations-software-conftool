@@ -7,7 +7,7 @@ fixtures_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), os.path.pardir, 'fixtures'))
 
 
-class MockArg(object):
+class MockArg:
     schema = None
     object_type = 'horse'
 

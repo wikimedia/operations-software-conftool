@@ -25,7 +25,7 @@ class ObjectTypeError(Exception):
     pass
 
 
-class ToolCliBase(object):
+class ToolCliBase:
 
     def __init__(self, args):
         self.args = args

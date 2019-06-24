@@ -15,7 +15,7 @@ test_base = os.path.realpath(os.path.join(
     os.path.dirname(__file__), '..'))
 
 
-class EtcdProcessHelper(object):
+class EtcdProcessHelper:
 
     def __init__(
             self,

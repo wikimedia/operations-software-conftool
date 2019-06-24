@@ -6,7 +6,7 @@ from collections import OrderedDict
 from conftool import _log, backend, drivers
 
 
-class KVObject(object):
+class KVObject:
     backend = None
     config = None
     _schema = {}

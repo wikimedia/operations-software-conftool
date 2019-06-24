@@ -9,7 +9,7 @@ class MockDriver(drivers.BaseDriver):
         self.base_path = '/base_path/v2'
 
 
-class MockBackend(object):
+class MockBackend:
 
     def __init__(self, config):
         self.config = config

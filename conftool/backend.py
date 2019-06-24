@@ -3,7 +3,7 @@ import os
 from conftool import _log
 
 
-class Backend(object):
+class Backend:
 
     def __init__(self, config):
         self.config = config

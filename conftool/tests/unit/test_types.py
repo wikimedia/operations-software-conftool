@@ -45,7 +45,7 @@ class FieldValidatorsTestCase(TestCase):
         self.assertEqual(['a', 'list'], validator(['a', 'list']))
         self.assertEqual({'a': 'dict'}, validator({'a': 'dict'}))
 
-        class Foo(object):
+        class Foo:
             pass
 
         self.assertRaises(ValueError, validator, Foo())

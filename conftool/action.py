@@ -35,7 +35,7 @@ def get_action(obj, act):
         raise ActionError("Could not parse action %s" % act)
 
 
-class GetAction(object):
+class GetAction:
     """Action to perform when a get request is involved"""
 
     def __init__(self, obj):
@@ -131,7 +131,7 @@ class EditAction(GetAction):
         self.edited = yaml_safe_load(self.temp)
 
 
-class SetAction(object):
+class SetAction:
 
     def __init__(self, obj, act):
         """Action to perform when editing an object"""

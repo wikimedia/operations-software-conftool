@@ -6,7 +6,7 @@ from conftool.kvobject import Entity
 from conftool.service import Service
 
 
-class ServiceCache(object):
+class ServiceCache:
     """
     Cache class for services - this will make nodes fetch services
     once per run, esp in the syncer, instead of fetching them node-by-node.

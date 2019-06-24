@@ -10,7 +10,7 @@ class NotFoundError(BackendError):
     pass
 
 
-class BaseDriver(object):
+class BaseDriver:
 
     def __init__(self, config):
         self.base_path = os.path.join(config.namespace, config.api_version)

@@ -50,7 +50,7 @@ def factory(name, defs):
     return type(name, (cls,), properties)
 
 
-class Schema(object):
+class Schema:
     """
     Allows loading entities definitions from a file declaration
     """
