@@ -50,7 +50,7 @@ A section object has the following properties:
 
 * `master` the name of the database instance that is the master for this
   section.
-* `min_slaves` (integer) minimum number of slaves acceptable for this section
+* `min_replicas` (integer) minimum number of replicas acceptable for this section
 * `readonly` (boolean) if the section should be set to read-only or not
 * `reason` The reason for the read-only state, if any
 
@@ -237,7 +237,7 @@ What will happen once you call commit is what follows:
 
 * All instances and sections are read from the datastore.
 * A configuration based on those data is computed.
-* This configuration gets sanity-checked according to rules we implemented: at the time of this writing, we just verify there is a master, and that the minimum number of slaves is present.  (These three steps are also the `generate` command.)
+* This configuration gets sanity-checked according to rules we implemented: at the time of this writing, we just verify there is a master, and that the minimum number of replicas is present.  (These three steps are also the `generate` command.)
 * A diff is shown, and the user is prompted for confirmation.
 * A backup copy of the previous configuration is saved locally to disk and the rollback command printed to stderr.
 * Once the new configuration is considered valid, it is atomically written to the datastore and is available for MediaWiki to consume.

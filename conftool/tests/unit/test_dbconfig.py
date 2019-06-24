@@ -294,7 +294,7 @@ class TestDbSection(TestCase):
         self.section = Section(self.schema, checker)
         obj = self.section.entity('extra', 'x1')
         obj.master = 'db1'
-        obj.min_slaves = 3
+        obj.min_replicas = 3
         obj.write = mock.MagicMock()
         self.section.get = mock.MagicMock(return_value=obj)
 
@@ -364,7 +364,7 @@ class TestDbConfig(TestCase):
         s3.reason = 'Some reason.'
         s4 = self.schema.entities['dbconfig-section']('test', 's4')
         s4.master = 'db2'
-        s4.min_slaves = 1
+        s4.min_replicas = 1
         return ([db1, db2, db3], [s1, s3, s4])
 
     def test_init(self):
@@ -420,8 +420,8 @@ class TestDbConfig(TestCase):
         config = self.config.compute_config(sections, instances)
         self.assertEqual(
             self.config.check_config(config, sections),
-            ['Section s4 is supposed to have minimum 1 slaves, found 0'])
-        # Let's add one slave for s4. Config should be now ok
+            ['Section s4 is supposed to have minimum 1 replicas, found 0'])
+        # Let's add one replica for s4. Config should be now ok
         config['test']['sectionLoads']['s4'][1]['db1'] = 1
         self.assertEqual(self.config.check_config(config, sections), [])
         # Let's remove the master from s3
@@ -453,7 +453,7 @@ class TestDbConfig(TestCase):
         self.assertEqual(self.config.check_instance(new_instances[0]), [])
         # Let's test if we re-pass the original instances
         self.assertEqual(self.config.check_instance(instances[0]),
-                         ['Section s4 is supposed to have minimum 1 slaves, found 0'])
+                         ['Section s4 is supposed to have minimum 1 replicas, found 0'])
 
         pass
 
@@ -463,11 +463,11 @@ class TestDbConfig(TestCase):
         self.config.section.get_all.return_value = sections
         # Let's test if we re-pass the original instances
         self.assertEqual(self.config.check_section(sections[2]),
-                         ['Section s4 is supposed to have minimum 1 slaves, found 0'])
+                         ['Section s4 is supposed to have minimum 1 replicas, found 0'])
 
-        # Now let's reduce the minimum number of slaves in s4
+        # Now let's reduce the minimum number of replicas in s4
         _, new_sections = self._mock_objects()
-        new_sections[2].min_slaves = 0
+        new_sections[2].min_replicas = 0
         self.assertEqual(self.config.check_section(new_sections[2]), [])
 
     def test_diff(self):
@@ -493,7 +493,7 @@ class TestDbConfig(TestCase):
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
         self.assertEqual(self.config.commit(batch=True),
-                         (False, ['Section s4 is supposed to have minimum 1 slaves, found 0']))
+                         (False, ['Section s4 is supposed to have minimum 1 replicas, found 0']))
 
         instances[0].sections['s4']['pooled'] = True
         obj = mock.MagicMock()

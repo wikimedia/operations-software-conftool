@@ -30,7 +30,7 @@
   schema:
     master:
       default: "PLACEHOLDER"
-    min_slaves:
+    min_replicas:
       default: 0
     readonly:
       default: false

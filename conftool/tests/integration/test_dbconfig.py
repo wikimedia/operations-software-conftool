@@ -34,7 +34,7 @@ class ConftoolTestCase(IntegrationTestBase):
         # Let's configure one section and one db
         s1 = cli.section.get('s1', 'dcA')
         s1.master = 'dba1'
-        s1.min_slaves = 1
+        s1.min_replicas = 1
         s1.reason = ''
         s1.write()
         dbA1 = cli.instance.get('dba1')
@@ -49,7 +49,7 @@ class ConftoolTestCase(IntegrationTestBase):
         dbA1.write()
         # Now let's try to commit this config
         cli = self.get_cli('config', 'commit', '--batch')
-        # We won't be able to commit, as we don't have the minimum number of slaves
+        # We won't be able to commit, as we don't have the minimum number of replicas
         self.assertEqual(cli.run_action(), False)
         # Let's try to generate this config; similarly, this should return an error
         cli = self.get_cli('config', 'generate')
@@ -57,7 +57,7 @@ class ConftoolTestCase(IntegrationTestBase):
         # and same for diffing
         cli = self.get_cli('config', 'diff')
         self.assertEqual(cli.run_action(), False)
-        # let's add a slave, with some groups too
+        # let's add a replica, with some groups too
         dbA2 = cli.instance.get('dba2')
         dbA2.hostname = 'dbA2.example.com'
         dbA2.sections = {
@@ -71,7 +71,7 @@ class ConftoolTestCase(IntegrationTestBase):
         dbA2.write()
         s2 = cli.section.get('s2', 'dcA')
         s2.master = 'dba2'
-        s2.min_slaves = 0
+        s2.min_replicas = 0
         s2.reason = ''
         s2.write()
         # Now generate and commit should work

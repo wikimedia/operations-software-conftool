@@ -46,7 +46,7 @@ class DbConfig:
             s1:
               [
                 {db1: 0},  # master
-                {db2: 50, db3: 150, ...}  # slaves
+                {db2: 50, db3: 150, ...}  # replicas
               ]
             ...
           groupLoadsBySection:
@@ -172,13 +172,13 @@ class DbConfig:
                             section=name, master=my_section.master, found=master
                         )
                     )
-                min_pooled = my_section.min_slaves
-                num_slaves = len(section[1])
-                if num_slaves < min_pooled:
+                min_pooled = my_section.min_replicas
+                num_replicas = len(section[1])
+                if num_replicas < min_pooled:
                     errors.append(
                         'Section {section} is supposed to have '
-                        'minimum {N} slaves, found {M}'.format(
-                            section=name, N=min_pooled, M=num_slaves)
+                        'minimum {N} replicas, found {M}'.format(
+                            section=name, N=min_pooled, M=num_replicas)
                     )
         return errors
 
