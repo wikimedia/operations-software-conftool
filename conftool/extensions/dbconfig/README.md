@@ -173,18 +173,20 @@ You can specify which parts of the configuration to act on, and you can either d
 
 #### Pooling an instance
 
-Pooling works pretty much like depooling, with one difference: you can declare a "pooling percentage", that will determine which fraction of the nominal weight of the instance will be used.
+Pooling works pretty much like depooling, with one difference: you can declare a "pooling percentage", that will determine which fraction of the nominal weight of the instance will be used.  Percentages are supported for sections, but not groups within a section.
 
-    # Pool all, at nominal weight
+    # Pool all, at the previously-used weight
     dbctl instance db1 pool
     # Pool all, at 10% the nominal weight
     dbctl instance db1 pool -p 10
+    # Pool in a section, at full weight
+    dbctl instance db1 pool --section s1 -p 100
     # You can also define a section and a group
-    dbctl instance db1 pool -p 20 --section s2 --group logpager
+    dbctl instance db1 pool --section s2 --group logpager
 
-#### Changing weights
+#### Changing nominal weights
 
-Changing the weight of an instance to a new value is pretty easy:
+Changing the 'nominal' weight of an instance -- the weight used at 100% pooling percentage -- to a new value is pretty easy:
 
     # Set the main weight for s1
     dbctl instance db2:3308 set-weight 10 --section s1

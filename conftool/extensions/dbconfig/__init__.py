@@ -45,8 +45,9 @@ def parse_args(cmdline):
     depool.add_argument('--group', help='If within a section you want to pick one group')
 
     pool = commands.add_parser(
-        'pool', help='Pool the instance, either completely or from a specified section/group')
-    pool.add_argument('-p', '--percentage', default=100,  type=int,
+        'pool', help=('Pool the instance, either completely or for a specified section/group. '
+                      'If no percentage is given, it will remain at the previously-stored value.'))
+    pool.add_argument('-p', '--percentage', default=None, type=int,
                       help='The percentage of pooling to set')
     pool.add_argument('--section', help='If you want to indicate a specific section')
     pool.add_argument('--group',

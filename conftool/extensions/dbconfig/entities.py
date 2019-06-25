@@ -180,7 +180,7 @@ class Instance(DbObjBase):
 
         return self.write_callback(set_depooled, (instance, ), section=section, group=group)
 
-    def pool(self, instance, percentage=100, section=None, group=None):
+    def pool(self, instance, percentage=None, section=None, group=None):
         """
         Pools a database from all sections, or just a specific section/group
 
@@ -194,7 +194,7 @@ class Instance(DbObjBase):
         """
         if group is not None and section is None:
             return (False, ['Cannot select a group but not a section'])
-        if percentage != 100 and group is not None:
+        if percentage is not None and group is not None:
             return (False, ['Percentages are only supported for global pooling'])
         # TODO: checking default values doesn't let us differentiate between
         # nothing provided vs the default values explicitly provided.
@@ -202,7 +202,8 @@ class Instance(DbObjBase):
         def set_pooled(obj, section, group):
             if group is None:
                 obj.sections[section]['pooled'] = True
-                obj.sections[section]['percentage'] = percentage
+                if percentage is not None:
+                    obj.sections[section]['percentage'] = percentage
             else:
                 obj.sections[section]['groups'][group]['pooled'] = True
 

@@ -29,7 +29,9 @@ class TestParseArgs(TestCase):
         self.assertEqual(args.command, 'pool')
         self.assertEqual(args.section, None)
         self.assertEqual(args.group, None)
-        self.assertEqual(args.percentage, 100)
+        self.assertEqual(args.percentage, None)
+        args = dbconfig.parse_args(['instance', 'db1', 'pool', '-p', '75'])
+        self.assertEqual(args.percentage, 75)
         args = dbconfig.parse_args(['instance', 'db1', 'depool',
                                     '--section', 's1', '--group', 'vslow'])
         self.assertEqual(args.command, 'depool')
@@ -217,6 +219,11 @@ class TestDbInstance(TestCase):
         instance.pool('db1', section='s1', group='vslow')
         self.assertEqual(obj.sections['s1']['percentage'], 10)
         self.assertTrue(obj.sections['s1']['groups']['vslow']['pooled'])
+        # Setting a percentage when pooling a group is not supported
+        obj.write.reset_mock()
+        self.assertEqual(instance.pool('db1', section='s1', group='vslow', percentage=90),
+                         (False, ['Percentages are only supported for global pooling']))
+        obj.write.assert_not_called()
 
     def test_weight(self):
         # Let's assume a successful check.
@@ -626,7 +633,7 @@ class TestDbConfigCli(TestCase):
         cli = self.get_cli(['instance', 'db1', 'pool'])
         cli.instance.pool = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_instance(), (True, None))
-        cli.instance.pool.assert_called_with('db1', 100, None, None)
+        cli.instance.pool.assert_called_with('db1', None, None, None)
         cli = self.get_cli(['instance', 'db1', 'pool', '-p', '10',
                             '--section', 's1', '--group', 'vslow'])
         cli.instance.pool = mock.MagicMock(return_value=(True, None))
