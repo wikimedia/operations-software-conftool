@@ -414,6 +414,11 @@ class TestDbConfig(TestCase):
         # Now let's check a globally non-pooled server doesn't get added to the groups
         instances[0].sections['s4']['groups'] = {'recentChanges': {'weight': 1, 'pooled': True}}
         self.assertEqual(self.config.compute_config(sections, instances), expected)
+        # An instance that has section pooled: True but group pooled: False should appear in
+        # sectionLoads but not groupLoadsBySection for that group.
+        instances[1].sections['s3']['groups']['vslow']['pooled'] = False
+        del expected['test']['groupLoadsBySection']['DEFAULT']
+        self.assertEqual(self.config.compute_config(sections, instances), expected)
 
     def test_check_config(self):
         instances, sections = self._mock_objects()

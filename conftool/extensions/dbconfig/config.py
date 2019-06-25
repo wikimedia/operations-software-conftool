@@ -126,6 +126,9 @@ class DbConfig:
                 if 'groups' not in section:
                     continue
                 for group_name, group in section['groups'].items():
+                    # Instances can be pooled for a section, but depooled from a given group.
+                    if not group['pooled']:
+                        continue
                     weight = int(group['weight'] * fraction)
                     self._add_group(
                         config[datacenter]['groupLoadsBySection'], section_key,
