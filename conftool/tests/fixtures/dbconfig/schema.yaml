@@ -41,13 +41,9 @@
   json_schema:
     base_path: "conftool/tests/fixtures/dbconfig/schemas"
     rules:
-      sectionLoads:
-        selector: 'name=sectionLoads'
-        schema: 'sectionLoads.schema'
-      groupLoadsBySection:
-        selector: 'name=groupLoadsBySection'
-        schema: 'groupLoadsBySection.schema'
-      # TODO: this is missing readOnlyBySection
+      catchall:
+        selector: 'name=dbconfig'
+        schema: 'mwconfig.schema'
   schema:
-    val:
-      default: null
+    config:
+      default: {}

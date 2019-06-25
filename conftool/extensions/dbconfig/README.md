@@ -193,11 +193,11 @@ Changing the weight of an instance to a new value is pretty easy:
 
 ### MediaWiki-related records
 
-MediaWiki can fetch configuration variables from a specific etcd path; dbctl integrates with that mechanism and provides 3 variables per datacenter for MediaWiki consumption:
+MediaWiki can fetch configuration variables from a specific etcd path; dbctl integrates with that mechanism and provides one unified object per datacenter for MediaWiki consumption that contains:
 
-* `sectionLoads` which contains information about the pools of databases dedicated to the various section_master
-* `groupLoadsBySection` which contains the same information for specific usage groups
-* `readOnlyBySection` which contains all sections (if any) which are supposed to be in read-only mode
+* `sectionLoads`: information about the pools of databases dedicated to the various section_master
+* `groupLoadsBySection`: the same information for specific usage groups
+* `readOnlyBySection`: all sections (if any) which are supposed to be in read-only mode
 
 #### Reading your current live configuration
 

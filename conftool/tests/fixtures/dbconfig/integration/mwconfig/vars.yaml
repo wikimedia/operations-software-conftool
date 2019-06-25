@@ -1,8 +1,4 @@
 dcA:
-  - sectionLoads
-  - groupLoadsBySection
-  - readOnlyBySection
+  - dbconfig
 dcB:
-  - sectionLoads
-  - groupLoadsBySection
-  - readOnlyBySection
+  - dbconfig

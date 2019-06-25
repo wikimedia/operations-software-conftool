@@ -23,6 +23,7 @@ class DbConfig:
     # wikis that pre-date the section-izing of databases.
     default_section = 's3'
     object_identifier = 'mwconfig'
+    object_name = 'dbconfig'
     cache_file_suffix = '.json'
     cache_file_datetime_format = '%Y%m%d-%H%M%S'
 
@@ -56,11 +57,11 @@ class DbConfig:
             ...
 
         """
-        selector = {'name': re.compile('^(readOnlyBySection|sectionLoads|groupLoadsBySection)$')}
-        config = defaultdict(dict)
-        for obj in self.entity.query(selector):
+        config = {}
+        for obj in self.entity.query({'name': re.compile(r'^{}$'.format(DbConfig.object_name))}):
             dc = obj.tags['scope']
-            config[dc][obj.name] = obj.val
+            config[dc] = obj.config
+
         return config
 
     # TODO: is this truly a @property?  They aren't really immutable nor
@@ -307,7 +308,7 @@ class DbConfig:
                 user=get_username(),
                 suffix=DbConfig.cache_file_suffix)
             cache_file_path = Path(self.entity.config.cache_path).joinpath(
-                DbConfig.object_identifier)
+                DbConfig.object_name)
             try:  # TODO Python3.4 doesn't accept exist_ok=True
                 Path(cache_file_path).mkdir(mode=0o755, parents=True)
             except FileExistsError:
@@ -350,21 +351,20 @@ class DbConfig:
     def _write(self, config, *, rollback_message=None):
         """Write the given config, if valid, to the datastore."""
         for dc, data in config.items():
-            for name, value in data.items():
-                obj = self.entity(dc, name)
-                try:  # verify we conform to the json schema
-                    obj.validate({'val': value})
-                except ValueError as e:
-                    # TODO: should any other object already written be rolled-back?
-                    errors = ['Object {} failed to validate:'.format(obj.name),
-                              str(e),
-                              'The actual value was: {}'.format(value)]
-                    if rollback_message is not None:
-                        errors.insert(0, rollback_message)
-                    return (False, errors)
+            obj = self.entity(dc, DbConfig.object_name)
+            try:  # verify we conform to the json schema
+                obj.validate({'config': data})
+            except ValueError as e:
+                # TODO: should any other object already written be rolled-back?
+                errors = ['Object {} failed to validate:'.format(obj.name),
+                          str(e),
+                          'The actual value was: {}'.format(data)]
+                if rollback_message is not None:
+                    errors.insert(0, rollback_message)
+                return (False, errors)
 
-                obj.val = value
-                obj.write()
+            obj.config = data
+            obj.write()
 
         messages = None
         if rollback_message is not None:

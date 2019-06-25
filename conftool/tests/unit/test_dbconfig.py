@@ -373,15 +373,15 @@ class TestDbConfig(TestCase):
 
     def test_live_config(self):
         self.mwconfig.query = mock.MagicMock()
-        obj1 = self.mwconfig('eqiad', 'sectionLoads')
-        obj1.val = {'s1': [{'db1': 0}, {'db2': 10}], 'DEFAULT': [{'db3': 0}, {'db4': 10}]}
-        obj2 = self.mwconfig('eqiad', 'groupLoadsBySection')
-        obj2.val = {'s1': {'vslow': {'db2': 10}, 'recentChanges': {'db14:3307': 4}}}
-        self.mwconfig.query.return_value = [obj1, obj2]
-        self.assertEqual(self.config.live_config['eqiad']['sectionLoads'], obj1.val)
-        self.mwconfig.query.assert_called_with(
-            {'name': re.compile(r'^(readOnlyBySection|sectionLoads|groupLoadsBySection)$')}
-        )
+        obj = self.mwconfig('eqiad', 'mwconfig')
+        obj.config = {
+            'readOnlyBySection': {},
+            'sectionLoads': {'s1': [{'db1': 0}, {'db2': 10}], 'DEFAULT': [{'db3': 0}, {'db4': 10}]},
+            'groupLoadsBySection': {'s1': {'vslow': {'db2': 10}, 'recentChanges': {'db14:3307': 4}}}
+        }
+        self.mwconfig.query.return_value = [obj]
+        self.assertEqual(self.config.live_config['eqiad'], obj.config)
+        self.mwconfig.query.assert_called_with({'name': re.compile('^dbconfig$')})
 
     def test_config_from_dbstore(self):
         self.config.compute_config = mock.MagicMock(return_value=[])
@@ -508,12 +508,9 @@ class TestDbConfig(TestCase):
         self.assertTrue(res)
         self.assertRegexpMatches(messages[0], '^Previous configuration saved. To restore it run')
         self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
-                                 '^/cache/path/mwconfig/[0-9-]{15}-.+.json')
+                                 '^/cache/path/dbconfig/[0-9-]{15}-.+.json')
         mocked_mkdir.assert_called_with(mode=0o755, parents=True)
-        self.config.entity.assert_has_calls([
-            mock.call('test', 'sectionLoads'),
-            mock.call('test', 'groupLoadsBySection')
-        ], any_order=True)
+        self.config.entity.assert_called_once_with('test', 'dbconfig')
         # Validation error is catched and an error is shown to the user
         obj.validate.side_effect = ValueError('test')
         res, err = self.config.commit(batch=True)
@@ -558,7 +555,7 @@ class TestDbConfig(TestCase):
             success, errors = self.config.restore(f)
 
         self.assertFalse(success)
-        self.assertEqual(errors[0], 'Object sectionLoads failed to validate:')
+        self.assertEqual(errors[0], 'Object dbconfig failed to validate:')
 
 
 class TestDbConfigCli(TestCase):
