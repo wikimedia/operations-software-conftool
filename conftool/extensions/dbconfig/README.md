@@ -104,7 +104,6 @@ variable
 Instances are organized by datacenter as well, and might be configured for
 multiple sections. An instance object contains the following properties:
 
-* `hostname` the name of the host where the instance is located
 * `host_ip` the ipv4 or ipv6 address of the instance
 * `port` the TCP port of the instance
 * `sections` a dictionary of configurations for the sections this instance belongs
@@ -138,7 +137,6 @@ The elements of the `groups` dictionary are composed as follows:
 #### Example instance in yaml format
 
     # tags: datacenter = dc1, name = db2:3308
-    hostname: db2.dc1.local
     host_ip: 192.168.1.12
     port: 3308
     sections:

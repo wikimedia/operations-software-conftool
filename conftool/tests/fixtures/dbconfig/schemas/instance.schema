@@ -31,7 +31,6 @@
     "description": "Represents a database instance specific to a section\n",
     "type": "object",
     "properties": {
-        "hostname": {"type": "string"},
         "host_ip": {
             "type": "string",
             "anyOf": [
@@ -48,5 +47,5 @@
             "additionalProperties": false
         }
     },
-    "required": ["hostname", "host_ip", "port", "sections"]
+    "required": ["host_ip", "port", "sections"]
 }

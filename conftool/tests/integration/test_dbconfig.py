@@ -38,7 +38,6 @@ class ConftoolTestCase(IntegrationTestBase):
         s1.ro_reason = ''
         s1.write()
         dbA1 = cli.instance.get('dba1')
-        dbA1.hostname = 'dbA1.example.com'
         dbA1.sections = {
             's1': {'weight': 10, 'pooled': True, 'percentage': 50},
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
@@ -59,7 +58,6 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertEqual(cli.run_action(), False)
         # let's add a replica, with some groups too
         dbA2 = cli.instance.get('dba2')
-        dbA2.hostname = 'dbA2.example.com'
         dbA2.sections = {
             's1': {'weight': 10, 'pooled': True, 'percentage': 100,
                    'groups': {'recentChanges': {'pooled': True, 'weight': 1}}},
@@ -101,7 +99,6 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertTrue(dbA1.sections['s1']['pooled'])
         # Now let's change master to dba2:33076, not before adding it
         dba21 = cli.instance.get('dba2:3307')
-        dba21.hostname = 'dbA2.example.com'
         dba21.sections = {
             's1': {'weight': 0, 'pooled': True, 'percentage': 100},
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},

@@ -127,7 +127,6 @@ class TestDbInstance(TestCase):
         checker = mock.MagicMock()
         instance = Instance(self.schema, checker)
         obj = instance.entity('dcA', 'db1')
-        obj.hostname = 'db1.example.com'
         obj.host_ip = '192.168.0.2'
         obj.port = 3306
         obj.sections = {
