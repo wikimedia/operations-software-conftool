@@ -42,7 +42,10 @@ def parse_args(cmdline):
         'depool',
         help='Depool the instance, either completely or from a specified section/group')
     depool.add_argument('--section', help='If you want to indicate a specific section')
-    depool.add_argument('--group', help='If within a section you want to pick one group')
+    depool.add_argument('--group',
+                        help='Within a section depool only a specific group. The '
+                             'special label "all" can be used to depool the instance from all the '
+                             'configured groups at once, without touching the main pooled status.')
 
     pool = commands.add_parser(
         'pool', help=('Pool the instance, either completely or for a specified section/group. '
@@ -51,12 +54,17 @@ def parse_args(cmdline):
                       help='The percentage of pooling to set')
     pool.add_argument('--section', help='If you want to indicate a specific section')
     pool.add_argument('--group',
-                      help='If within a section you want to pick one group')
+                      help='Within a section pool only a specific group. The '
+                           'special label "all" can be used to pool the instance in all the '
+                           'configured groups at once, without touching the main pooled status.')
 
     weight = commands.add_parser('set-weight', help='Set the weight of a specific section/group')
     weight.add_argument('--section',
                         help='If you want to indicate a specific section', required=True)
-    weight.add_argument('--group', help='If within a section you want to pick one group')
+    weight.add_argument('--group',
+                        help='Within a section set the weight only for a specific group. The '
+                             'special label "all" can be used to set the weight of the instance '
+                             'in all configured groups at once, without touching the main weight.')
     weight.add_argument('weight', help='The new weight', type=int)
 
     # dbconfig section
