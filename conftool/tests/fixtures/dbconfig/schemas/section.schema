@@ -7,5 +7,7 @@
         "min_replicas": {"type": "integer"},
         "readonly": {"type": "boolean"},
         "ro_reason": {"type": "string"}
-    }
+    },
+    "required": ["master", "min_replicas", "readonly", "ro_reason"],
+    "additionalProperties": false
 }
