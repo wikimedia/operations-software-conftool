@@ -137,11 +137,11 @@ class DbConfig:
                     )
         return config
 
-    def _add_group(self, config, section, instance, group, weight):
+    def _add_group(self, group_loads_by_section, section, instance, group, weight):
         """Add groupbysection info from an instance into the configuration"""
-        if section not in config:
-            config[section] = defaultdict(OrderedDict)
-        config[section][group][instance] = weight
+        if section not in group_loads_by_section:
+            group_loads_by_section[section] = defaultdict(OrderedDict)
+        group_loads_by_section[section][group][instance] = weight
 
     def check_config(self, config, sections):
         """
