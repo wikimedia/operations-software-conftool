@@ -6,7 +6,7 @@ from conftool.extensions.dbconfig.config import DbConfig
 from conftool.extensions.dbconfig.entities import Instance, Section
 
 
-ALL_SECTIONS = 'all'
+ALL_SELECTOR = 'all'
 
 
 class DbConfigCli(ToolCliBase):
@@ -45,6 +45,12 @@ class DbConfigCli(ToolCliBase):
         cmd = self.args.command
         datacenter = self.args.scope
         if cmd == 'get':
+            if name == ALL_SELECTOR:
+                all_instances = [s.asdict() for s in self.instance.get_all(dc=datacenter)]
+                for instance in sorted(all_instances, key=lambda d: (d['tags'], sorted(d.keys()))):
+                    print(json.dumps(instance))
+                return (True, None)
+
             try:
                 res = self.instance.get(name, datacenter)
             except Exception as e:
@@ -69,7 +75,7 @@ class DbConfigCli(ToolCliBase):
         cmd = self.args.command
         datacenter = self.args.scope
         if cmd == 'get':
-            if name == ALL_SECTIONS:
+            if name == ALL_SELECTOR:
                 all_sections = [s.asdict() for s in self.section.get_all(dc=datacenter)]
                 for section in sorted(all_sections, key=lambda d: (d['tags'], sorted(d.keys()))):
                     print(json.dumps(section))

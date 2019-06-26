@@ -204,7 +204,7 @@ class TestDbInstance(TestCase):
         self.assertEqual(instance.depool('db1', 's1', 'foobar'),
                          (False, ['Group "foobar" is not configured in section "s1"']))
         # All groups alias
-        self.assertEqual(instance.depool('db1', 's1', 'all'), (True, None))
+        self.assertEqual(instance.depool('db1', section='s1', group='all'), (True, None))
         self.assertFalse(obj.sections['s1']['groups']['vslow']['pooled'])
         self.assertFalse(obj.sections['s1']['groups']['dump']['pooled'])
 
@@ -645,6 +645,14 @@ class TestDbConfigCli(TestCase):
         self.assertEqual(cli._run_on_instance(), (True, None))
         cli.instance.get.side_effect = ValueError('test!')
         self.assertEqual(cli._run_on_instance(), (False, ['Unexpected error:', 'test!']))
+        # Get all instances
+        cli = self.get_cli(['instance', 'all', 'get'])
+        cli.instance.get_all = mock.MagicMock(return_value=iter(()))
+        self.assertEqual(cli._run_on_instance(), (True, None))
+        cli.instance.get_all.return_value = iter(
+            [cli.instance.entity('test', 'db1'), cli.instance.entity('test', 'db2')])
+        self.assertEqual(cli._run_on_instance(), (True, None))
+
         # Case 2: edit
         cli = self.get_cli(['instance', 'db1', 'edit'])
         cli.instance.edit = mock.MagicMock(return_value='test')

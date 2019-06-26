@@ -31,7 +31,10 @@ def parse_args(cmdline):
 
     # dbconfig instance
     # Possible actions: get, depool, pool, edit
-    instance.add_argument('instance_name', metavar='LABEL', help='The label of the instance')
+    instance.add_argument('instance_name', metavar='LABEL',
+                          help=('The label of the instance. Exclusively with the "get" action, the '
+                                'special label "all" can be used to select all instances.'))
+
     commands = instance.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
 
@@ -71,7 +74,7 @@ def parse_args(cmdline):
     # Possible actions are get, edit, set-master, ro, rw
     section.add_argument('section_name', metavar='LABEL',
                          help=('The label of the section. Exclusively with the "get" action, the '
-                               'special label "all" can be used to select all sections'))
+                               'special label "all" can be used to select all sections.'))
     # TODO: validation on the section_name?
     commands = section.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
