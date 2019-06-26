@@ -516,6 +516,7 @@ class TestDbConfig(TestCase):
         self.assertFalse(res)
         self.assertEqual(err[1:3], ['Object mocked failed to validate:', 'test'])
 
+
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
     def test_commit_fail_write_backup(self, mocked_mkdir, mocked_open):

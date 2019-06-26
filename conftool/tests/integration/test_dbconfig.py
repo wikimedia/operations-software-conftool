@@ -77,6 +77,9 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertEqual(cli.run_action(), True)
         cli = self.get_cli('config', 'commit', '--batch')
         self.assertEqual(cli.run_action(), True)
+        # On empty diff exit early without committing or saving current configuration
+        cli = self.get_cli('config', 'commit')
+        self.assertEqual(cli.run_action(), True)
         # Limiting scope to a datacenter should work.
         cli = self.get_cli('-s', 'dcA', 'config', 'generate')
         self.assertEqual(cli.run_action(), True)

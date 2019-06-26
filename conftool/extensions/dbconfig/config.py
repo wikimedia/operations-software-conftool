@@ -294,11 +294,13 @@ class DbConfig:
         if errors:
             return (False, errors)
 
+        diff = ''.join(self.diff_configs(previous_config, config))
+        if not diff:
+            return (True, ['Nothing to commit'])
+
         if not batch:
-            # TODO: exit early if we have a null diff.
             # TODO: add test coverage
-            diff = self.diff_configs(previous_config, config)
-            confirmed, errors = self._ask_confirmation(''.join(diff))
+            confirmed, errors = self._ask_confirmation(diff)
             if not confirmed:
                 return (False, errors)
 
