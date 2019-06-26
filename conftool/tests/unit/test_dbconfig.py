@@ -737,7 +737,19 @@ class TestDbConfigCli(TestCase):
                          (False, ['Datacenter missing not found in live configuration']))
         assert mocked_live_config.called
 
+        mocked_live_config.reset_mock()
+        cli = self.get_cli(['config', 'diff'])
+        cli.db_config.compute_and_check_config = mock.MagicMock(return_value=({}, None))
+        cli.db_config.diff_configs = mock.MagicMock(return_value=(iter(())))
+        self.assertEqual(cli._run_on_config(), (True, None))
+
+        cli = self.get_cli(['-s', 'missing', 'config', 'diff'])
+        cli.db_config.compute_and_check_config = mock.MagicMock(return_value=({}, None))
+        cli.db_config.diff_configs = mock.MagicMock(return_value=(iter(())))
+        self.assertEqual(cli._run_on_config(),
+                         (False, ['Datacenter missing not found']))
+
         cli = self.get_cli(['config', 'commit'])
         cli.db_config.commit = mock.MagicMock(return_value=(True, None))
         self.assertEqual(cli._run_on_config(), (True, None))
-        cli.db_config.commit.assert_called_with(batch=False)
+        cli.db_config.commit.assert_called_with(batch=False, datacenter=None)

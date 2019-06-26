@@ -107,17 +107,19 @@ class DbConfigCli(ToolCliBase):
         cmd = self.args.command
         dc = self.args.scope
         if cmd == 'commit':
-            # TODO: look at --scope
-            return self.db_config.commit(batch=self.args.batch)
+            return self.db_config.commit(batch=self.args.batch, datacenter=dc)
         elif cmd == 'diff':
-            # TODO: look at --scope
             config, errors = self.db_config.compute_and_check_config()
             if errors:
                 return (False, ['Could not generate configuration:'] + errors)
 
+            if dc is not None:
+                if dc not in (self.db_config.live_config.keys() | config.keys()):
+                    return (False, ['Datacenter {} not found'.format(dc)])
+
             if not self.args.quiet:
                 sys.stdout.writelines(self.db_config.diff_configs(
-                    self.db_config.live_config, config))
+                    self.db_config.live_config, config, datacenter=dc))
 
             # TODO: we'd like to plumb through a nonzero exit status but the current interface
             # doesn't make it very easy to indicate "operation successful, but exit nonzero"

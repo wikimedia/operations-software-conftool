@@ -229,13 +229,15 @@ class DbConfig:
 
         return (config, errors)
 
-    def diff_configs(self, a, b, *, a_name='live', b_name='generated'):
+    def diff_configs(self, a, b, *, a_name='live', b_name='generated', datacenter=None):
         """
         Returns a generator that yields unified diff lines of the deltas between configs a and b.
         The generator returned is akin to the ones returned by difflib.unified_diff, but with
         newlines already included, suitable for passing directly to sys.stdout.writelines().
 
         The input configs should be formatted like those returned by live_config.
+
+        datacenter should be None (show diffs for all DCs) or exactly a datacenter name.
         """
         # TODO: add support for limiting --scope
 
@@ -261,6 +263,9 @@ class DbConfig:
         # We also take care to order sections deterministically in the output.
         rv = []
         for dc in sorted(a.keys() | b.keys()):
+            if datacenter is not None:
+                if dc != datacenter:
+                    continue
             for stanza in sorted(_get(a, [dc]).keys() | _get(b, [dc]).keys()):
                 path = '{}/{}'.format(dc, stanza)  # e.g. 'eqiad/sectionLoads'
                 # When generating diffs we ask for extra context lines, so that output
@@ -275,11 +280,13 @@ class DbConfig:
                     tofile=' '.join([path, b_name]))))
         return itertools.chain(*rv)
 
-    def commit(self, *, batch=False):
+    def commit(self, *, batch=False, datacenter=None):
         """
         Translates the current configuration from the db objects
         to the one read by MediaWiki, validates it and writes the objects to
         the datastore.
+
+        if batch=True, we don't show diff and prompt for confirmation.
         """
         try:
             previous_config = self.live_config
@@ -289,12 +296,15 @@ class DbConfig:
                                 '{e}').format(e=e)
 
         # TODO: add a locking mechanism
-        # TODO: call out to diff generation here, and ask for confirmation, unless --batch
         config, errors = self.compute_and_check_config()
         if errors:
             return (False, errors)
 
-        diff = ''.join(self.diff_configs(previous_config, config))
+        if datacenter is not None:
+            if datacenter not in config.keys():
+                return (False, ['Datacenter {} not found'.format(datacenter)])
+
+        diff = ''.join(self.diff_configs(previous_config, config, datacenter=datacenter))
         if not diff:
             return (True, ['Nothing to commit'])
 

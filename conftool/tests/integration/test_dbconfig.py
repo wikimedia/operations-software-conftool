@@ -83,8 +83,16 @@ class ConftoolTestCase(IntegrationTestBase):
         # Limiting scope to a datacenter should work.
         cli = self.get_cli('-s', 'dcA', 'config', 'generate')
         self.assertEqual(cli.run_action(), True)
+        cli = self.get_cli('-s', 'dcA', 'config', 'diff')
+        self.assertEqual(cli.run_action(), True)
+        cli = self.get_cli('-s', 'dcA', 'config', 'commit')
+        self.assertEqual(cli.run_action(), True)
         # But limiting scope to a nonexistent datacenter should fail.
         cli = self.get_cli('-s', 'nonexistent', 'config', 'generate')
+        self.assertEqual(cli.run_action(), False)
+        cli = self.get_cli('-s', 'nonexistent', 'config', 'diff')
+        self.assertEqual(cli.run_action(), False)
+        cli = self.get_cli('-s', 'nonexistent', 'config', 'commit')
         self.assertEqual(cli.run_action(), False)
         # Let's verify that the live config contains s1
         lc = cli.db_config.live_config
