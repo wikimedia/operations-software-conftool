@@ -1,5 +1,6 @@
 import copy
 import re
+import textwrap
 
 from abc import ABC, abstractmethod
 
@@ -13,9 +14,19 @@ ALL_GROUPS = 'all'  # Special group name to select all configured groups
 class DbEditAction(EditAction):
     """Specific derived action for editing db objects"""
 
-    def __init__(self, obj, checker):
+    def __init__(self, obj, checker, example):
         super().__init__(obj)
         self.checker = checker
+        self.example = example
+
+    def _to_file(self):
+        super()._to_file()
+        if self.example is None:
+            return
+
+        with open(self.temp, 'a') as f:
+            f.write('\n# Full object example (all commented lines are automatically discarded)')
+            f.write(textwrap.indent(textwrap.dedent(self.example), '#'))
 
     def _validate_edit(self):
         try:
@@ -36,6 +47,7 @@ class DbObjBase(ABC):
     """Abstract base class for interacting with the db-like objects"""
     selectors = {'datacenter': re.compile(r'^\w+$'), 'name': re.compile(r'.*')}
     label = None
+    example = None
 
     def __init__(self, schema, checker=None):
         """
@@ -100,8 +112,7 @@ class DbObjBase(ABC):
                         self.label, name)]
                 )
             obj = self.entity(datacenter, name)
-        act = DbEditAction(
-            obj, checker=self.checker)
+        act = DbEditAction(obj, self.checker, self.example)
         try:
             act.run()
             return (True, None)
@@ -160,6 +171,26 @@ class DbObjBase(ABC):
 class Instance(DbObjBase):
     """Manages configurations for MediaWiki database configuration objects"""
     label = 'instance'
+    example = """
+    host_ip: 10.0.0.1
+    port: 3306
+    sections:
+      s1:
+        groups:
+          dump:
+            pooled: true
+            weight: 100
+          vslow:
+            pooled: true
+            weight: 100
+        percentage: 100
+        pooled: true
+        weight: 200
+      s2:
+        percentage: 100
+        pooled: true
+        weight: 200
+    """
 
     def depool(self, instance, section=None, group=None):
         """

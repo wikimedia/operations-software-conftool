@@ -4,6 +4,8 @@ import re
 from collections import defaultdict, OrderedDict
 from unittest import mock, TestCase
 
+import yaml
+
 import conftool.extensions.dbconfig as dbconfig
 from conftool.extensions.dbconfig.cli import DbConfigCli
 from conftool.extensions.dbconfig.config import DbConfig
@@ -79,6 +81,10 @@ class TestDbInstance(TestCase):
         instance = Instance(self.schema)
         self.assertEqual(instance.entity.__name__, 'Dbconfig_instance')
         self.assertIsNone(instance.checker)
+        # Validate the example
+        example = yaml.safe_load(instance.example)
+        obj = instance.entity('dcA', 'example')
+        obj.validate(example)
 
     def test_get_all(self):
         """Test getting all objects"""
@@ -114,7 +120,7 @@ class TestDbInstance(TestCase):
         obj = instance.entity('dcA', 'db1')
         instance.get = mock.MagicMock(return_value=obj)
         self.assertEqual(instance.edit('db1'), (True, None))
-        dbedit.assert_called_with(obj, checker.check_instance)
+        dbedit.assert_called_with(obj, checker.check_instance, Instance.example)
         # What if object doesn't exist
         instance.get = mock.MagicMock(return_value=None)
         obj = instance.entity('dcB', 'db4')
@@ -123,7 +129,7 @@ class TestDbInstance(TestCase):
             (False, ['No instance found with name "db4"; please provide a datacenter'])
         )
         self.assertEqual(instance.edit('db4', 'dcB'), (True, None))
-        dbedit.assert_called_with(obj, checker.check_instance)
+        dbedit.assert_called_with(obj, checker.check_instance, Instance.example)
 
     def _mock_object(self):
         checker = mock.MagicMock()
@@ -538,7 +544,6 @@ class TestDbConfig(TestCase):
         res, err = self.config.commit(batch=True)
         self.assertFalse(res)
         self.assertEqual(err[1:3], ['Object mocked failed to validate:', 'test'])
-
 
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
