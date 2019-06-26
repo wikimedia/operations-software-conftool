@@ -105,6 +105,7 @@ class DbConfigCli(ToolCliBase):
 
     def _run_on_config(self):
         cmd = self.args.command
+        dc = self.args.scope
         if cmd == 'commit':
             # TODO: look at --scope
             return self.db_config.commit(batch=self.args.batch)
@@ -122,7 +123,6 @@ class DbConfigCli(ToolCliBase):
             # doesn't make it very easy to indicate "operation successful, but exit nonzero"
             return (True, None)
         elif cmd == 'generate':
-            dc = self.args.scope
             (config, errors) = self.db_config.compute_and_check_config()
             if dc is not None:
                 if dc not in config:
@@ -135,7 +135,6 @@ class DbConfigCli(ToolCliBase):
             success = errors is None or len(errors) == 0
             return(success, errors)
         elif cmd == 'get':
-            dc = self.args.scope
             config = self.db_config.live_config
             if dc is not None:
                 if dc not in config:
@@ -145,4 +144,4 @@ class DbConfigCli(ToolCliBase):
             print(json.dumps(config, indent=4, sort_keys=True))
             return (True, None)
         elif cmd == 'restore':
-            return self.db_config.restore(self.args.file)
+            return self.db_config.restore(self.args.file, datacenter=dc)

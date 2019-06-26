@@ -489,7 +489,6 @@ class TestDbConfig(TestCase):
         self.assertIn('-            "db2": 10\n', diff)
         self.assertIn('+            "db2": 1\n', diff)
 
-
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
     def test_commit(self, mocked_mkdir, mocked_open):
@@ -537,6 +536,22 @@ class TestDbConfig(TestCase):
     def test_restore_valid(self):
         with open(os.path.join(self.restore_path, 'valid.json'), 'r') as f:
             self.assertEqual(self.config.restore(f), (True, None))
+
+    def test_restore_valid_dc(self):
+        with open(os.path.join(self.restore_path, 'invalid_data_multidc.json'), 'r') as f:
+            self.assertEqual(self.config.restore(f, datacenter='dcA'), (True, None))
+
+    def test_restore_with_invalid_dc(self):
+        with open(os.path.join(self.restore_path, 'invalid_data_multidc.json'), 'r') as f:
+            self.assertEqual(
+                self.config.restore(f, datacenter='dcB'),
+                (False, ["Section s1 has multiple masters: ['dbb2:3307', 'dbb3']"]))
+
+    def test_restore_valid_with_missing_dc(self):
+        with open(os.path.join(self.restore_path, 'invalid_data_multidc.json'), 'r') as f:
+            self.assertEqual(
+                self.config.restore(f, datacenter='invalid'),
+                (False, ['Datacenter invalid not found in configuration to be restored']))
 
     def test_restore_invalid_json(self):
         with open(os.path.join(self.restore_path, 'invalid_json.json'), 'r') as f:

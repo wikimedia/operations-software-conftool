@@ -296,6 +296,7 @@ class DbConfig:
 
         if not batch:
             # TODO: exit early if we have a null diff.
+            # TODO: add test coverage
             diff = self.diff_configs(previous_config, config)
             confirmed, errors = self._ask_confirmation(''.join(diff))
             if not confirmed:
@@ -328,7 +329,7 @@ class DbConfig:
 
         return self._write(config, rollback_message=rollback_message)
 
-    def restore(self, file_object):
+    def restore(self, file_object, datacenter=None):
         """Restore the configuration from the given file object."""
         # TODO: add a locking mechanism
         # TODO: show a visual diff and ask for confirmation
@@ -338,6 +339,14 @@ class DbConfig:
         except ValueError as e:  # TODO: Python 3.4 doesn't have json.JSONDecodeError
             errors.append('Invalid JSON configuration: {e}'.format(e=e))
             return (False, errors)
+
+        if datacenter is not None:
+            if datacenter not in config:
+                errors.append('Datacenter {dc} not found in configuration to be restored'.format(
+                    dc=datacenter))
+                return (False, errors)
+
+            config = {datacenter: config[datacenter]}
 
         for dc, mwconfig in config.items():
             for name, section in mwconfig['sectionLoads'].items():

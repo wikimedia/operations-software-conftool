@@ -1,0 +1,59 @@
+{
+    "dcA": {
+        "groupLoadsBySection": {
+            "s1": {
+                "recentChanges": {
+                    "dba2": 1
+                }
+            }
+        },
+        "readOnlyBySection": {},
+        "sectionLoads": {
+            "s1": [
+                {
+                    "dba2:3307": 0
+                },
+                {
+                    "dba2": 10
+                }
+            ],
+            "s2": [
+                {
+                    "dba2": 10
+                },
+                {
+                    "dba2:3307": 10
+                }
+            ]
+        }
+    },
+    "dcB": {
+        "groupLoadsBySection": {
+            "s1": {
+                "recentChanges": {
+                    "dbb2": 1
+                }
+            }
+        },
+        "readOnlyBySection": {},
+        "sectionLoads": {
+            "s1": [
+                {
+                    "dbb2:3307": 0,
+                    "dbb3": 0
+                },
+                {
+                    "dbb2": 10
+                }
+            ],
+            "s2": [
+                {
+                    "dbb2": 10
+                },
+                {
+                    "dbb2:3307": 10
+                }
+            ]
+        }
+    }
+}
