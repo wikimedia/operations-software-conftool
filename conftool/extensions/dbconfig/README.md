@@ -170,6 +170,8 @@ You can specify which parts of the configuration to act on, and you can either d
     dbctl instance db1 depool --section s1
     # Depool one specific group
     dbctl instance db1 depool --section s2 --group logpager
+    # Depool all configured groups, but not globally
+    dbctl instance db1 depool --section s2 --group all
 
 #### Pooling an instance
 
@@ -183,6 +185,8 @@ Pooling works pretty much like depooling, with one difference: you can declare a
     dbctl instance db1 pool --section s1 -p 100
     # You can also define a section and a group
     dbctl instance db1 pool --section s2 --group logpager
+    # Pool all configured groups, but not globally
+    dbctl instance db1 pool --section s2 --group all
 
 #### Changing nominal weights
 
@@ -192,6 +196,8 @@ Changing the 'nominal' weight of an instance -- the weight used at 100% pooling 
     dbctl instance db2:3308 set-weight 10 --section s1
     # Set the weight for a group
     dbctl instance db2:3308 set-weight 1 --section s2 --group logpager
+    # Set the weight for all configured groups, but not globally
+    dbctl instance db2:3308 set-weight 1 --section s2 --group all
 
 ### MediaWiki-related records
 

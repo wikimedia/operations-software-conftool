@@ -148,8 +148,8 @@ class TestDbInstance(TestCase):
                                         mock.call(obj, 's2', None)],
                                        any_order=True)
         # We actively ignore additional arguments
-        instance._update(obj, mock_callback, section='s1', group=1, test=120)
-        mock_callback.assert_called_with(obj, 's1', 1)
+        instance._update(obj, mock_callback, section='s1', group='group', test=120)
+        mock_callback.assert_called_with(obj, 's1', 'group')
         # Now error conditions:
         # 1 - callback fails
         mock_callback.side_effect = ValueError('FAIL!')
@@ -189,12 +189,18 @@ class TestDbInstance(TestCase):
         self.assertEqual(instance.depool('db1', 's1', 'vslow'),
                          (False, ["No groups are configured for section 's1'"]))
         # Now let's test the happy path
-        obj.sections['s1']['groups'] = {'vslow': {'pooled': True, 'weight': 10}}
+        obj.sections['s1']['groups'] = {'vslow': {'pooled': True, 'weight': 10},
+                                        'dump': {'pooled': True, 'weight': 10}}
         self.assertEqual(instance.depool('db1', 's1', 'vslow'), (True, None))
         self.assertFalse(obj.sections['s1']['groups']['vslow']['pooled'])
+        self.assertTrue(obj.sections['s1']['groups']['dump']['pooled'])
         # Now the other option
         self.assertEqual(instance.depool('db1', 's1', 'foobar'),
                          (False, ['Group "foobar" is not configured in section "s1"']))
+        # All groups alias
+        self.assertEqual(instance.depool('db1', 's1', 'all'), (True, None))
+        self.assertFalse(obj.sections['s1']['groups']['vslow']['pooled'])
+        self.assertFalse(obj.sections['s1']['groups']['dump']['pooled'])
 
     def test_pool(self):
         # This test is going to be simpler as it's basically the same as depooling with a twist
@@ -214,11 +220,17 @@ class TestDbInstance(TestCase):
         self.assertTrue(obj.sections['s2']['pooled'])
         self.assertEqual(obj.sections['s1']['percentage'], 10)
         self.assertEqual(obj.sections['s2']['percentage'], 10)
-        obj.sections['s1']['groups'] = {'vslow': {'pooled': False, 'weight': 10}}
+        obj.sections['s1']['groups'] = {'vslow': {'pooled': False, 'weight': 10},
+                                        'dump': {'pooled': False, 'weight': 10}}
         # Now let's test how if we select a group, percentage will remain the same
-        instance.pool('db1', section='s1', group='vslow')
+        self.assertEqual(instance.pool('db1', section='s1', group='vslow'), (True, None))
         self.assertEqual(obj.sections['s1']['percentage'], 10)
         self.assertTrue(obj.sections['s1']['groups']['vslow']['pooled'])
+        self.assertFalse(obj.sections['s1']['groups']['dump']['pooled'])
+        # All groups alias
+        self.assertEqual(instance.pool('db1', section='s1', group='all'), (True, None))
+        self.assertTrue(obj.sections['s1']['groups']['vslow']['pooled'])
+        self.assertTrue(obj.sections['s1']['groups']['dump']['pooled'])
         # Setting a percentage when pooling a group is not supported
         obj.write.reset_mock()
         self.assertEqual(instance.pool('db1', section='s1', group='vslow', percentage=90),
@@ -237,9 +249,13 @@ class TestDbInstance(TestCase):
         instance.weight('db1', 10, section='s1')
         self.assertEqual(obj.sections['s1']['weight'], 10)
         self.assertEqual(obj.sections['s2']['weight'], 1)
-        obj.sections['s1']['groups'] = {'vslow': {'pooled': False, 'weight': 10}}
+        obj.sections['s1']['groups'] = {'vslow': {'pooled': False, 'weight': 10},
+                                        'dump': {'pooled': False, 'weight': 10}}
         instance.weight('db1', 0, section='s1', group='vslow')
         self.assertEqual(obj.sections['s1']['groups']['vslow']['weight'], 0)
+        instance.weight('db1', 100, section='s1', group='all')
+        self.assertEqual(obj.sections['s1']['groups']['vslow']['weight'], 100)
+        self.assertEqual(obj.sections['s1']['groups']['dump']['weight'], 100)
 
     def test_check_state(self):
         # Try all cases.

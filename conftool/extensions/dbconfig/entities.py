@@ -7,6 +7,9 @@ from conftool.action import EditAction
 from conftool.drivers import BackendError
 
 
+ALL_GROUPS = 'all'  # Special group name to select all configured groups
+
+
 class DbEditAction(EditAction):
     """Specific derived action for editing db objects"""
 
@@ -175,6 +178,9 @@ class Instance(DbObjBase):
         def set_depooled(obj, section, group):
             if group is None:
                 obj.sections[section]['pooled'] = False
+            elif group == ALL_GROUPS:
+                for group_data in obj.sections[section]['groups'].values():
+                    group_data['pooled'] = False
             else:
                 obj.sections[section]['groups'][group]['pooled'] = False
 
@@ -204,6 +210,9 @@ class Instance(DbObjBase):
                 obj.sections[section]['pooled'] = True
                 if percentage is not None:
                     obj.sections[section]['percentage'] = percentage
+            elif group == ALL_GROUPS:
+                for group_data in obj.sections[section]['groups'].values():
+                    group_data['pooled'] = True
             else:
                 obj.sections[section]['groups'][group]['pooled'] = True
 
@@ -227,6 +236,9 @@ class Instance(DbObjBase):
         def set_weight(obj, section, group):
             if group is None:
                 obj.sections[section]['weight'] = new_weight
+            elif group == ALL_GROUPS:
+                for group_data in obj.sections[section]['groups'].values():
+                    group_data['weight'] = new_weight
             else:
                 obj.sections[section]['groups'][group]['weight'] = new_weight
         return self.write_callback(set_weight, (instance, ), section=section, group=group)
