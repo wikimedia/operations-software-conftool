@@ -33,6 +33,9 @@ class DbConfigCli(ToolCliBase):
         if result.messages:
             print('\n'.join(result.messages), file=sys.stderr)
 
+        if result.announce_message:
+            self.irc.warning(result.announce_message)
+
         return result.exit_code
 
     def _get_result(self, success, errors):

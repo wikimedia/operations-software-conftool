@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from conftool import get_username
-from conftool.extensions.dbconfig.action import ActionResult
+from conftool.extensions.dbconfig.action import ActionResult, phaste
 
 
 class DbConfig:
@@ -314,13 +314,15 @@ class DbConfig:
         if not has_diff:
             return ActionResult(True, 0, messages=['Nothing to commit'])
 
+        diff_text = ''.join(diff)
         if not batch:
             # TODO: add test coverage
-            confirmed, error = self._ask_confirmation(''.join(diff))
+            confirmed, error = self._ask_confirmation(diff_text)
             if not confirmed:
                 return ActionResult(False, 3, messages=[error])
 
         # Save current config for easy rollback
+        cache_file = None
         if previous_config is not None:
             cache_file_name = '{date}-{user}{suffix}'.format(
                 date=datetime.now().strftime(DbConfig.cache_file_datetime_format),
@@ -345,12 +347,22 @@ class DbConfig:
                 rollback_message = ('Previous configuration saved. To restore it run: '
                                     'dbctl config restore {path}').format(path=cache_file)
 
-        return self._write(config, rollback_message=rollback_message)
+        result = self._write(config, datacenter=datacenter)
+        # Inject the rollback message
+        result.messages.insert(0, rollback_message)
+        datacenter_label = datacenter if datacenter is not None else 'all'
+        # Publish diff to Phaste
+        phaste_title = 'dbconfig changes for MediaWiki (dc={dc})'.format(dc=datacenter_label)
+        phaste_url = phaste(phaste_title, diff_text)
+        # Set the announce message
+        result.announce_message = ('dbctl commit of MediaWiki config (dc={dc}), diff saved to '
+                                   "'{url}', previous config saved to {f}").format(
+            dc=datacenter_label, url=phaste_url, f=cache_file)
+        return result
 
     def restore(self, file_object, datacenter=None):
         """Restore the configuration from the given file object."""
         # TODO: add a locking mechanism
-        # TODO: show a visual diff and ask for confirmation
         errors = []
         try:
             config = json.load(file_object)
@@ -364,20 +376,28 @@ class DbConfig:
                     dc=datacenter))
                 return ActionResult(False, 2, messages=errors)
 
-            config = {datacenter: config[datacenter]}
-
         for dc, mwconfig in config.items():
+            if datacenter is not None and dc != datacenter:
+                continue
+
             for name, section in mwconfig['sectionLoads'].items():
                 errors += self._check_section(name, section)
 
         if errors:
             return ActionResult(False, 3, messages=errors)
 
-        return self._write(config)
+        result = self._write(config, datacenter=datacenter)
+        # Set the announce message
+        result.announce_message = ('dbctl restore of MediaWiki config (dc={dc}) from {f}').format(
+            dc=datacenter if datacenter is not None else 'all', f=file_object.name)
+        return result
 
-    def _write(self, config, *, rollback_message=None):
+    def _write(self, config, datacenter=None):
         """Write the given config, if valid, to the datastore."""
         for dc, data in config.items():
+            if datacenter is not None and dc != datacenter:
+                continue
+
             obj = self.entity(dc, DbConfig.object_name)
             try:  # verify we conform to the json schema
                 obj.validate({'config': data})
@@ -387,19 +407,13 @@ class DbConfig:
                 errors = ['Object {} failed to validate:'.format(obj.name),
                           str(e),
                           'The actual value was: {}'.format(data)]
-                if rollback_message is not None:
-                    errors.insert(0, rollback_message)
                 # TODO: consider keep going with the other objects
                 return ActionResult(False, 10, messages=errors)
 
             obj.config = data
             obj.write()
 
-        messages = None
-        if rollback_message is not None:
-            messages = [rollback_message]
-
-        return ActionResult(True, 0, messages=messages)
+        return ActionResult(True, 0)
 
     def _ask_confirmation(self, message, *, yes_response='y'):
         """Display message to the user and prompt for confirmation, expecting yes_response.
