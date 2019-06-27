@@ -82,7 +82,8 @@ class IntegrationTestBase(TestCase):
         cls.fixture_dir = os.path.join(test_base, 'fixtures')
         config_file = os.path.join(cls.fixture_dir, 'etcd_testrc')
         conf = configuration.Config(
-            driver_options={'etcd_config_file': config_file}, cache_path=cls.directory)
+            driver_options={'etcd_config_file': config_file}, cache_path=cls.directory,
+            tcpircbot_host='example.com', tcpircbot_port=1111)
         try:
             KVObject.setup(conf)
             KVObject.setup = mock.MagicMock()

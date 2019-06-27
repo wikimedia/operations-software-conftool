@@ -34,8 +34,8 @@ class Config(ConfigBase):
                 pools_path='pools',
                 services_path='services',
                 driver_options={},
-                tcpircbot_host='localhost',
-                tcpircbot_port='9999',
+                tcpircbot_host='',
+                tcpircbot_port=0,
                 cache_path='/var/cache/conftool'):
 
         if pools_path.startswith('/'):

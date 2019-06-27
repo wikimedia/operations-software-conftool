@@ -58,12 +58,17 @@ def setup_irc(config):
     # Only one handler should be present
     if _irc.handlers:
         return
-    _irc.addHandler(
-        IRCSocketHandler(
-            config.tcpircbot_host,
-            config.tcpircbot_port
+
+    if config.tcpircbot_host and config.tcpircbot_port:
+        _irc.addHandler(
+            IRCSocketHandler(
+                config.tcpircbot_host,
+                config.tcpircbot_port
+            )
         )
-    )
+    else:
+        _log.warning('Skipped configuration of IRC handler, invalid parameters: host=%s, port=%d',
+                     config.tcpircbot_host, config.tcpircbot_port)
 
 
 def yaml_log_error(name, exc, critical):
