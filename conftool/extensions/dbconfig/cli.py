@@ -2,6 +2,7 @@ import json
 import sys
 
 from conftool.cli.tool import ToolCliBase
+from conftool.extensions.dbconfig.action import ActionResult
 from conftool.extensions.dbconfig.config import DbConfig
 from conftool.extensions.dbconfig.entities import Instance, Section
 
@@ -26,19 +27,17 @@ class DbConfigCli(ToolCliBase):
         behaviour by selecting which sub-cli to use based on args.object_name
         """
         # TODO: the below uses a Golang-ish idiom
-        if self.args.object_name == 'instance':
-            success, err = self._run_on_instance()
-        elif self.args.object_name == 'section':
-            success, err = self._run_on_section()
-        elif self.args.object_name == 'config':
-            success, err = self._run_on_config()
-        # TODO: could perhaps be cleaner by building a dict of name->method, or
-        # by dynamically getting methods based on object_name
-        if not success:
+        result = getattr(self, '_run_on_{}'.format(self.args.object_name))()
+        if not result.success:
             print('Execution FAILED\nReported errors:', file=sys.stderr)
-        if err:  # Print messages also on success, if any
-            print('\n'.join(err), file=sys.stderr)
-        return success
+        if result.messages:
+            print('\n'.join(result.messages), file=sys.stderr)
+
+        return result.exit_code
+
+    def _get_result(self, success, errors):
+        """Get a default ActionResult instance based on success (bool) and errors (list of str)."""
+        return ActionResult(success, 0 if success else 1, messages=errors)
 
     def _run_on_instance(self):
         name = self.args.instance_name
@@ -49,26 +48,27 @@ class DbConfigCli(ToolCliBase):
                 all_instances = [s.asdict() for s in self.instance.get_all(dc=datacenter)]
                 for instance in sorted(all_instances, key=lambda d: (d['tags'], sorted(d.keys()))):
                     print(json.dumps(instance))
-                return (True, None)
+                return ActionResult(True, 0)
 
             try:
                 res = self.instance.get(name, datacenter)
             except Exception as e:
-                return(False, ['Unexpected error:', str(e)])
+                return ActionResult(False, 1, messages=['Unexpected error:', str(e)])
             if res is None:
-                return (False, ["DB instance '{}' not found".format(name)])
+                return ActionResult(False, 2, messages=["DB instance '{}' not found".format(name)])
             else:
                 print(json.dumps(res.asdict(), indent=4, sort_keys=True))
-                return (True, None)
+                return ActionResult(True, 0)
         elif cmd == 'edit':
-            return self.instance.edit(name, datacenter=datacenter)
+            return self._get_result(*self.instance.edit(name, datacenter=datacenter))
         elif cmd == 'depool':
-            return self.instance.depool(name, self.args.section, self.args.group)
+            return self._get_result(*self.instance.depool(name, self.args.section, self.args.group))
         elif cmd == 'pool':
-            return self.instance.pool(name, self.args.percentage,
-                                      self.args.section, self.args.group)
+            return self._get_result(*self.instance.pool(
+                name, self.args.percentage, self.args.section, self.args.group))
         elif cmd == 'set-weight':
-            return self.instance.weight(name, self.args.weight, self.args.section, self.args.group)
+            return self._get_result(*self.instance.weight(
+                name, self.args.weight, self.args.section, self.args.group))
 
     def _run_on_section(self):
         name = self.args.section_name
@@ -79,49 +79,57 @@ class DbConfigCli(ToolCliBase):
                 all_sections = [s.asdict() for s in self.section.get_all(dc=datacenter)]
                 for section in sorted(all_sections, key=lambda d: (d['tags'], sorted(d.keys()))):
                     print(json.dumps(section))
-                return (True, None)
+                return ActionResult(True, 0)
 
             try:
                 res = self.section.get(name, datacenter)
             except ValueError as e:
-                return (False, [str(e)])
+                return ActionResult(False, 1, messages=[str(e)])
 
             if res is None:
-                return (False, ["DB section '{}' not found".format(name)])
+                return ActionResult(False, 2, messages=["DB section '{}' not found".format(name)])
             else:
                 print(json.dumps(res.asdict(), indent=4, sort_keys=True))
-                return (True, None)
-        elif cmd == 'edit':
-            return self.section.edit(name, datacenter)
+                return ActionResult(True, 0)
         elif cmd == 'set-master':
             instance_name = self.args.instance_name
             candidate_master = self.instance.get(instance_name, dc=self.args.scope)
             if candidate_master is None:
-                return (False, ["DB instance '{}' not found".format(instance_name)])
+                return ActionResult(
+                    False, 2, messages=["DB instance '{}' not found".format(instance_name)])
 
             if name not in candidate_master.sections:
-                return (False, ["DB instance '{}' is not configured for section '{}'".format(
-                    instance_name, name)])
+                return ActionResult(
+                    False,
+                    3,
+                    messages=["DB instance '{}' is not configured for section '{}'".format(
+                        instance_name, name)])
 
-            return self.section.set_master(name, datacenter, instance_name)
+            return self._get_result(*self.section.set_master(name, datacenter, instance_name))
+        elif cmd == 'edit':
+            return self._get_result(*self.section.edit(name, datacenter))
         elif cmd == 'ro':
-            return self.section.set_readonly(name, datacenter, True, self.args.reason)
+            return self._get_result(*self.section.set_readonly(
+                name, datacenter, True, self.args.reason))
         elif cmd == 'rw':
-            return self.section.set_readonly(name, datacenter, False)
+            return self._get_result(*self.section.set_readonly(name, datacenter, False))
 
     def _run_on_config(self):
         cmd = self.args.command
         dc = self.args.scope
         if cmd == 'commit':
             return self.db_config.commit(batch=self.args.batch, datacenter=dc)
+        elif cmd == 'restore':
+            return self.db_config.restore(self.args.file, datacenter=dc)
         elif cmd == 'diff':
             config, errors = self.db_config.compute_and_check_config()
             if errors:
-                return (False, ['Could not generate configuration:'] + errors)
+                return ActionResult(False, 1,
+                                    messages=['Could not generate configuration:'] + errors)
 
             if dc is not None:
                 if dc not in (self.db_config.live_config.keys() | config.keys()):
-                    return (False, ['Datacenter {} not found'.format(dc)])
+                    return ActionResult(False, 2, messages=['Datacenter {} not found'.format(dc)])
 
             if not self.args.quiet:
                 sys.stdout.writelines(self.db_config.diff_configs(
@@ -129,27 +137,27 @@ class DbConfigCli(ToolCliBase):
 
             # TODO: we'd like to plumb through a nonzero exit status but the current interface
             # doesn't make it very easy to indicate "operation successful, but exit nonzero"
-            return (True, None)
+            return ActionResult(True, 0)
         elif cmd == 'generate':
-            (config, errors) = self.db_config.compute_and_check_config()
+            config, errors = self.db_config.compute_and_check_config()
             if dc is not None:
                 if dc not in config:
-                    return (False,
-                            ['Datacenter {} not found in generated configuration'.format(dc)]
-                            + errors)
+                    messages = ['Datacenter {} not found in generated configuration'.format(dc)]
+                    messages += errors
+                    return ActionResult(False, 2, messages=messages)
+
                 config = config[dc]
 
             print(json.dumps(config, indent=4, sort_keys=True))
-            success = errors is None or len(errors) == 0
-            return(success, errors)
+            return self._get_result(errors is None or not errors, errors)
         elif cmd == 'get':
             config = self.db_config.live_config
             if dc is not None:
                 if dc not in config:
-                    return (False, ['Datacenter {} not found in live configuration'.format(dc)])
+                    messages = ['Datacenter {} not found in live configuration'.format(dc)]
+                    return ActionResult(False, 2, messages=messages)
+
                 config = config[dc]
 
             print(json.dumps(config, indent=4, sort_keys=True))
-            return (True, None)
-        elif cmd == 'restore':
-            return self.db_config.restore(self.args.file, datacenter=dc)
+            return ActionResult(True, 0)

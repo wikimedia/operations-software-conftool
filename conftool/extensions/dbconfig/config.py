@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from conftool import get_username
+from conftool.extensions.dbconfig.action import ActionResult
 
 
 class DbConfig:
@@ -298,21 +299,22 @@ class DbConfig:
         # TODO: add a locking mechanism
         config, errors = self.compute_and_check_config()
         if errors:
-            return (False, errors)
+            return ActionResult(False, 1, messages=errors)
 
         if datacenter is not None:
             if datacenter not in config.keys():
-                return (False, ['Datacenter {} not found'.format(datacenter)])
+                return ActionResult(
+                    False, 2, messages=['Datacenter {} not found'.format(datacenter)])
 
         diff = ''.join(self.diff_configs(previous_config, config, datacenter=datacenter))
         if not diff:
-            return (True, ['Nothing to commit'])
+            return ActionResult(True, 0, messages=['Nothing to commit'])
 
         if not batch:
             # TODO: add test coverage
-            confirmed, errors = self._ask_confirmation(diff)
+            confirmed, error = self._ask_confirmation(diff)
             if not confirmed:
-                return (False, errors)
+                return ActionResult(False, 3, messages=[error])
 
         # Save current config for easy rollback
         if previous_config is not None:
@@ -350,13 +352,13 @@ class DbConfig:
             config = json.load(file_object)
         except ValueError as e:  # TODO: Python 3.4 doesn't have json.JSONDecodeError
             errors.append('Invalid JSON configuration: {e}'.format(e=e))
-            return (False, errors)
+            return ActionResult(False, 1, messages=errors)
 
         if datacenter is not None:
             if datacenter not in config:
                 errors.append('Datacenter {dc} not found in configuration to be restored'.format(
                     dc=datacenter))
-                return (False, errors)
+                return ActionResult(False, 2, messages=errors)
 
             config = {datacenter: config[datacenter]}
 
@@ -365,7 +367,7 @@ class DbConfig:
                 errors += self._check_section(name, section)
 
         if errors:
-            return (False, errors)
+            return ActionResult(False, 3, messages=errors)
 
         return self._write(config)
 
@@ -377,12 +379,14 @@ class DbConfig:
                 obj.validate({'config': data})
             except ValueError as e:
                 # TODO: should any other object already written be rolled-back?
+                #       Or
                 errors = ['Object {} failed to validate:'.format(obj.name),
                           str(e),
                           'The actual value was: {}'.format(data)]
                 if rollback_message is not None:
                     errors.insert(0, rollback_message)
-                return (False, errors)
+                # TODO: consider keep going with the other objects
+                return ActionResult(False, 10, messages=errors)
 
             obj.config = data
             obj.write()
@@ -391,12 +395,12 @@ class DbConfig:
         if rollback_message is not None:
             messages = [rollback_message]
 
-        return (True, messages)
+        return ActionResult(True, 0, messages=messages)
 
     def _ask_confirmation(self, message, *, yes_response='y'):
         """Display message to the user and prompt for confirmation, expecting yes_response.
 
-        Returns (success, errors) where success is a boolean and errors is a list of strings.
+        Returns (success, error) where success is a boolean and error is a string.
         """
         if not sys.stdout.isatty():
             return (False, 'Could not prompt for confirmation, stdin not a TTY.')
@@ -406,9 +410,9 @@ class DbConfig:
         resp = input(prompt)
 
         if resp != yes_response:
-            return (False, ['User did not confirm'])
+            return (False, 'User did not confirm')
 
-        return (True, [])
+        return (True, '')
 
     def _check_section(self, name, section):
         """Checks the validity of a section in sectionLoads."""

@@ -30,7 +30,7 @@ class ConftoolTestCase(IntegrationTestBase):
         sync.load()
         # At this point, we don't have the mwconfig variables
         cli = self.get_cli('config', 'get')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         # Let's configure one section and one db
         s1 = cli.section.get('s1', 'dcA')
         s1.master = 'dba1'
@@ -49,13 +49,13 @@ class ConftoolTestCase(IntegrationTestBase):
         # Now let's try to commit this config
         cli = self.get_cli('config', 'commit', '--batch')
         # We won't be able to commit, as we don't have the minimum number of replicas
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 1)
         # Let's try to generate this config; similarly, this should return an error
         cli = self.get_cli('config', 'generate')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 1)
         # and same for diffing
         cli = self.get_cli('config', 'diff')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 1)
         # let's add a replica, with some groups too
         dbA2 = cli.instance.get('dba2')
         dbA2.sections = {
@@ -74,38 +74,38 @@ class ConftoolTestCase(IntegrationTestBase):
         s2.write()
         # Now generate and commit should work
         cli = self.get_cli('config', 'generate')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         cli = self.get_cli('config', 'commit', '--batch')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         # On empty diff exit early without committing or saving current configuration
         cli = self.get_cli('config', 'commit')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         # Limiting scope to a datacenter should work.
         cli = self.get_cli('-s', 'dcA', 'config', 'generate')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         cli = self.get_cli('-s', 'dcA', 'config', 'diff')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         cli = self.get_cli('-s', 'dcA', 'config', 'commit')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         # But limiting scope to a nonexistent datacenter should fail.
         cli = self.get_cli('-s', 'nonexistent', 'config', 'generate')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 2)
         cli = self.get_cli('-s', 'nonexistent', 'config', 'diff')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 2)
         cli = self.get_cli('-s', 'nonexistent', 'config', 'commit')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 2)
         # Let's verify that the live config contains s1
         lc = cli.db_config.live_config
         self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba1': 5}, {'dba2': 10}])
         # Let's try setting s2's master to dba1, which is not a replica of s2; this should fail.
         cli = self.get_cli('section', 's2', 'set-master', 'dba1')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 3)
         # Let's try setting s2's master to a non-existent instance; this should fail.
         cli = self.get_cli('section', 's2', 'set-master', 'garbage1')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 2)
         # Let's depool the master, this should be impossible and return false
         cli = self.get_cli('instance', 'dba1', 'depool')
-        self.assertEqual(cli.run_action(), False)
+        self.assertEqual(cli.run_action(), 1)
         dbA1 = cli.instance.get('dba1')
         self.assertTrue(dbA1.sections['s1']['pooled'])
         # Now let's change master to dba2:33076, not before adding it
@@ -119,11 +119,11 @@ class ConftoolTestCase(IntegrationTestBase):
         dba21.port = 3307
         dba21.write()
         cli = self.get_cli('-s', 'dcA', 'section', 's1', 'set-master', 'dba2:3307')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         # Do a cursory test of our diff we've built up.
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             cli = self.get_cli('config', 'diff')
-            self.assertEqual(cli.run_action(), True)
+            self.assertEqual(cli.run_action(), 0)
             # We should see a diff header indicating changes in dcA/sectionLoads
             self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\+\+ dcA/sectionLoads generated$')
             # and the addition of a 0 weight for the new master
@@ -133,14 +133,14 @@ class ConftoolTestCase(IntegrationTestBase):
             self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\s+ "dba1": 5,$')
         # Now we can depool dba1 safely
         cli = self.get_cli('instance', 'dba1', 'depool')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         # And the config is valid again
         cli = self.get_cli('config', 'commit', '--batch')
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)
         # TODO: check that cached files are properly saved (issue with the tmpdir)
         lc = cli.db_config.live_config
         self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba2:3307': 0}, {'dba2': 10}])
         # Restore
         restore_file = os.path.join(fixtures_base, 'restore', 'valid.json')
         cli = self.get_cli('config', 'restore', restore_file)
-        self.assertEqual(cli.run_action(), True)
+        self.assertEqual(cli.run_action(), 0)

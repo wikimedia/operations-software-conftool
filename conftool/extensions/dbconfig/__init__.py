@@ -127,11 +127,7 @@ def main(cmdline=None):
 
     cli = DbConfigCli(args)
     cli.setup()
-    success = cli.run_action()
-    if success:
-        return 0
-
-    return 1
+    return cli.run_action()
 
 
 if __name__ == '__main__':

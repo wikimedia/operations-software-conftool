@@ -7,6 +7,7 @@ from unittest import mock, TestCase
 import yaml
 
 import conftool.extensions.dbconfig as dbconfig
+from conftool.extensions.dbconfig.action import ActionResult
 from conftool.extensions.dbconfig.cli import DbConfigCli
 from conftool.extensions.dbconfig.config import DbConfig
 from conftool.extensions.dbconfig.entities import Instance, Section
@@ -488,8 +489,6 @@ class TestDbConfig(TestCase):
         self.assertEqual(self.config.check_instance(instances[0]),
                          ['Section s4 is supposed to have minimum 1 replicas, found 0'])
 
-        pass
-
     def test_check_section(self):
         instances, sections = self._mock_objects()
         self.config.instance.get_all.return_value = instances
@@ -524,26 +523,28 @@ class TestDbConfig(TestCase):
         instances, sections = self._mock_objects()
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
-        self.assertEqual(self.config.commit(batch=True),
-                         (False, ['Section s4 is supposed to have minimum 1 replicas, found 0']))
+        res = self.config.commit(batch=True)
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ['Section s4 is supposed to have minimum 1 replicas, found 0'])
 
         instances[0].sections['s4']['pooled'] = True
         obj = mock.MagicMock()
         obj.name = 'mocked'
         self.config.entity = mock.MagicMock(return_value=obj)
         self.config.entity.config.cache_path = '/cache/path'
-        res, messages = self.config.commit(batch=True)
-        self.assertTrue(res)
-        self.assertRegexpMatches(messages[0], '^Previous configuration saved. To restore it run')
+        res = self.config.commit(batch=True)
+        self.assertTrue(res.success)
+        self.assertRegexpMatches(res.messages[0],
+                                 '^Previous configuration saved. To restore it run')
         self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
                                  '^/cache/path/dbconfig/[0-9-]{15}-.+.json')
         mocked_mkdir.assert_called_with(mode=0o755, parents=True)
         self.config.entity.assert_called_once_with('test', 'dbconfig')
         # Validation error is catched and an error is shown to the user
         obj.validate.side_effect = ValueError('test')
-        res, err = self.config.commit(batch=True)
-        self.assertFalse(res)
-        self.assertEqual(err[1:3], ['Object mocked failed to validate:', 'test'])
+        res = self.config.commit(batch=True)
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages[1:3], ['Object mocked failed to validate:', 'test'])
 
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
@@ -557,49 +558,56 @@ class TestDbConfig(TestCase):
         self.config.entity = mock.MagicMock(return_value=obj)
         self.config.entity.config.cache_path = '/cache/path'
         mocked_open.side_effect = OSError
-        res, messages = self.config.commit(batch=True)
-        self.assertTrue(res)
-        self.assertRegexpMatches(messages[0],
+        res = self.config.commit(batch=True)
+        self.assertTrue(res.success)
+        self.assertRegexpMatches(res.messages[0],
                                  '^Unable to backup previous configuration. Failed to save it')
 
     def test_restore_valid(self):
         with open(os.path.join(self.restore_path, 'valid.json'), 'r') as f:
-            self.assertEqual(self.config.restore(f), (True, None))
+            res = self.config.restore(f)
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
 
     def test_restore_valid_dc(self):
         with open(os.path.join(self.restore_path, 'invalid_data_multidc.json'), 'r') as f:
-            self.assertEqual(self.config.restore(f, datacenter='dcA'), (True, None))
+            res = self.config.restore(f, datacenter='dcA')
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
 
     def test_restore_with_invalid_dc(self):
         with open(os.path.join(self.restore_path, 'invalid_data_multidc.json'), 'r') as f:
-            self.assertEqual(
-                self.config.restore(f, datacenter='dcB'),
-                (False, ["Section s1 has multiple masters: ['dbb2:3307', 'dbb3']"]))
+            res = self.config.restore(f, datacenter='dcB')
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages,
+                         ["Section s1 has multiple masters: ['dbb2:3307', 'dbb3']"])
 
     def test_restore_valid_with_missing_dc(self):
         with open(os.path.join(self.restore_path, 'invalid_data_multidc.json'), 'r') as f:
-            self.assertEqual(
-                self.config.restore(f, datacenter='invalid'),
-                (False, ['Datacenter invalid not found in configuration to be restored']))
+            res = self.config.restore(f, datacenter='invalid')
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages,
+                         ['Datacenter invalid not found in configuration to be restored'])
 
     def test_restore_invalid_json(self):
         with open(os.path.join(self.restore_path, 'invalid_json.json'), 'r') as f:
-            success, errors = self.config.restore(f)
+            res = self.config.restore(f)
 
-        self.assertFalse(success)
-        self.assertRegexpMatches(errors[0], r'^Invalid JSON configuration')
+        self.assertFalse(res.success)
+        self.assertRegexpMatches(res.messages[0], r'^Invalid JSON configuration')
 
     def test_restore_invalid_data(self):
         with open(os.path.join(self.restore_path, 'invalid_data.json'), 'r') as f:
-            self.assertEqual(self.config.restore(f),
-                             (False, ["Section s1 has multiple masters: ['dba2:3307', 'dba3']"]))
+            res = self.config.restore(f)
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ["Section s1 has multiple masters: ['dba2:3307', 'dba3']"])
 
     def test_restore_invalid_schema(self):
         with open(os.path.join(self.restore_path, 'invalid_schema.json'), 'r') as f:
-            success, errors = self.config.restore(f)
+            res = self.config.restore(f)
 
-        self.assertFalse(success)
-        self.assertEqual(errors[0], 'Object dbconfig failed to validate:')
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages[0], 'Object dbconfig failed to validate:')
 
 
 class TestDbConfigCli(TestCase):
@@ -621,90 +629,126 @@ class TestDbConfigCli(TestCase):
 
     def test_run_action(self):
         cli = self.get_cli(['instance', 'db1', 'get'])
-        cli._run_on_instance = mock.MagicMock(return_value=(True, None))
-        self.assertTrue(cli.run_action())
+        cli._run_on_instance = mock.MagicMock(return_value=ActionResult(True, 0))
+        self.assertEqual(cli.run_action(), 0)
         assert cli._run_on_instance.called
         # Check section call, and what happens in a failure
         cli = self.get_cli(['section', 's1', 'ro', 'PANIC'])
-        cli._run_on_section = mock.MagicMock(return_value=(False, ['test']))
-        self.assertFalse(cli.run_action())
+        cli._run_on_section = mock.MagicMock(
+            return_value=ActionResult(False, 1, messages=['test']))
+        self.assertEqual(cli.run_action(), 1)
         assert cli._run_on_section.called
         # Finally, config
         cli = self.get_cli(['config', 'commit'])
-        cli._run_on_config = mock.MagicMock(return_value=(True, None))
-        self.assertTrue(cli.run_action())
+        cli._run_on_config = mock.MagicMock(return_value=ActionResult(True, 0))
+        self.assertEqual(cli.run_action(), 0)
         assert cli._run_on_config.called
 
     def test_run_on_instance(self):
         # Case 1: get
         cli = self.get_cli(['instance', 'db1', 'get'])
         cli.instance.get = mock.MagicMock(return_value=None)
-        self.assertEqual(cli._run_on_instance(), (False, ["DB instance 'db1' not found"]))
+        res = cli._run_on_instance()
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ["DB instance 'db1' not found"])
         cli.instance.get.assert_called_with('db1', None)
         cli.instance.get.return_value = cli.instance.entity('test', 'db1')
-        self.assertEqual(cli._run_on_instance(), (True, None))
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.get.side_effect = ValueError('test!')
-        self.assertEqual(cli._run_on_instance(), (False, ['Unexpected error:', 'test!']))
+        res = cli._run_on_instance()
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ['Unexpected error:', 'test!'])
         # Get all instances
         cli = self.get_cli(['instance', 'all', 'get'])
         cli.instance.get_all = mock.MagicMock(return_value=iter(()))
-        self.assertEqual(cli._run_on_instance(), (True, None))
+        res = cli._run_on_instance()
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.get_all.return_value = iter(
             [cli.instance.entity('test', 'db1'), cli.instance.entity('test', 'db2')])
-        self.assertEqual(cli._run_on_instance(), (True, None))
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
 
         # Case 2: edit
         cli = self.get_cli(['instance', 'db1', 'edit'])
-        cli.instance.edit = mock.MagicMock(return_value='test')
-        self.assertEqual(cli._run_on_instance(), 'test')
+        cli.instance.edit = mock.MagicMock(return_value=(True, None))
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.edit.assert_called_with('db1', datacenter=None)
         # Case 3: pool
         cli = self.get_cli(['instance', 'db1', 'pool'])
         cli.instance.pool = mock.MagicMock(return_value=(True, None))
-        self.assertEqual(cli._run_on_instance(), (True, None))
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.pool.assert_called_with('db1', None, None, None)
         cli = self.get_cli(['instance', 'db1', 'pool', '-p', '10',
                             '--section', 's1', '--group', 'vslow'])
         cli.instance.pool = mock.MagicMock(return_value=(True, None))
-        cli._run_on_instance()
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.pool.assert_called_with('db1', 10, 's1', 'vslow')
         # Case 4: depool
         cli = self.get_cli(['instance', 'db1', 'depool',
                             '--section', 's1', '--group', 'vslow'])
         cli.instance.depool = mock.MagicMock(return_value=(True, None))
-        cli._run_on_instance()
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.depool.assert_called_with('db1', 's1', 'vslow')
         cli = self.get_cli(['instance', 'db1', 'depool'])
         cli.instance.depool = mock.MagicMock(return_value=(True, None))
-        cli._run_on_instance()
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.depool.assert_called_with('db1', None, None)
         cli = self.get_cli(['instance', 'db1', 'set-weight', '1', '--section', 's1'])
         cli.instance.weight = mock.MagicMock(return_value=(True, None))
-        cli._run_on_instance()
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.weight.assert_called_with('db1', 1, 's1', None)
 
     def test_run_on_section(self):
         # Case 1: get
         cli = self.get_cli(['-s', 'test', 'section', 's1', 'get'])
         cli.section.get = mock.MagicMock(return_value=None)
-        self.assertEqual(cli._run_on_section(), (False, ["DB section 's1' not found"]))
+        res = cli._run_on_section()
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ["DB section 's1' not found"])
         cli.section.get.assert_called_with('s1', 'test')
         cli.section.get.return_value = cli.section.entity('test', 's1')
-        self.assertEqual(cli._run_on_section(), (True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.section.get.side_effect = ValueError('error')
-        self.assertEqual(cli._run_on_section(), (False, ['error']))
+        res = cli._run_on_section()
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ['error'])
 
         cli = self.get_cli(['-s', 'test', 'section', 'all', 'get'])
         cli.section.get_all = mock.MagicMock(return_value=iter(()))
-        self.assertEqual(cli._run_on_section(), (True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.section.get_all.return_value = iter(
             [cli.section.entity('test', 's1'), cli.section.entity('test', 's2')])
-        self.assertEqual(cli._run_on_section(), (True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
 
         # Case 2: edit
         cli = self.get_cli(['-s', 'test', 'section', 's1', 'edit'])
         cli.section.edit = mock.MagicMock(return_value=(True, None))
-        self.assertEqual(cli._run_on_section(), (True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.section.edit.assert_called_with('s1', 'test')
         # Case 3: set-master
         cli = self.get_cli(['-s', 'test', 'section', 's1', 'set-master', 'db-test'])
@@ -712,17 +756,23 @@ class TestDbConfigCli(TestCase):
         instance.sections['s1'] = {'weight': 100, 'pooled': True}
         cli.instance.get = mock.MagicMock(return_value=instance)
         cli.section.set_master = mock.MagicMock(return_value=(True, None))
-        self.assertEqual(cli._run_on_section(), (True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.instance.get.assert_called_with('db-test', dc='test')
         cli.section.set_master.assert_called_with('s1', 'test', 'db-test')
         # Case 4: ro/rw
         cli = self.get_cli(['-s', 'dc1', 'section', 's1', 'ro', 'test'])
         cli.section.set_readonly = mock.MagicMock(return_value=(True, None))
-        self.assertEqual(cli._run_on_section(), (True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.section.set_readonly.assert_called_with('s1', 'dc1', True, 'test')
         cli = self.get_cli(['-s', 'dc3', 'section', 's1', 'rw'])
         cli.section.set_readonly = mock.MagicMock(return_value=(True, None))
-        self.assertEqual(cli._run_on_section(), (True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.section.set_readonly.assert_called_with('s1', 'dc3', False)
 
     @mock.patch('conftool.extensions.dbconfig.config.DbConfig.live_config',
@@ -731,33 +781,43 @@ class TestDbConfigCli(TestCase):
         mocked_live_config.return_value = {'dc1': {}}
         # Case 1: get
         cli = self.get_cli(['config', 'get'])
-        self.assertEqual(cli._run_on_config(), (True, None))
+        res = cli._run_on_config()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         assert mocked_live_config.called
 
         mocked_live_config.reset_mock()
         cli = self.get_cli(['-s', 'dc1', 'config', 'get'])
-        self.assertEqual(cli._run_on_config(), (True, None))
+        res = cli._run_on_config()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         assert mocked_live_config.called
 
         mocked_live_config.reset_mock()
         cli = self.get_cli(['-s', 'missing', 'config', 'get'])
-        self.assertEqual(cli._run_on_config(),
-                         (False, ['Datacenter missing not found in live configuration']))
+        res = cli._run_on_config()
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ['Datacenter missing not found in live configuration'])
         assert mocked_live_config.called
 
         mocked_live_config.reset_mock()
         cli = self.get_cli(['config', 'diff'])
         cli.db_config.compute_and_check_config = mock.MagicMock(return_value=({}, None))
         cli.db_config.diff_configs = mock.MagicMock(return_value=(iter(())))
-        self.assertEqual(cli._run_on_config(), (True, None))
+        res = cli._run_on_config()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
 
         cli = self.get_cli(['-s', 'missing', 'config', 'diff'])
         cli.db_config.compute_and_check_config = mock.MagicMock(return_value=({}, None))
         cli.db_config.diff_configs = mock.MagicMock(return_value=(iter(())))
-        self.assertEqual(cli._run_on_config(),
-                         (False, ['Datacenter missing not found']))
+        res = cli._run_on_config()
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ['Datacenter missing not found'])
 
         cli = self.get_cli(['config', 'commit'])
-        cli.db_config.commit = mock.MagicMock(return_value=(True, None))
-        self.assertEqual(cli._run_on_config(), (True, None))
+        cli.db_config.commit = mock.MagicMock(return_value=ActionResult(True, 0))
+        res = cli._run_on_config()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
         cli.db_config.commit.assert_called_with(batch=False, datacenter=None)
