@@ -124,20 +124,20 @@ class DbConfigCli(ToolCliBase):
         elif cmd == 'diff':
             config, errors = self.db_config.compute_and_check_config()
             if errors:
-                return ActionResult(False, 1,
+                return ActionResult(False, 3,
                                     messages=['Could not generate configuration:'] + errors)
 
             if dc is not None:
                 if dc not in (self.db_config.live_config.keys() | config.keys()):
                     return ActionResult(False, 2, messages=['Datacenter {} not found'.format(dc)])
 
-            if not self.args.quiet:
-                sys.stdout.writelines(self.db_config.diff_configs(
-                    self.db_config.live_config, config, datacenter=dc))
+            has_diff, diff = self.db_config.diff_configs(
+                self.db_config.live_config, config, datacenter=dc)
 
-            # TODO: we'd like to plumb through a nonzero exit status but the current interface
-            # doesn't make it very easy to indicate "operation successful, but exit nonzero"
-            return ActionResult(True, 0)
+            if has_diff and not self.args.quiet:
+                sys.stdout.writelines(diff)
+
+            return ActionResult(True, int(has_diff))
         elif cmd == 'generate':
             config, errors = self.db_config.compute_and_check_config()
             if dc is not None:

@@ -55,7 +55,7 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertEqual(cli.run_action(), 1)
         # and same for diffing
         cli = self.get_cli('config', 'diff')
-        self.assertEqual(cli.run_action(), 1)
+        self.assertEqual(cli.run_action(), 3)
         # let's add a replica, with some groups too
         dbA2 = cli.instance.get('dba2')
         dbA2.sections = {
@@ -123,7 +123,7 @@ class ConftoolTestCase(IntegrationTestBase):
         # Do a cursory test of our diff we've built up.
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             cli = self.get_cli('config', 'diff')
-            self.assertEqual(cli.run_action(), 0)
+            self.assertEqual(cli.run_action(), 1)
             # We should see a diff header indicating changes in dcA/sectionLoads
             self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\+\+ dcA/sectionLoads generated$')
             # and the addition of a 0 weight for the new master
@@ -136,6 +136,9 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertEqual(cli.run_action(), 0)
         # And the config is valid again
         cli = self.get_cli('config', 'commit', '--batch')
+        self.assertEqual(cli.run_action(), 0)
+        # And no diff
+        cli = self.get_cli('config', 'diff')
         self.assertEqual(cli.run_action(), 0)
         # TODO: check that cached files are properly saved (issue with the tmpdir)
         lc = cli.db_config.live_config

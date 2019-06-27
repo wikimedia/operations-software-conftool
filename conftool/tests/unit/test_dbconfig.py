@@ -506,13 +506,16 @@ class TestDbConfig(TestCase):
         instances, sections = self._mock_objects()
         a = self.config.compute_config(sections, instances)
         # Identical input should yield empty diff output.
-        diff = list(self.config.diff_configs(a, a))
-        self.assertEqual(diff, [])
+        has_diff, diff = self.config.diff_configs(a, a)
+        self.assertFalse(has_diff)
+        self.assertEqual(list(diff), [])
 
         # Changing the weight of an instance should yield a diff.
         instances[1].sections['s3']['percentage'] = 10
         b = self.config.compute_config(sections, instances)
-        diff = list(self.config.diff_configs(a, b))
+        has_diff, diff = self.config.diff_configs(a, b)
+        diff = list(diff)
+        self.assertTrue(has_diff)
         self.assertIn('+++ test/sectionLoads generated\n', diff)
         self.assertIn('-            "db2": 10\n', diff)
         self.assertIn('+            "db2": 1\n', diff)
@@ -803,14 +806,21 @@ class TestDbConfigCli(TestCase):
         mocked_live_config.reset_mock()
         cli = self.get_cli(['config', 'diff'])
         cli.db_config.compute_and_check_config = mock.MagicMock(return_value=({}, None))
-        cli.db_config.diff_configs = mock.MagicMock(return_value=(iter(())))
+        cli.db_config.diff_configs = mock.MagicMock(return_value=(False, iter(())))
         res = cli._run_on_config()
         self.assertTrue(res.success)
         self.assertEqual(res.messages, [])
 
+        cli.db_config.compute_and_check_config = mock.MagicMock(return_value=({}, None))
+        cli.db_config.diff_configs = mock.MagicMock(return_value=(True, iter(('diff'))))
+        res = cli._run_on_config()
+        self.assertTrue(res.success)
+        self.assertEqual(res.exit_code, 1)
+        self.assertEqual(res.messages, [])
+
         cli = self.get_cli(['-s', 'missing', 'config', 'diff'])
         cli.db_config.compute_and_check_config = mock.MagicMock(return_value=({}, None))
-        cli.db_config.diff_configs = mock.MagicMock(return_value=(iter(())))
+        cli.db_config.diff_configs = mock.MagicMock(return_value=(False, iter(())))
         res = cli._run_on_config()
         self.assertFalse(res.success)
         self.assertEqual(res.messages, ['Datacenter missing not found'])

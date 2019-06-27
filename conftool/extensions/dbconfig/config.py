@@ -232,7 +232,9 @@ class DbConfig:
 
     def diff_configs(self, a, b, *, a_name='live', b_name='generated', datacenter=None):
         """
-        Returns a generator that yields unified diff lines of the deltas between configs a and b.
+        Returns a 2-element tuple. The first element is a boolean, True if there is any diff,
+        False otherwise. The second element is a generator that yields unified diff lines of
+        the deltas between configs a and b.
         The generator returned is akin to the ones returned by difflib.unified_diff, but with
         newlines already included, suitable for passing directly to sys.stdout.writelines().
 
@@ -273,13 +275,15 @@ class DbConfig:
                 # for sectionLoads is helpful.  It may be necessary to instead recurse
                 # into each section of sectionLoads -- so then we'd emit diffs for e.g.
                 # eqiad/sectionLoads/s1.
-                rv.append((line + '\n' for line in difflib.unified_diff(
+                rv.append([line + '\n' for line in difflib.unified_diff(
                     _to_json_lines(_get(a, [dc, stanza])),
                     _to_json_lines(_get(b, [dc, stanza])),
                     n=10, lineterm='',
                     fromfile=' '.join([path, a_name]),
-                    tofile=' '.join([path, b_name]))))
-        return itertools.chain(*rv)
+                    tofile=' '.join([path, b_name]))])
+
+        has_diff = any(i for i in rv)
+        return (has_diff, itertools.chain(*rv))
 
     def commit(self, *, batch=False, datacenter=None):
         """
@@ -306,13 +310,13 @@ class DbConfig:
                 return ActionResult(
                     False, 2, messages=['Datacenter {} not found'.format(datacenter)])
 
-        diff = ''.join(self.diff_configs(previous_config, config, datacenter=datacenter))
-        if not diff:
+        has_diff, diff = self.diff_configs(previous_config, config, datacenter=datacenter)
+        if not has_diff:
             return ActionResult(True, 0, messages=['Nothing to commit'])
 
         if not batch:
             # TODO: add test coverage
-            confirmed, error = self._ask_confirmation(diff)
+            confirmed, error = self._ask_confirmation(''.join(diff))
             if not confirmed:
                 return ActionResult(False, 3, messages=[error])
 
