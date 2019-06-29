@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='conftool',
-    version='1.0.2',
+    version='1.1.0',
     description='Tools to interoperate with distributed k/v stores',
     author='Joe',
     author_email='joe@wikimedia.org',
@@ -13,15 +13,18 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose'],
     zip_safe=False,
-    packages=find_packages(),
+    packages=find_packages(exclude=['*.tests', '*.tests.*']),
     entry_points={
         'console_scripts': [
             'conftool-sync = conftool.cli.syncer:main',
             'confctl = conftool.cli.tool:main',
-            'dbctl = conftool.extensions.dbconfig:main'
+            'dbctl = conftool.extensions.dbconfig:main [with-dbctl]'
         ],
     },
-    classifiers=(
+    extras_require={
+        'with-dbctl': [],  # No extra dependencies, but allow to mark it
+    },
+    classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
@@ -32,5 +35,5 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Topic :: System :: Clustering',
-    ),
+    ],
 )
