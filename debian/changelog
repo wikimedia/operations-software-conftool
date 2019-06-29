@@ -1,3 +1,16 @@
+conftool (1.1.0-1) stretch-wikimedia; urgency=medium
+
+  * Bump version to 1.1.0
+  * Add new binary package python3-conftool-dbctl that installs the dbconfig
+    extension.
+  * Refactor rules to build the two packages using .install files
+  * Remove prerm script
+  * Modify postinst script to remove the alternatives
+  * Bump Standards-Version to 4.3.0
+  * Fix debhelper Build-Depends
+
+ -- Riccardo Coccioli <rcoccioli@wikimedia.org>  Mon, 01 Jul 2019 10:10:10 +0200
+
 conftool (1.0.2-1) jessie-wikimedia; urgency=medium
 
   * Fix bug in raised exceptions in kvobject.py

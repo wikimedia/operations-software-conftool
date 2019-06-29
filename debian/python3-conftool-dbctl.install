@@ -1,0 +1,2 @@
+conftool/extensions/dbconfig/* /usr/lib/python3/dist-packages/conftool/extensions/dbconfig
+usr/bin/dbctl usr/bin

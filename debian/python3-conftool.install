@@ -1,0 +1,7 @@
+conftool/*.py usr/lib/python3/dist-packages/conftool
+conftool/cli/* usr/lib/python3/dist-packages/conftool/cli
+conftool/drivers/* usr/lib/python3/dist-packages/conftool/drivers
+conftool/extensions/__init__.py usr/lib/python3/dist-packages/conftool/extensions
+usr/bin/confctl usr/bin
+usr/bin/conftool-sync usr/bin
+usr/lib/python3.*/dist-packages/conftool-*.egg-info usr/lib/python3/dist-packages

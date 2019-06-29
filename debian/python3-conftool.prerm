@@ -1,8 +1,0 @@
-#!/bin/sh
-set -e
-if [ "$1" = remove ] || [ "$1" = deconfigure ]
-then
-	update-alternatives --remove confctl /usr/share/python3-conftool/confctl
-	update-alternatives --remove conftool-sync /usr/share/python3-conftool/conftool-sync
-fi
-#DEBHELPER#

@@ -2,10 +2,9 @@ Source: conftool
 Section: python
 Priority: optional
 Maintainer: Giuseppe Lavagetto <glavagetto@wikimedia.org>
-Build-Depends: debhelper (>= 9), dh-python, python-all, python-setuptools, python3-all, python3-setuptools
-Standards-Version: 4.1.2
+Build-Depends: debhelper (>= 10), dh-python, python-all, python-setuptools, python3-all, python3-setuptools
+Standards-Version: 4.3.0
 Homepage: https://github.com/wikimedia/operations-software-conftool
-X-Python3-Version: >= 3.4
 #Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/conftool.git
 #Vcs-Browser: https://anonscm.debian.org/cgit/python-modules/packages/conftool.git/
 #Testsuite: autopkgtest-pkg-python
@@ -18,3 +17,14 @@ Description: Set of tools to configure the WMF kv config store.
  syncing objects from a series of yaml files.
  .
  This package installs the library for Python 3.
+
+Package: python3-conftool-dbctl
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}, python3-conftool
+Description: Set of tools to manage MediaWiki databases.
+ It installs an extension to python3-conftool that allows one
+ to manage the MediaWiki database dynamic live state stored
+ by conftool.
+ .
+ This package installs the library for Python 3 and the dbctl
+ utility binary.
