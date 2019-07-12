@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 
+from conftool import __version__
 from conftool.extensions.dbconfig.cli import DbConfigCli
 
 
@@ -9,6 +10,7 @@ def parse_args(cmdline):
     parser = argparse.ArgumentParser(
         description='Tool to perform simple operations of configuration for databases in mediawiki',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--version', action='version', version="%(prog)s " + __version__)
     parser.add_argument('--config', help='Config file', default='/etc/conftool/config.yaml')
     parser.add_argument('--debug', action='store_true', default=False, help='print debug info')
     # TODO: how necessary / safe is this option?

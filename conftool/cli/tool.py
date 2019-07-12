@@ -13,7 +13,7 @@ import sys
 
 import yaml
 
-from conftool import _log, action, configuration, loader, setup_irc
+from conftool import __version__, _log, action, configuration, loader, setup_irc
 from conftool.kvobject import KVObject
 from conftool.drivers import BackendError
 
@@ -269,6 +269,7 @@ def parse_args(cmdline):
         epilog="More details at"
         " <https://wikitech.wikimedia.org/wiki/conftool>.",
         fromfile_prefix_chars='@')
+    parser.add_argument('--version', action='version', version="%(prog)s " + __version__)
     parser.add_argument('--config', help="Config file", default="/etc/conftool/config.yaml")
     parser.add_argument('--object-type', dest="object_type", default='node')
     parser.add_argument('--yaml', action="store_true",

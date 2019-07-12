@@ -5,6 +5,15 @@ import socket
 
 import yaml
 
+from pkg_resources import get_distribution, DistributionNotFound
+
+try:
+    __version__ = get_distribution(__name__).version
+    """The version of the installed conftool module."""
+except DistributionNotFound:
+    pass
+
+
 _log = logging.getLogger(__name__)
 
 

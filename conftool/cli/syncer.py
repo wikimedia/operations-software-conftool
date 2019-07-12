@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-from conftool import _log, configuration, loader, yaml_safe_load
+from conftool import __version__, _log, configuration, loader, yaml_safe_load
 from conftool.kvobject import KVObject
 from conftool.drivers import BackendError
 
@@ -187,6 +187,7 @@ def get_args(args):
     parser = argparse.ArgumentParser(description="Tool to sync the declared "
                                      "configuration on-disk with the kvstore "
                                      "data")
+    parser.add_argument('--version', action='version', version="%(prog)s " + __version__)
     parser.add_argument('--directory',
                         help="Directory containing the files to sync")
     parser.add_argument('--config', help="Optional configuration file",
