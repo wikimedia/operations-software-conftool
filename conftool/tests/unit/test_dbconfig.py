@@ -404,13 +404,13 @@ class TestDbConfig(TestCase):
     def test_live_config(self):
         self.mwconfig.query = mock.MagicMock()
         obj = self.mwconfig('eqiad', 'mwconfig')
-        obj.config = {
+        obj.val = {
             'readOnlyBySection': {},
             'sectionLoads': {'s1': [{'db1': 0}, {'db2': 10}], 'DEFAULT': [{'db3': 0}, {'db4': 10}]},
             'groupLoadsBySection': {'s1': {'vslow': {'db2': 10}, 'recentChanges': {'db14:3307': 4}}}
         }
         self.mwconfig.query.return_value = [obj]
-        self.assertEqual(self.config.live_config['eqiad'], obj.config)
+        self.assertEqual(self.config.live_config['eqiad'], obj.val)
         self.mwconfig.query.assert_called_with({'name': re.compile('^dbconfig$')})
 
     def test_config_from_dbstore(self):

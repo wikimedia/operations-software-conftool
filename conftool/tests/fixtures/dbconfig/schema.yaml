@@ -45,6 +45,6 @@
         selector: 'name=dbconfig'
         schema: 'mwconfig.schema'
   schema:
-    config:
+    val:
       type: "any"
       default: null

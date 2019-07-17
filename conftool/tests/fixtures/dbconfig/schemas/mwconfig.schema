@@ -80,8 +80,8 @@
     },
     "type": "object",
     "properties": {
-        "config": { "$ref": "#/definitions/config" }
+        "val": { "$ref": "#/definitions/config" }
     },
     "additionalProperties": false,
-    "required": ["config"]
+    "required": ["val"]
 }

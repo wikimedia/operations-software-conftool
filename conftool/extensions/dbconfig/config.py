@@ -61,7 +61,7 @@ class DbConfig:
         config = {}
         for obj in self.entity.query({'name': re.compile(r'^{}$'.format(DbConfig.object_name))}):
             dc = obj.tags['scope']
-            config[dc] = obj.config
+            config[dc] = obj.val
 
         return config
 
@@ -403,7 +403,7 @@ class DbConfig:
 
             obj = self.entity(dc, DbConfig.object_name)
             try:  # verify we conform to the json schema
-                obj.validate({'config': data})
+                obj.validate({'val': data})
             except ValueError as e:
                 # TODO: should any other object already written be rolled-back?
                 #       Or
@@ -413,7 +413,7 @@ class DbConfig:
                 # TODO: consider keep going with the other objects
                 return ActionResult(False, 10, messages=errors)
 
-            obj.config = data
+            obj.val = data
             obj.write()
 
         return ActionResult(True, 0)
