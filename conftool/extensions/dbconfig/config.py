@@ -244,17 +244,20 @@ class DbConfig:
         """
         # TODO: add support for limiting --scope
 
-        def _get(tree, branches, default=None):
+        def _get(tree, branches):
             """
             Multi-level dict.get().  branches is an iterable of keys to traverse in tree.
+            Will translate any NoneType encountered along the way into {}.  (This is
+            important for handling the bootstrapping case where no configuration object yet
+            exists in etcd.)
             """
-            if default is None:
-                default = {}
             subtree = tree
             for b in branches:
-                if b not in subtree:
-                    return default
+                if subtree is None or b not in subtree:
+                    return {}
                 subtree = subtree[b]
+            if subtree is None:
+                return {}
             return subtree
 
         def _to_json_lines(tree):

@@ -46,4 +46,5 @@
         schema: 'mwconfig.schema'
   schema:
     config:
-      default: {}
+      type: "any"
+      default: null
