@@ -1,3 +1,11 @@
+conftool (1.1.1-1) stretch-wikimedia; urgency=medium
+
+  * Bump version to 1.1.1
+  * All binaries now support --version flag
+  * dbctl fixes to make mwconfig schema match what is used in production
+
+ -- Chris Danis <cdanis@wikimedia.org>  Wed, 17 Jul 2019 13:25:47 -0400
+
 conftool (1.1.0-1) stretch-wikimedia; urgency=medium
 
   * Bump version to 1.1.0
