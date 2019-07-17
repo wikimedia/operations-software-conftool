@@ -3,7 +3,7 @@
   tags:
     - datacenter
   json_schema:
-    base_path: "conftool/tests/fixtures/dbconfig/schemas"
+    base_path: "conftool/tests/fixtures/dbconfig/schemas/dbconfig"
     rules:
       catchall:
         selector: 'name=.*'
@@ -20,7 +20,7 @@
   tags:
     - datacenter
   json_schema:
-    base_path: "conftool/tests/fixtures/dbconfig/schemas"
+    base_path: "conftool/tests/fixtures/dbconfig/schemas/dbconfig"
     rules:
       catchall:
         selector: 'name=.*'
@@ -39,11 +39,11 @@
   tags:
     - scope
   json_schema:
-    base_path: "conftool/tests/fixtures/dbconfig/schemas"
+    base_path: "conftool/tests/fixtures/dbconfig/schemas/mediawiki-config"
     rules:
       catchall:
         selector: 'name=dbconfig'
-        schema: 'mwconfig.schema'
+        schema: 'dbconfig.schema'
   schema:
     val:
       type: "any"
