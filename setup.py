@@ -13,7 +13,7 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose'],
     zip_safe=False,
-    packages=find_packages(exclude=['*.tests', '*.tests.*']),
+    packages=find_packages(),
     entry_points={
         'console_scripts': [
             'conftool-sync = conftool.cli.syncer:main',
