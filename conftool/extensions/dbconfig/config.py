@@ -359,7 +359,7 @@ class DbConfig:
         phaste_url = phaste(phaste_title, diff_text)
         # Set the announce message
         result.announce_message = ('dbctl commit of MediaWiki config (dc={dc}), diff saved to '
-                                   "'{url}', previous config saved to {f}").format(
+                                   "{url} and previous config saved to {f}").format(
             dc=datacenter_label, url=phaste_url, f=cache_file)
         return result
 
