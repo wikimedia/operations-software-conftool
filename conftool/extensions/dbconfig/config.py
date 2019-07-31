@@ -288,7 +288,7 @@ class DbConfig:
         has_diff = any(i for i in rv)
         return (has_diff, itertools.chain(*rv))
 
-    def commit(self, *, batch=False, datacenter=None):
+    def commit(self, *, batch=False, datacenter=None, comment=None):
         """
         Translates the current configuration from the db objects
         to the one read by MediaWiki, validates it and writes the objects to
@@ -318,11 +318,18 @@ class DbConfig:
             return ActionResult(True, 0, messages=['Nothing to commit'])
 
         diff_text = ''.join(diff)
+        if batch and comment is None:
+            return ActionResult(False, 4, messages=['--message required for batch commits'])
         if not batch:
             # TODO: add test coverage
             confirmed, error = self._ask_confirmation(diff_text)
             if not confirmed:
                 return ActionResult(False, 3, messages=[error])
+            if not sys.stdout.isatty():
+                return ActionResult(False, 4,
+                                    messages=['--batch required when running uninteractively'])
+            if comment is None:
+                comment = input("Please describe this commit: ")
 
         # Save current config for easy rollback
         cache_file = None
@@ -355,12 +362,12 @@ class DbConfig:
         result.messages.insert(0, rollback_message)
         datacenter_label = datacenter if datacenter is not None else 'all'
         # Publish diff to Phaste
-        phaste_title = 'dbconfig changes for MediaWiki (dc={dc})'.format(dc=datacenter_label)
+        phaste_title = "dbctl commit (dc={dc}): '{msg}'".format(dc=datacenter_label, msg=comment)
         phaste_url = phaste(phaste_title, diff_text)
         # Set the announce message
-        result.announce_message = ('dbctl commit of MediaWiki config (dc={dc}), diff saved to '
-                                   "{url} and previous config saved to {f}").format(
-            dc=datacenter_label, url=phaste_url, f=cache_file)
+        result.announce_message = ("dbctl commit (dc={dc}): '{msg}', diff saved to "
+                                   '{url} and previous config saved to {f}').format(
+            dc=datacenter_label, url=phaste_url, f=cache_file, msg=comment)
         return result
 
     def restore(self, file_object, datacenter=None):

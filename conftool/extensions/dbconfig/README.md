@@ -245,6 +245,7 @@ What will happen once you call commit is what follows:
 * A configuration based on those data is computed.
 * This configuration gets sanity-checked according to rules we implemented: at the time of this writing, we just verify there is a master, and that the minimum number of replicas is present.  (These three steps are also the `generate` command.)
 * A diff is shown, and the user is prompted for confirmation.
+* If a comment describing the change was not provided with `-m`/`--message`, the user is prompted to enter one.
 * A backup copy of the previous configuration is saved locally to disk and the rollback command printed to stderr.
 * Once the new configuration is considered valid, it is atomically written to the datastore and is available for MediaWiki to consume.
 
@@ -257,6 +258,6 @@ command printed to stderr when committing.
     # Restore the configuration from file
     dbctl config restore /path/to/previous_config.json
 
-The file will be read, validated and writted to the datastore to make it available for MediaWiki to consume.
-The internal section and instance objects will not be touched, so a new `dbctl config commit` whould re-apply
+The file will be read, validated and written to the datastore to make it available for MediaWiki to consume.
+The internal section and instance objects will not be touched, so a new `dbctl config commit` would re-apply
 the configuration from before the restore.

@@ -121,7 +121,8 @@ class DbConfigCli(ToolCliBase):
         cmd = self.args.command
         dc = self.args.scope
         if cmd == 'commit':
-            return self.db_config.commit(batch=self.args.batch, datacenter=dc)
+            return self.db_config.commit(batch=self.args.batch, datacenter=dc,
+                                         comment=self.args.message)
         elif cmd == 'restore':
             return self.db_config.restore(self.args.file, datacenter=dc)
         elif cmd == 'diff':

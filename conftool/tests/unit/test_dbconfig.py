@@ -526,7 +526,7 @@ class TestDbConfig(TestCase):
         instances, sections = self._mock_objects()
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
-        res = self.config.commit(batch=True)
+        res = self.config.commit(batch=True, comment='s4: pool db1')
         self.assertFalse(res.success)
         self.assertEqual(res.messages, ['Section s4 is supposed to have minimum 1 replicas, found 0'])
 
@@ -535,8 +535,12 @@ class TestDbConfig(TestCase):
         obj.name = 'mocked'
         self.config.entity = mock.MagicMock(return_value=obj)
         self.config.entity.config.cache_path = '/cache/path'
-        res = self.config.commit(batch=True)
+        res = self.config.commit(batch=True, comment=None)
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ['--message required for batch commits'])
+        res = self.config.commit(batch=True, comment='s4: pool db1')
         self.assertTrue(res.success)
+        self.assertRegexpMatches(res.announce_message, 's4: pool db1')
         self.assertRegexpMatches(res.messages[0],
                                  '^Previous configuration saved. To restore it run')
         self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
@@ -545,7 +549,7 @@ class TestDbConfig(TestCase):
         self.config.entity.assert_called_once_with('test', 'dbconfig')
         # Validation error is catched and an error is shown to the user
         obj.validate.side_effect = ValueError('test')
-        res = self.config.commit(batch=True)
+        res = self.config.commit(batch=True, comment='s4: pool db1')
         self.assertFalse(res.success)
         self.assertEqual(res.messages[1:3], ['Object mocked failed to validate:', 'test'])
 
@@ -561,7 +565,7 @@ class TestDbConfig(TestCase):
         self.config.entity = mock.MagicMock(return_value=obj)
         self.config.entity.config.cache_path = '/cache/path'
         mocked_open.side_effect = OSError
-        res = self.config.commit(batch=True)
+        res = self.config.commit(batch=True, comment='s4: pool db1')
         self.assertTrue(res.success)
         self.assertRegexpMatches(res.messages[0],
                                  '^Unable to backup previous configuration. Failed to save it')
@@ -830,4 +834,4 @@ class TestDbConfigCli(TestCase):
         res = cli._run_on_config()
         self.assertTrue(res.success)
         self.assertEqual(res.messages, [])
-        cli.db_config.commit.assert_called_with(batch=False, datacenter=None)
+        cli.db_config.commit.assert_called_with(batch=False, datacenter=None, comment=None)

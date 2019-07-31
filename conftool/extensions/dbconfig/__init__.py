@@ -101,6 +101,9 @@ def parse_args(cmdline):
                                  help='Commit the configuration for consumption by MediaWiki')
     commit.add_argument('-b', '--batch', action='store_true',
                         help='Do not ask for visual diff confirmation')
+    commit.add_argument('-m', '--message',
+                        help='A comment describing the change.  If unspecified, will prompt user '
+                             'in an interactive session.  Required if running uninteractively.')
     diff = commands.add_parser('diff',
                                help='Show deltas between the live config and the generated config')
     diff.add_argument('-q', '--quiet', action='store_true',

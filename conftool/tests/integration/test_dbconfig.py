@@ -75,7 +75,10 @@ class ConftoolTestCase(IntegrationTestBase):
         # Now generate and commit should work
         cli = self.get_cli('config', 'generate')
         self.assertEqual(cli.run_action(), 0)
+        # A batch commit without a message fails.
         cli = self.get_cli('config', 'commit', '--batch')
+        self.assertEqual(cli.run_action(), 4)
+        cli = self.get_cli('config', 'commit', '--batch', '--message', 'initial commit')
         self.assertEqual(cli.run_action(), 0)
         # On empty diff exit early without committing or saving current configuration
         cli = self.get_cli('config', 'commit')
@@ -135,7 +138,7 @@ class ConftoolTestCase(IntegrationTestBase):
         cli = self.get_cli('instance', 'dba1', 'depool')
         self.assertEqual(cli.run_action(), 0)
         # And the config is valid again
-        cli = self.get_cli('config', 'commit', '--batch')
+        cli = self.get_cli('config', 'commit', '--batch', '--message', 'change master to dba2:3307')
         self.assertEqual(cli.run_action(), 0)
         # And no diff
         cli = self.get_cli('config', 'diff')
