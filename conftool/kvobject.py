@@ -10,6 +10,8 @@ class KVObject:
     backend = None
     config = None
     _schema = {}
+    _tags = {}
+    strict_schema = True
 
     @classmethod
     def setup(cls, configobj):
@@ -200,8 +202,8 @@ class Entity(KVObject):
     """
     General-purpose entity with a strict schema
     """
+    # Allows to store dependencies
     depends = []
-    strict_schema = True
 
     def __init__(self, *tags):
         if len(tags) != (len(self._tags) + 1):
@@ -241,9 +243,14 @@ class JsonSchemaEntity(Entity):
     """
     Specific class for json-schema based entities
     """
+    # loader gets injected into the derived classes when they get generated
+    # by loader.factory
+    loader = None
+
     def __init__(self, *tags):
         super().__init__(*tags)
-        self.rules = self.loader.rules_for(self.tags, self._name)
+        if self.loader is not None:
+            self.rules = self.loader.rules_for(self.tags, self._name)
 
     def validate(self, values):
         # First dump our current value to a json output
