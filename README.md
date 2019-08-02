@@ -36,8 +36,6 @@ switch, `--config`. The following configurations can be changed:
 
 * `pools_path` (default: 'pools'): base path for the 'node' entity
 
-* `services_path` (default: 'services'): base path for the 'service' entity
-
 * `driver_options` (default: {}): a dict of options to pass to the
   specific driver you're using. Check the specific driver class for
   details.

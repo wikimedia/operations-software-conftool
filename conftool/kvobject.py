@@ -10,7 +10,6 @@ class KVObject:
     backend = None
     config = None
     _schema = {}
-    static_values = False
 
     @classmethod
     def setup(cls, configobj):
@@ -128,29 +127,6 @@ class KVObject:
 
     @classmethod
     def from_yaml(cls, data):
-        if cls.static_values:
-            return cls._kv_from_yaml(data)
-        else:
-            return cls._from_yaml(data)
-
-    @classmethod
-    def _kv_from_yaml(cls, data):
-        """Get keys and values from the yaml file"""
-        depth = len(cls._tags)
-        if depth == 0:
-            return data
-        # Flatten a multidimensional dict
-        # to {a/b/c/d: val} format
-        while depth > 0:
-            depth -= 1
-            tmpdict = {}
-            for k, v in data.items():
-                tmpdict.update({("%s/%s" % (k, el)): val for el, val in v.items()})
-            data = tmpdict
-        return data
-
-    @classmethod
-    def _from_yaml(cls, data):
         depth = len(cls._tags)
         if depth == 0:
             return {el: None for el in data}

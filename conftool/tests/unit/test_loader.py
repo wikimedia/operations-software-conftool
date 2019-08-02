@@ -82,7 +82,7 @@ class SchemaTestCase(TestCase):
     def test_load_schema(self):
         schema = loader.Schema.from_file(self.schema_file)
         self.assertEqual(set(schema.entities.keys()),
-                         set(['node', 'pony', 'service', 'unicorn', 'horse']))
+                         set(['node', 'pony', 'unicorn', 'horse']))
         n = schema.entities['pony']('violet', 'female', 'foobar')
         n.hair_color = "violet"
         self.assertEqual(n.accessories, [])
@@ -96,12 +96,12 @@ class SchemaTestCase(TestCase):
         """
         # Case 1: the file is not present
         schema = loader.Schema.from_file('doesnt.exists')
-        self.assertListEqual(sorted(schema.entities.keys()), ['node', 'service'])
+        self.assertListEqual(sorted(schema.entities.keys()), ['node'])
         self.assertFalse(schema.has_errors)
         # Case 2: broken file (that means the file includes invalid data)
         schema = loader.Schema.from_file(os.path.join(test_base, 'fixtures',
                                                       'broken_schema.yaml'))
-        self.assertListEqual(sorted(schema.entities.keys()), ['node', 'pony', 'service', 'unicorn'])
+        self.assertListEqual(sorted(schema.entities.keys()), ['node', 'pony', 'unicorn'])
         self.assertTrue(schema.has_errors)
         # Case 3: invalid yaml
         with mock.patch('conftool.yaml.safe_load') as mocker:

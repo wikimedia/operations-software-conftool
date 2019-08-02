@@ -133,17 +133,11 @@ class EntitySyncer:
             tags = key.split('/')
             _log.debug("Loading %s:%s", self.entity, key)
             obj = self.cls(*tags)
-            if obj.static_values:
-                _log.info("Syncing static object %s:%s", self.entity, key)
-                obj.validate(self.data[key])
-                obj.from_net(self.data[key])
-            else:
-                if obj.exists:
-                    # For some reason, the object already exists, do nothing
-                    _log.warning("Not loading %s:%s: object already exists")
-                    continue
-                else:
-                    _log.info("Creating %s with tags %s", self.entity, key)
+            if obj.exists:
+                # For some reason, the object already exists, do nothing
+                _log.warning("Not loading %s:%s: object already exists")
+                continue
+            _log.info("Creating %s with tags %s", self.entity, key)
             obj.write()
 
     def cleanup(self):
@@ -175,12 +169,7 @@ class EntitySyncer:
         live_set = set(live_data.keys())
         new = exp_set - live_set
         to_remove = live_set - exp_set
-        # If this entity is static, load changed values as well
-        to_change = set()
-        if self.cls.static_values:
-            to_change = {el for el in (live_set & exp_set) if live_data[el] != exp_data[el]}
-
-        return (new | to_change, to_remove)
+        return (new, to_remove)
 
 
 def get_args(args):

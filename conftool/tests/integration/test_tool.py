@@ -59,7 +59,7 @@ class ToolIntegration(IntegrationTestBase):
         output = self.output_for(args)[0]
         k = sorted(output.keys())
         self.assertEqual(k, ['cp1008', 'tags'])
-        self.assertEqual(output['cp1008']['pooled'], 'no')
+        self.assertEqual(output['cp1008']['pooled'], 'inactive')
         # Check the irc message was not sent for a get operation
         self.assertEqual(self.irc.emit.called, False)
 

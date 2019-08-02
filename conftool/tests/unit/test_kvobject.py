@@ -171,8 +171,7 @@ class TestKVObject(TestCase):
 
     def test_from_yaml_no_tags(self):
         KVObject._tags = mock.MagicMock(return_value=[])
-        self.assertEqual(KVObject._kv_from_yaml("test"), "test")
-        self.assertEqual({'a': None}, KVObject._from_yaml(['a']))
+        self.assertEqual({'a': None}, KVObject.from_yaml(['a']))
 
 
 class TestEntity(TestCase):
