@@ -1,3 +1,10 @@
+conftool (1.1.4-1) stretch-wikimedia; urgency=medium
+
+  * dbctl config commit now requires a descriptive commit message
+  * dbctl no longer surrounds phab paste URLs with spurious quotes
+
+ -- Chris Danis <cdanis@wikimedia.org>  Mon, 05 Aug 2019 15:49:43 -0400
+
 conftool (1.1.1-1) stretch-wikimedia; urgency=medium
 
   * Bump version to 1.1.1
