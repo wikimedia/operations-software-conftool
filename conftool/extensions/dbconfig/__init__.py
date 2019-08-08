@@ -43,33 +43,32 @@ def parse_args(cmdline):
     commands.add_parser('get', help='Get information about the database instance')
     commands.add_parser('edit', help='Edit information about the database instance')
 
+    def _add_section_and_group(parser, action_description, without_touching_description):
+        """
+        Adds --section and --group arguments from a common template.
+        """
+        parser.add_argument('--section', help='If you want to indicate a specific section')
+        parser.add_argument(
+            '--group',
+            help='Within a section {action} only a specific group. The '
+                 'special label "all" can be used to {action} the instance from all the '
+                 'configured groups at once, without touching the main {without}.'.format(
+                     action=action_description, without=without_touching_description))
+
     depool = commands.add_parser(
         'depool',
         help='Depool the instance, either completely or from a specified section/group')
-    depool.add_argument('--section', help='If you want to indicate a specific section')
-    depool.add_argument('--group',
-                        help='Within a section depool only a specific group. The '
-                             'special label "all" can be used to depool the instance from all the '
-                             'configured groups at once, without touching the main pooled status.')
+    _add_section_and_group(depool, "depool", "pooled status")
 
     pool = commands.add_parser(
         'pool', help=('Pool the instance, either completely or for a specified section/group. '
                       'If no percentage is given, it will remain at the previously-stored value.'))
     pool.add_argument('-p', '--percentage', default=None, type=int,
                       help='The percentage of pooling to set')
-    pool.add_argument('--section', help='If you want to indicate a specific section')
-    pool.add_argument('--group',
-                      help='Within a section pool only a specific group. The '
-                           'special label "all" can be used to pool the instance in all the '
-                           'configured groups at once, without touching the main pooled status.')
+    _add_section_and_group(pool, "pool", "pooled status")
 
     weight = commands.add_parser('set-weight', help='Set the weight of a specific section/group')
-    weight.add_argument('--section',
-                        help='If you want to indicate a specific section', required=True)
-    weight.add_argument('--group',
-                        help='Within a section set the weight only for a specific group. The '
-                             'special label "all" can be used to set the weight of the instance '
-                             'in all configured groups at once, without touching the main weight.')
+    _add_section_and_group(weight, "set the weight for", "weight")
     weight.add_argument('weight', help='The new weight', type=int)
 
     # dbconfig section
