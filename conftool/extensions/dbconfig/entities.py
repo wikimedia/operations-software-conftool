@@ -174,6 +174,7 @@ class Instance(DbObjBase):
     example = """
     host_ip: 10.0.0.1
     port: 3306
+    note: ''
     sections:
       s1:
         groups:
@@ -186,10 +187,12 @@ class Instance(DbObjBase):
         percentage: 100
         pooled: true
         weight: 200
+        candidate_master: false
       s2:
         percentage: 100
         pooled: true
         weight: 200
+        candidate_master: false
     """
 
     def depool(self, instance, section=None, group=None):
