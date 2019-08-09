@@ -40,8 +40,8 @@ def parse_args(cmdline):
     commands = instance.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
 
-    commands.add_parser('get', help='Get information about the database instance')
-    commands.add_parser('edit', help='Edit information about the database instance')
+    commands.add_parser('get', help='Get information about the specified instance(s)')
+    commands.add_parser('edit', help='Edit information about the specified instance')
 
     def _add_section_and_group(parser, action_description, without_touching_description):
         """
@@ -80,16 +80,17 @@ def parse_args(cmdline):
     commands = section.add_subparsers(help='Command to execute', dest='command')
     commands.required = True
 
-    commands.add_parser('get', help='Get information about the database instance')
+    commands.add_parser('get', help='Get information about the specified section(s)')
 
-    commands.add_parser('edit', help='Edit information about the database instance')
+    commands.add_parser('edit', help='Edit information about the specified section')
 
     master = commands.add_parser('set-master', help='Set a new master for the specified section')
     master.add_argument('instance_name', metavar='INSTANCE',
-                        help='Instance to set as the master')
+                        help='Instance to set as the master. It must already be pooled '
+                             'in this section.')
 
     ro = commands.add_parser('ro', help='Set the section to read-only')
-    ro.add_argument('reason', help='Message to show to the users for the read-only phase')
+    ro.add_argument('reason', help='Message to show to users for the read-only phase')
     commands.add_parser('rw', help='Set the section to read-write')
 
     # dbconfig config
