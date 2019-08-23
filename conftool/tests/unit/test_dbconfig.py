@@ -362,6 +362,12 @@ class TestDbConfig(TestCase):
         KVObject.config = configuration.Config(driver="")
         self.schema = loader.Schema.from_file(
             os.path.join(test_base, 'fixtures', 'dbconfig', 'schema.yaml'))
+        # We mock open() in some tests below, so for schema validation to work, we need to load
+        # all JSON schemas now, instead of lazily loading them.
+        for name, entity in self.schema.entities.items():
+            if hasattr(entity, 'loader'):
+                for rule in entity.loader.rules:
+                    _ = rule.schema
         self.instance = mock.MagicMock()
         self.section = mock.MagicMock()
         self.config = DbConfig(self.schema, self.instance, self.section)
@@ -546,12 +552,12 @@ class TestDbConfig(TestCase):
         self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
                                  '^/cache/path/dbconfig/[0-9-]{15}-.+.json')
         mocked_mkdir.assert_called_with(mode=0o755, parents=True)
-        self.config.entity.assert_called_once_with('test', 'dbconfig')
+        self.config.entity.assert_called_with('test', 'dbconfig')
         # Validation error is catched and an error is shown to the user
         obj.validate.side_effect = ValueError('test')
         res = self.config.commit(batch=True, comment='s4: pool db1')
         self.assertFalse(res.success)
-        self.assertEqual(res.messages[1:3], ['Object mocked failed to validate:', 'test'])
+        self.assertEqual(res.messages[0:2], ['Object mocked failed to validate:', 'test'])
 
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
