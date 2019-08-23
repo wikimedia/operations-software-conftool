@@ -376,17 +376,21 @@ class TestDbConfig(TestCase):
 
     def _mock_objects(self):
         db1 = self.schema.entities['dbconfig-instance']('test', 'db1')
+        db1.host_ip = '1.1.1.1'
         db1.sections = {
             's1': {'weight': 10, 'pooled': True, 'percentage': 50},
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
             's4': {'weight': 10, 'pooled': False, 'percentage': 100},
         }
         db2 = self.schema.entities['dbconfig-instance']('test', 'db2')
+        db2.host_ip = '2.2.2.2'
         db2.sections = {
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
             's4': {'weight': 10, 'pooled': True, 'percentage': 100},
         }
         db3 = self.schema.entities['dbconfig-instance']('test', 'db3')
+        db3.host_ip = '3.3.3.3'
+        db3.port = '3333'
         db3.sections = {
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
         }
@@ -435,6 +439,7 @@ class TestDbConfig(TestCase):
                 'DEFAULT': [{'db3': 10}, {'db1': 10, 'db2': 10}],
                 's4': [{'db2': 10}, {}]},
              'groupLoadsBySection': {},
+             'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333'},
              'readOnlyBySection': {'s3': 'Some reason.'}}
         }
         res1 = self.config.compute_config(sections, instances)

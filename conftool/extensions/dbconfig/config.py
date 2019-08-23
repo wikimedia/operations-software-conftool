@@ -88,7 +88,9 @@ class DbConfig:
         # Let's initialize the variables
         for dc in section_masters.keys():
             config[dc] = {'sectionLoads': defaultdict(lambda: [{}, {}]), 'groupLoadsBySection': {},
-                          'readOnlyBySection': {}}
+                          'readOnlyBySection': {},
+                          'hostsByName': {},
+                          }
 
         # Fill in the readonlybysection data
         for obj in sections:
@@ -100,6 +102,13 @@ class DbConfig:
         for instance in instances:
             datacenter = instance.tags['datacenter']
             masters = section_masters[datacenter]
+            if instance.name not in config[datacenter]['hostsByName']:
+                if instance.port == instance.get_default('port'):
+                    hostport = instance.host_ip
+                else:
+                    # TODO: this will not work at all for IPv6 host_ips!
+                    hostport = '{}:{}'.format(instance.host_ip, instance.port)
+                config[datacenter]['hostsByName'][instance.name] = hostport
             for section_name, section in instance.sections.items():
                 # If the corresponding section is not defined, skip it
                 if section_name not in masters:
