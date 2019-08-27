@@ -217,17 +217,38 @@ class DbConfig:
         new_config = self.compute_config(sections, instances)
         return self.check_config(new_config, sections)
 
-    def compute_and_check_config(self):
+    def _validate(self, config, datacenter=None):
+        errors = []
+        for dc, data in config.items():
+            if datacenter is not None and dc != datacenter:
+                continue
+
+            obj = self.entity(dc, DbConfig.object_name)
+            try:
+                obj.validate({'val': data})
+            except ValueError as e:
+                errors.extend(['Object {} failed to validate:'.format(obj.name),
+                               str(e),
+                               'The actual value was: {}'.format(data)])
+
+        return errors
+
+    def compute_and_check_config(self, datacenter=None):
         """
         Returns a tuple of (configuration dict, list of errors).
+        Runs the checks in check_config as well as validating against the JSON schema.
         """
+        # Something subtle here: even when datacenter!=None, we generate configuration
+        # using all sections and instances.  It might be relevant in the future if we allow
+        # instances to belong to sections from another DC, or some other oddball scenarios.
         sections = [s for s in self.section.get_all(initialized_only=True)]
         config = self.compute_config(
             sections,
             self.instance.get_all(initialized_only=True))
 
-        errors = self.check_config(config, sections)
-
+        errors = []
+        errors.extend(self.check_config(config, sections))
+        errors.extend(self._validate(config))
         return (config, errors)
 
     def diff_configs(self, a, b, *, a_name='live', b_name='generated', datacenter=None):
@@ -407,19 +428,10 @@ class DbConfig:
         for dc, data in config.items():
             if datacenter is not None and dc != datacenter:
                 continue
-
-            obj = self.entity(dc, DbConfig.object_name)
-            try:  # verify we conform to the json schema
-                obj.validate({'val': data})
-            except ValueError as e:
-                # TODO: should any other object already written be rolled-back?
-                #       Or
-                errors = ['Object {} failed to validate:'.format(obj.name),
-                          str(e),
-                          'The actual value was: {}'.format(data)]
-                # TODO: consider keep going with the other objects
+            errors = self._validate(config, datacenter)
+            if errors:
                 return ActionResult(False, 10, messages=errors)
-
+            obj = self.entity(dc, DbConfig.object_name)
             obj.val = data
             obj.write()
 
