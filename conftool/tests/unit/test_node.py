@@ -1,7 +1,7 @@
 from unittest import mock, TestCase
 
 from conftool.kvobject import KVObject
-from conftool import node, service, drivers
+from conftool import node, drivers
 from conftool import configuration
 from conftool.tests.unit import MockBackend
 
@@ -48,7 +48,7 @@ class TestNode(TestCase):
         """Test bad validation"""
         self._mock_read({"pooled": "maybe?", "weight": 20})
         n = node.Node('dc', 'cluster', 'service', 'foo')
-        self.assertEqual(n.pooled, "no")
+        self.assertEqual(n.pooled, "inactive")
         # Note: this fails at the moment
         # self.assertRaises(ValueError, setattr, n, "pooled", "maybe")
 

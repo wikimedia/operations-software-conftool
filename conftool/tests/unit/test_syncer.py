@@ -35,8 +35,8 @@ class EntitySyncerTestCase(TestCase):
         # Test actually loading data yields the expected result
         self.assertIn('eqiad/cache_text/https/cp1008', e.data)
         # Test can survive a malformed file
-        e = EntitySyncer('service', self.schema.entities['service'])
-        e.load_files(self.fixtures_dir)
+        e = EntitySyncer('node', self.schema.entities['node'])
+        e.load_files(os.path.join(self.fixtures_dir, 'baddata'))
         # Test a malformed / empty file will cause removal _not_ to happen
         self.assertTrue(e.skip_removal)
 
@@ -67,32 +67,6 @@ class EntitySyncerTestCase(TestCase):
         self.assertSetEqual(set(['dc1/clusterA/https/serv3']), to_add)
         self.assertSetEqual(set(['dc1/clusterA/https/serv4', 'dc1/clusterA/apache/serv3']),
                             to_remove)
-        # Test an unmodified static value object will not get overwritten
-        exp_data = {
-            'clusterA/https': {
-                'default_values': {'pooled': 'no', 'weight': 1},
-                'datacenters': ['eqiad']
-            },
-            'clusterA/apache2': {
-                'default_values': {'pooled': 'yes', 'weight': 1},
-                'datacenters': ['eqiad']
-            }
-        }
-        live_data = {
-            'clusterA/https': {
-                'default_values': {'pooled': 'no', 'weight': 1},
-                'datacenters': ['eqiad']
-            },
-            'clusterA/apache2': {
-                'default_values': {'pooled': 'no', 'weight': 1},
-                'datacenters': ['eqiad']
-            }
-        }
-        e = EntitySyncer('service', self.schema.entities['service'])
-        KVObject.backend.driver.all_data = mock.Mock(return_value=live_data)
-        to_add, to_remove = e.get_changes(exp_data)
-        self.assertSetEqual(to_remove, set())
-        self.assertSetEqual(to_add, set(['clusterA/apache2']))
 
     def test_load_cleanup(self):
         e = EntitySyncer('node', self.schema.entities['node'])
@@ -101,7 +75,6 @@ class EntitySyncerTestCase(TestCase):
                           set(['dc1/clusterA/https/serv2'])))
         obj = mock.Mock()
         obj.exists = False
-        obj.static_values = False
         e.cls = mock.Mock(return_value=obj)
         e.load()
         e.cls.assert_any_call('dc1', 'clusterA', 'https', 'serv1')
@@ -111,13 +84,6 @@ class EntitySyncerTestCase(TestCase):
         e.cleanup()
         e.cls.assert_called_with('dc1', 'clusterA', 'https', 'serv2')
         obj.delete.assert_called_with()
-        # Now let's test a static value object
-        obj.static_values = True
-        e.get_changes.return_value = (set(['dc1/clusterA/https/serv1']), set())
-        e.data = {'dc1/clusterA/https/serv1': {'weight': 2, 'pooled': 'yes'},
-                  'dc2/clusterB/https/serv2': {'weight': 2, 'pooled': 'yes'}}
-        e.load()
-        obj.from_net.assert_called_with(e.data['dc1/clusterA/https/serv1'])
 
 
 class SyncerTestCase(TestCase):
@@ -137,7 +103,7 @@ class SyncerTestCase(TestCase):
         self.assertEqual(self.syncer.load_order, ['pony', 'unicorn'])
         # If there is a dependency, the master class gets loaded first
         self.syncer.add('node', self.syncer.schema.entities['node'])
-        self.assertEqual(self.syncer.load_order, ['pony', 'unicorn', 'service', 'node'])
+        self.assertEqual(self.syncer.load_order, ['pony', 'unicorn', 'node'])
 
     def test_loop_dependencies(self):
         self.syncer.schema.entities['pony'].depends = ['unicorn']
@@ -145,27 +111,30 @@ class SyncerTestCase(TestCase):
         # Test a circular dependency raises an exception
         with self.assertRaises(ValueError):
             self.syncer.add('pony', self.syncer.schema.entities['pony'])
-        # A more complex example
+        # A more complex example:
+        # pony depends on node
+        # unicorn depends on pony
+        # node depends on unicorn
+        self.syncer.schema.entities['node'].depends = ['unicorn']
         self.syncer.schema.entities['pony'].depends = ['node']
-        self.syncer.schema.entities['service'].depends = ['unicorn']
         with self.assertRaises(ValueError):
             self.syncer.add('pony', self.syncer.schema.entities['pony'])
 
     def test_multiple_dependencies(self):
-        self.syncer.schema.entities['pony'].depends = ['service']
-        self.syncer.schema.entities['unicorn'].depends = ['service']
-        self.syncer.schema.entities['service'].depends = []
+        self.syncer.schema.entities['pony'].depends = ['node']
+        self.syncer.schema.entities['unicorn'].depends = ['node']
+        self.syncer.schema.entities['node'].depends = []
         # Test multiple entities having the same dependency add it only once
         self.syncer.add('pony', self.syncer.schema.entities['pony'])
         self.syncer.add('unicorn', self.syncer.schema.entities['unicorn'])
-        self.assertEqual(self.syncer.load_order, ['service', 'pony', 'unicorn'])
+        self.assertEqual(self.syncer.load_order, ['node', 'pony', 'unicorn'])
 
     def test_load(self):
         with mock.patch('conftool.cli.syncer.EntitySyncer') as mocker:
             obj = mock.Mock()
             mocker.return_value = obj
             self.syncer.load()
-            for ent in ['unicorn', 'pony', 'service', 'node']:
+            for ent in ['unicorn', 'pony', 'node']:
                 mocker.assert_any_call(ent, self.syncer.schema.entities[ent])
             obj.load_files.assert_called_with(self.fixtures_dir)
             obj.load.assert_called_with()

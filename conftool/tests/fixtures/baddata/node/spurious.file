@@ -1,0 +1,6 @@
+eqiad:
+    cache_text:
+      not_to_load:
+        - varnish-fe
+        - varnish-be
+        - https

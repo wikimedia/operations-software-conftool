@@ -1,7 +1,7 @@
 import os
 import re
 
-from conftool import _log, node, service, yaml_safe_load
+from conftool import _log, node, yaml_safe_load
 from conftool.kvobject import Entity, FreeSchemaEntity, JsonSchemaEntity
 from conftool.types import get_validator, get_json_schema
 
@@ -89,4 +89,3 @@ class Schema:
 
     def _add_default_entities(self):
         self.entities['node'] = node.Node
-        self.entities['service'] = service.Service

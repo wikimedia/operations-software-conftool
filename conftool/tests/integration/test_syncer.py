@@ -1,7 +1,7 @@
 import os
 import contextlib
 from conftool.cli import syncer
-from conftool import loader, service, node
+from conftool import loader, node
 from conftool.extensions.dbconfig.entities import Instance, Section
 from conftool.tests.integration import IntegrationTestBase, test_base
 import tempfile
@@ -10,16 +10,11 @@ import shutil
 
 
 @contextlib.contextmanager
-def temp_data(services, nodes=None):
+def temp_data(nodes=None):
     directory = tempfile.mkdtemp()
-    services_dir = os.path.join(directory, 'service')
     nodes_dir = os.path.join(directory, 'node')
-    os.mkdir(services_dir)
     os.mkdir(nodes_dir)
-    services_file = os.path.join(services_dir, 'test.yaml')
     nodes_file = os.path.join(nodes_dir, 'test.yaml')
-    with open(services_file, 'w') as fh:
-        yaml.dump({'test': services}, fh)
     if nodes is not None:
         with open(nodes_file, 'w') as fh:
             yaml.dump({'testdc': nodes}, fh)
@@ -30,15 +25,6 @@ def temp_data(services, nodes=None):
 class SyncerIntegration(IntegrationTestBase):
 
     @staticmethod
-    def service_generator(base_servname, number, initial=0):
-        data = {}
-        for i in range(initial, number):
-            servname = base_servname + str(i)
-            data[servname] = {'default_values': {"pooled": "yes", "weight": i},
-                              'datacenters': ['kitchen_sink', 'sofa']}
-        return data
-
-    @staticmethod
     def nodelist_generator(servnames, number, initial=0):
         return {nodename: servnames for nodename
                 in ["node-%d" % i for i in range(initial, number)]}
@@ -46,41 +32,12 @@ class SyncerIntegration(IntegrationTestBase):
     def node_generator(self, cluster, servnames, number, initial=0):
         return {cluster: self.nodelist_generator(servnames, number, initial)}
 
-    def test_load_services(self):
-        data = self.service_generator('espresso-machine', 10)
-        with temp_data(data) as basepath:
-            sync = syncer.Syncer('/nonexistent', basepath)
-            sync.load()
-
-        for i in range(10):
-            servname = 'espresso-machine' + str(i)
-            s = service.Service('test', servname)
-            self.assertEqual(
-                s.default_values, data[servname]['default_values'])
-
-    def test_remove_services(self):
-        cluster = 'test'
-        data = self.service_generator('espresso-machine', 10)
-        with temp_data(data) as basepath:
-            sync = syncer.Syncer('/nonexistent', basepath)
-            sync.load()
-        data = self.service_generator('espresso-machine', 1)
-        with temp_data(data) as basepath:
-            sync = syncer.Syncer('/nonexistent', basepath)
-            sync.load()
-        s = service.Service(cluster, 'espresso-machine0')
-        self.assertTrue(s.exists)
-        for i in range(1, 10):
-            servname = 'espresso-machine' + str(i)
-            s = service.Service(cluster, servname)
-            self.assertFalse(s.exists)
-
     def test_load_nodes(self):
         dc = 'testdc'
         cluster = 'test'
-        services = self.service_generator('espresso-machine', 2)
-        nodes = self.node_generator(cluster, list(services.keys()), 20)
-        with temp_data(services, nodes) as basepath:
+        services = ['coffee', 'espresso']
+        nodes = self.node_generator(cluster, services, 20)
+        with temp_data(nodes) as basepath:
             sync = syncer.Syncer('/nonexistent', basepath)
             sync.load()
 
@@ -89,19 +46,19 @@ class SyncerIntegration(IntegrationTestBase):
                 nodename = "node-%d" % i
                 n = node.Node(dc, cluster, servname, nodename)
                 self.assertTrue(n.exists)
-                self.assertEqual(n.pooled, 'yes')
+                self.assertEqual(n.pooled, 'inactive')
 
     def test_remove_nodes(self):
         dc = 'testdc'
         cluster = 'test'
-        services = self.service_generator('espresso-machine', 2)
-        nodes = self.node_generator(cluster, list(services.keys()), 20)
-        with temp_data(services, nodes) as basepath:
+        services = ['coffee', 'espresso']
+        nodes = self.node_generator(cluster, services, 20)
+        with temp_data(nodes) as basepath:
             sync = syncer.Syncer('/nonexistent', basepath)
             sync.load()
 
-        nodes =  self.node_generator(cluster, list(services.keys()), 10)
-        with temp_data(services, nodes) as basepath:
+        nodes =  self.node_generator(cluster, services, 10)
+        with temp_data(nodes) as basepath:
             sync = syncer.Syncer('/nonexistent', basepath)
             sync.load()
         for servname in services:
