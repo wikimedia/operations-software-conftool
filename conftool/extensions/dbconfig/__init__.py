@@ -100,7 +100,9 @@ def parse_args(cmdline):
     commit = commands.add_parser('commit',
                                  help='Commit the configuration for consumption by MediaWiki')
     commit.add_argument('-b', '--batch', action='store_true',
-                        help='Do not ask for visual diff confirmation')
+                        help='Do not ask for visual diff confirmation, for use from scripts.  '
+                              'Required if stdin is not a tty (aka running uninteractively).  '
+                              'When --batch is specified, --message must also be provided.')
     commit.add_argument('-m', '--message',
                         help='A comment describing the change.  If unspecified, will prompt user '
                              'in an interactive session.  Required if running uninteractively.')

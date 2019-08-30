@@ -249,6 +249,14 @@ What will happen once you call commit is what follows:
 * A backup copy of the previous configuration is saved locally to disk and the rollback command printed to stderr.
 * Once the new configuration is considered valid, it is atomically written to the datastore and is available for MediaWiki to consume.
 
+##### Scripted config commits
+The `dbctl config commit` subcommand also accepts a `--batch` argument for use from scripts or other automation.  If standard input is not a TTY, `--batch` *must* be specified.
+
+When `--batch` is specified:
+* There will be no output of diffs or prompts for confirmation.
+* `--message` must also be specified on the command line.
+
+On a successful commit, `dbctl` will exit with status 0; otherwise it will exit nonzero.
 
 #### Rollback a change
 
