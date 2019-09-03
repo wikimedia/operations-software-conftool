@@ -42,6 +42,7 @@ class ConftoolTestCase(IntegrationTestBase):
             's1': {'weight': 10, 'pooled': True, 'percentage': 50},
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
             's4': {'weight': 10, 'pooled': False, 'percentage': 100},
+            'wikitech': {'weight': 0, 'pooled': True, 'percentage': 100},
         }
         dbA1.host_ip = '192.168.1.11'
         dbA1.port = 3306
@@ -72,6 +73,11 @@ class ConftoolTestCase(IntegrationTestBase):
         s2.min_replicas = 0
         s2.ro_reason = ''
         s2.write()
+        wikitech = cli.section.get('wikitech', 'dcA')
+        wikitech.master = 'dba1'
+        wikitech.min_replicas = 0
+        wikitech.ro_reason = ''
+        wikitech.write()
         # Now generate and commit should work
         cli = self.get_cli('config', 'generate')
         self.assertEqual(cli.run_action(), 0)
@@ -97,6 +103,13 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertEqual(cli.run_action(), 2)
         cli = self.get_cli('-s', 'nonexistent', 'config', 'commit')
         self.assertEqual(cli.run_action(), 2)
+        # Let's make wikitech read-only; this should succeed.
+        cli = self.get_cli('-s', 'dcA', 'section', 'wikitech', 'ro', 'Maintenance')
+        self.assertEqual(cli.run_action(), 0)
+        cli = self.get_cli('config', 'generate')
+        self.assertEqual(cli.run_action(), 0)
+        cli = self.get_cli('config', 'commit', '--batch', '--message', 'wikitech ro for maintanance')
+        self.assertEqual(cli.run_action(), 0)
         # Let's verify that the live config contains s1
         lc = cli.db_config.live_config
         self.assertEqual(lc['dcA']['sectionLoads']['s1'], [{'dba1': 5}, {'dba2': 10}])
