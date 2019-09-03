@@ -574,7 +574,6 @@ class TestDbConfig(TestCase):
         self.assertEqual(res.messages, ['--message required for batch commits'])
         res = self.config.commit(batch=True, comment='s4: pool db1')
         self.assertTrue(res.success)
-        self.assertRegexpMatches(res.announce_message, 's4: pool db1')
         self.assertRegexpMatches(res.messages[0],
                                  '^Previous configuration saved. To restore it run')
         self.assertRegexpMatches(mocked_open.call_args_list[0][0][0],
@@ -586,6 +585,23 @@ class TestDbConfig(TestCase):
         res = self.config.commit(batch=True, comment='s4: pool db1')
         self.assertFalse(res.success)
         self.assertEqual(res.messages[0:2], ['Object mocked failed to validate:', 'test'])
+
+    @mock.patch('conftool.extensions.dbconfig.config.DbConfig._write',
+                return_value=ActionResult(False, 99, messages=['an error']))
+    @mock.patch('builtins.open')
+    @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
+    def test_commit_fail_write(self, mocked_write, mocked_open, mocked_mkdir):
+        instances, sections = self._mock_objects()
+        self.config.instance.get_all.return_value = instances
+        self.config.section.get_all.return_value = sections
+        instances[0].sections['s4']['pooled'] = True
+        obj = mock.MagicMock()
+        obj.name = 'mocked'
+        self.config.entity = mock.MagicMock(return_value=obj)
+        self.config.entity.config.cache_path = '/cache/path'
+        res = self.config.commit(batch=True, comment='s4: pool db1')
+        self.assertFalse(res.success)
+        self.assertRegexpMatches(res.announce_message, 'FAILED')
 
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
