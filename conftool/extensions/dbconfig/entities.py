@@ -277,6 +277,22 @@ class Instance(DbObjBase):
                 obj.sections[section]['groups'][group]['weight'] = new_weight
         return self.write_callback(set_weight, (instance, ), section=section, group=group)
 
+    def candidate_master(self, instance, candidate_status, section):
+        """
+        Modifies the "is instance a candidate master of section" status bit.
+
+        Parameters:
+        * instance: the instance name
+        * candidate_status: True or False
+        * section: the section name (required)
+
+        Returns: a tuple (result, error)
+        """
+
+        def set_candidate_master(obj, section, group,):
+            obj.sections[section]['candidate_master'] = candidate_status
+        return self.write_callback(set_candidate_master, (instance, ), section=section, group=None)
+
     # "Private" methods
     def _update(self, obj, callback, section=None, group=None, **kwargs):
         # If the section we're supposed to operate upon is

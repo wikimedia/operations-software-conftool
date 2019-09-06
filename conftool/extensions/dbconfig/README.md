@@ -199,6 +199,17 @@ Changing the 'nominal' weight of an instance -- the weight used at 100% pooling 
     # Set the weight for all configured groups, but not globally
     dbctl instance db2:3308 set-weight 1 --section s2 --group all
 
+#### Setting candidate master status
+
+For each section an instance is associated with, we also keep track of a boolean of whether or not that instance should be considered
+a candidate master in that section.  This is purely informational, and has no effect on dbctl's behavior -- aside from being shown in
+`dbctl instance FOO get` output.  The default is false.
+
+    # Set that db1 should be considered a candidate master in s1
+    dbctl instance db1 set-candidate-master true --section s1
+
+Unlike the pool/depool commands, `--section` is a mandatory argument.
+
 ### MediaWiki-related records
 
 MediaWiki can fetch configuration variables from a specific etcd path; dbctl integrates with that mechanism and provides one unified object per datacenter for MediaWiki consumption that contains:
