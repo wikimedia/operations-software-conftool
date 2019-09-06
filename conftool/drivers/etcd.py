@@ -23,10 +23,13 @@ to python-etcd.
 
 def get_config(configfile):
     conf = {}
-    configfiles = ['/etc/etcd/etcdrc']
-    configfiles.append(os.path.join(
-        os.path.expanduser('~'),
-        '.etcdrc'))
+    # Find the home of the user we're sudoing as - if any.
+    # By default, expanduser checks the HOME variable, which is not overwritten by sudo
+    # if env_keep += HOME is set. So sudo confctl would end up reading the config files of the user
+    # executing sudo and not those of the user it was sudoing to.
+    run_as = os.environ.get('USER', '')
+    user_home = os.path.expanduser('~{}'.format(run_as))
+    configfiles = ['/etc/etcd/etcdrc', os.path.join(user_home, '.etcdrc')]
     if configfile:
         configfiles.append(configfile)
 
