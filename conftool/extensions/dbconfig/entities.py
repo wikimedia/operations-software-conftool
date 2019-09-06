@@ -294,7 +294,7 @@ class Instance(DbObjBase):
             # Modify the dataset using the provided callback.
             # Given obj is a JsonSchemaEntity, it will be modified as well
             try:
-                callback(obj, my_section, group)
+                callback(obj, section=my_section, group=group)
             except KeyError as e:
                 # Manage the error scenario where we're trying to act on the
                 # wrong key.
