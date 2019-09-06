@@ -54,6 +54,12 @@ def parse_args(cmdline):
         help='true, t, yes, or y for yes; other values for no; case-insensitive',
         type=lambda x: (str(x).lower() in ['true', 't', 'yes', 'y']))
 
+    note = commands.add_parser('set-note',
+                               help='Attach an informational description to this instance')
+    note.add_argument(
+        'note', metavar='NOTE',
+        help='A freeform string for your own purposes.  Does not affect dbctl behavior.')
+
     def _add_section_and_group(parser, action_description, without_touching_description):
         """
         Adds --section and --group arguments from a common template.
