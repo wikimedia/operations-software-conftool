@@ -1,0 +1,19 @@
+When making changes that require actions to be performed as part of the next
+release, note such things here.
+
+When finished with a new release, clear out the done/obsoleted items.
+
+* dbctl will require a schema migration because of the new fields added.
+  https://wikitech.wikimedia.org/wiki/Dbctl#Schema_upgrades
+
+* dbctl will be generating new a output key in mwconfig as well, hostsByName.
+
+* The above two things mean that you will need to update the JSON and YAML
+  schemas in Puppet as part of deploying the new dbctl binaries.  Currently
+  there is no automation for this, and the files are different, and require
+  merging of changes by hand.  Both those issues should be fixed at some point.
+  * If you deploy a new binary, and do not deploy a new schema, you will break
+    config generation!  Don't do that.
+
+* As of f5dbdda, confctl no longer requires being run with special sudo args
+  to use the proper etcd permissions.  Publicize this on ops@.
