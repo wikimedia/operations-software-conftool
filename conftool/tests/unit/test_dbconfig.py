@@ -151,12 +151,12 @@ class TestDbInstance(TestCase):
         instance.checker.return_value = []
         mock_callback = mock.MagicMock()
         self.assertEqual(instance._update(obj, mock_callback, section=None, group=None), [])
-        mock_callback.assert_has_calls([mock.call(obj, 's1', None),
-                                        mock.call(obj, 's2', None)],
+        mock_callback.assert_has_calls([mock.call(obj, section='s1', group=None),
+                                        mock.call(obj, section='s2', group=None)],
                                        any_order=True)
         # We actively ignore additional arguments
         instance._update(obj, mock_callback, section='s1', group='group', test=120)
-        mock_callback.assert_called_with(obj, 's1', 'group')
+        mock_callback.assert_called_with(obj, section='s1', group='group')
         # Now error conditions:
         # 1 - callback fails
         mock_callback.side_effect = ValueError('FAIL!')
