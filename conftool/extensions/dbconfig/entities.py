@@ -293,6 +293,19 @@ class Instance(DbObjBase):
             obj.sections[section]['candidate_master'] = candidate_status
         return self.write_callback(set_candidate_master, (instance, ), section=section, group=None)
 
+    def note(self, instance, note):
+        """
+        Modifies the descriptive note attached to the instance.
+
+        Parameters:
+        * instance: the instance name
+        * note: the note to set
+        """
+
+        def set_note(obj, section, group):
+            obj.note = note
+        return self.write_callback(set_note, (instance, ), section=None, group=None)
+
     # "Private" methods
     def _update(self, obj, callback, section=None, group=None, **kwargs):
         # If the section we're supposed to operate upon is

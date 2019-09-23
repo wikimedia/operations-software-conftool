@@ -210,6 +210,16 @@ a candidate master in that section.  This is purely informational, and has no ef
 
 Unlike the pool/depool commands, `--section` is a mandatory argument.
 
+#### Setting a note on an instance
+
+Each instance also stores a freeform string users can use to store notes.  Like candidate master status, this is purely informational,
+and has no effect on dbctl's behavior.
+
+    # Set a note
+    dbctl instance db1 note 'awaiting repairs T123456; row A6, 3.6TB, s1 candidate master'
+    # Clear a note
+    dbctl instance db2 note ''
+
 ### MediaWiki-related records
 
 MediaWiki can fetch configuration variables from a specific etcd path; dbctl integrates with that mechanism and provides one unified object per datacenter for MediaWiki consumption that contains:

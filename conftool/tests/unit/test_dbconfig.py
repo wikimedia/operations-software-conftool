@@ -276,6 +276,17 @@ class TestDbInstance(TestCase):
         self.assertTrue(obj.sections['s1']['candidate_master'])
         self.assertFalse(obj.sections['s2']['candidate_master'])
 
+    def test_set_note(self):
+        # Let's assume a successful check.
+        instance, obj = self._mock_object()
+        instance.checker.return_value = []
+        # Object present
+        instance.get = mock.MagicMock(return_value=obj)
+        instance.note('db1', 'in repairs T123456; A6; candidate')
+        self.assertEqual(obj.note, 'in repairs T123456; A6; candidate')
+        instance.note('db1', '')
+        self.assertEqual(obj.note, '')
+
     def test_check_state(self):
         # Try all cases.
         instance, _ = self._mock_object()
@@ -758,6 +769,14 @@ class TestDbConfigCli(TestCase):
         self.assertTrue(res.success)
         self.assertEqual(res.messages, [])
         cli.instance.candidate_master.assert_called_with('db1', False, 's1')
+        # Case 7: set-note
+        cli = self.get_cli(['instance', 'db1', 'set-note', 'T123456 bad hw'])
+        cli.instance.note = mock.MagicMock(return_value=(True, None))
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
+        cli.instance.note.assert_called_with('db1', 'T123456 bad hw')
+
 
 
     def test_run_on_section(self):

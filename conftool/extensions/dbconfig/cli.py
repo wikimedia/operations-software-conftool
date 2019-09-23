@@ -75,6 +75,8 @@ class DbConfigCli(ToolCliBase):
         elif cmd == 'set-candidate-master':
             return self._get_result(*self.instance.candidate_master(
                 name, self.args.status, self.args.section))
+        elif cmd == 'set-note':
+            return self._get_result(*self.instance.note(name, self.args.note))
 
     def _run_on_section(self):
         name = self.args.section_name
