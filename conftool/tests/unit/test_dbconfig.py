@@ -264,6 +264,18 @@ class TestDbInstance(TestCase):
         self.assertEqual(obj.sections['s1']['groups']['vslow']['weight'], 100)
         self.assertEqual(obj.sections['s1']['groups']['dump']['weight'], 100)
 
+    def test_set_candidate_master(self):
+        # Let's assume a successful check.
+        instance, obj = self._mock_object()
+        instance.checker.return_value = []
+        # Object present
+        instance.get = mock.MagicMock(return_value=obj)
+        instance.candidate_master('db1', True, 's1')
+        self.assertTrue(obj.sections['s1']['candidate_master'])
+        instance.candidate_master('db1', False, 's2')
+        self.assertTrue(obj.sections['s1']['candidate_master'])
+        self.assertFalse(obj.sections['s2']['candidate_master'])
+
     def test_check_state(self):
         # Try all cases.
         instance, _ = self._mock_object()
@@ -726,12 +738,27 @@ class TestDbConfigCli(TestCase):
         self.assertTrue(res.success)
         self.assertEqual(res.messages, [])
         cli.instance.depool.assert_called_with('db1', None, None)
+        # Case 5: set-weight
         cli = self.get_cli(['instance', 'db1', 'set-weight', '1', '--section', 's1'])
         cli.instance.weight = mock.MagicMock(return_value=(True, None))
         res = cli._run_on_instance()
         self.assertTrue(res.success)
         self.assertEqual(res.messages, [])
         cli.instance.weight.assert_called_with('db1', 1, 's1', None)
+        # Case 6: set-candidate-master
+        cli = self.get_cli(['instance', 'db1', 'set-candidate-master', 'yes', '--section', 's1'])
+        cli.instance.candidate_master = mock.MagicMock(return_value=(True, None))
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
+        cli.instance.candidate_master.assert_called_with('db1', True, 's1')
+        cli = self.get_cli(['instance', 'db1', 'set-candidate-master', 'FALSE', '--section', 's1'])
+        cli.instance.candidate_master = mock.MagicMock(return_value=(True, None))
+        res = cli._run_on_instance()
+        self.assertTrue(res.success)
+        self.assertEqual(res.messages, [])
+        cli.instance.candidate_master.assert_called_with('db1', False, 's1')
+
 
     def test_run_on_section(self):
         # Case 1: get
@@ -772,6 +799,18 @@ class TestDbConfigCli(TestCase):
         cli = self.get_cli(['-s', 'test', 'section', 's1', 'set-master', 'db-test'])
         instance = cli.instance.entity('test', 'db-test')
         instance.sections['s1'] = {'weight': 100, 'pooled': True}
+        cli.instance.get = mock.MagicMock(return_value=instance)
+        cli.section.set_master = mock.MagicMock(return_value=(True, None))
+        res = cli._run_on_section()
+        self.assertTrue(res.success)
+        self.assertEqual(
+            res.messages, ["WARNING: 'db-test' is not a candidate master for section 's1'"])
+        cli.instance.get.assert_called_with('db-test', dc='test')
+        cli.section.set_master.assert_called_with('s1', 'test', 'db-test')
+
+        cli = self.get_cli(['-s', 'test', 'section', 's1', 'set-master', 'db-test'])
+        instance = cli.instance.entity('test', 'db-test')
+        instance.sections['s1'] = {'weight': 100, 'pooled': True, 'candidate_master': True}
         cli.instance.get = mock.MagicMock(return_value=instance)
         cli.section.set_master = mock.MagicMock(return_value=(True, None))
         res = cli._run_on_section()

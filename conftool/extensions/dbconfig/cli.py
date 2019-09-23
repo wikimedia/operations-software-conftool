@@ -72,6 +72,9 @@ class DbConfigCli(ToolCliBase):
         elif cmd == 'set-weight':
             return self._get_result(*self.instance.weight(
                 name, self.args.weight, self.args.section, self.args.group))
+        elif cmd == 'set-candidate-master':
+            return self._get_result(*self.instance.candidate_master(
+                name, self.args.status, self.args.section))
 
     def _run_on_section(self):
         name = self.args.section_name
@@ -95,20 +98,32 @@ class DbConfigCli(ToolCliBase):
                 print(json.dumps(res.asdict(), indent=4, sort_keys=True))
                 return ActionResult(True, 0)
         elif cmd == 'set-master':
+            # TODO: this validation should live somewhere else, somewhere more amenable to use as
+            # part of a proper API.
             instance_name = self.args.instance_name
-            candidate_master = self.instance.get(instance_name, dc=self.args.scope)
-            if candidate_master is None:
+            new_master = self.instance.get(instance_name, dc=self.args.scope)
+            if new_master is None:
                 return ActionResult(
                     False, 2, messages=["DB instance '{}' not found".format(instance_name)])
 
-            if name not in candidate_master.sections:
+            if name not in new_master.sections:
                 return ActionResult(
                     False,
                     3,
                     messages=["DB instance '{}' is not configured for section '{}'".format(
                         instance_name, name)])
 
-            return self._get_result(*self.section.set_master(name, datacenter, instance_name))
+            # Issue a warning to the user (but don't fail the operation) if we are setting master
+            # an instance that isn't defined as a candidate master.
+            extra_errors = []
+            if not new_master.sections[name].get('candidate_master', False):
+                extra_errors = ["WARNING: '{}' is not a candidate master for section '{}'".format(
+                    instance_name, name)]
+
+            op_success, op_errors = self.section.set_master(name, datacenter, instance_name)
+            if op_errors is None:
+                op_errors = []
+            return self._get_result(op_success, op_errors + extra_errors)
         elif cmd == 'edit':
             return self._get_result(*self.section.edit(name, datacenter))
         elif cmd == 'ro':

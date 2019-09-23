@@ -43,6 +43,17 @@ def parse_args(cmdline):
     commands.add_parser('get', help='Get information about the specified instance(s)')
     commands.add_parser('edit', help='Edit information about the specified instance')
 
+    set_candidate_master = commands.add_parser(
+        'set-candidate-master',
+        help=('Set whether or not this instance is considered a candidate master for '
+              'a particular section'))
+    set_candidate_master.add_argument('--section', required=True,
+                                      help='The section on which to set candidate master status')
+    set_candidate_master.add_argument(
+        'status', metavar='TRUEORFALSE',
+        help='true, t, yes, or y for yes; other values for no; case-insensitive',
+        type=lambda x: (str(x).lower() in ['true', 't', 'yes', 'y']))
+
     def _add_section_and_group(parser, action_description, without_touching_description):
         """
         Adds --section and --group arguments from a common template.
