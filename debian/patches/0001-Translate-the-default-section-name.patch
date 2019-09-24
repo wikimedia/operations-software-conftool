@@ -1,0 +1,70 @@
+From a028e4e8739d994f25b288c0798a543db68199fd Mon Sep 17 00:00:00 2001
+From: Giuseppe Lavagetto <glavagetto@wikimedia.org>
+Date: Tue, 24 Sep 2019 07:58:26 +0200
+Subject: [PATCH] Translate the default section name to DEFAULT in
+ ReadOnlyBySection too
+
+Bug: T233679
+Change-Id: I05914e2b3cd4086c9373227cff4fcd2d4107e3e0
+---
+ conftool/extensions/dbconfig/config.py | 19 ++++++++++++-------
+ conftool/tests/unit/test_dbconfig.py   |  2 +-
+ 2 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/conftool/extensions/dbconfig/config.py b/conftool/extensions/dbconfig/config.py
+index 9754e15..9ec13df 100644
+--- a/conftool/extensions/dbconfig/config.py
++++ b/conftool/extensions/dbconfig/config.py
+@@ -96,7 +96,8 @@ class DbConfig:
+         for obj in sections:
+             if not obj.readonly:
+                 continue
+-            config[obj.tags['datacenter']]['readOnlyBySection'][obj.name] = obj.ro_reason
++            section = self._mw_section(obj.name)
++            config[obj.tags['datacenter']]['readOnlyBySection'][section] = obj.ro_reason
+ 
+         # now fill them with the content of instances
+         for instance in instances:
+@@ -120,12 +121,7 @@ class DbConfig:
+                     continue
+ 
+                 fraction = section['percentage']/100
+-                # Mangle the key.
+-                # Thanks for this, MediaWiki
+-                if section_name == self.default_section:
+-                    section_key = 'DEFAULT'
+-                else:
+-                    section_key = section_name
++                section_key = self._mw_section(section_name)
+ 
+                 main_weight = int(section['weight'] * fraction)
+                 section_load_index = 1
+@@ -475,3 +471,12 @@ class DbConfig:
+                 name=name, masters=sorted(section[0].keys())))
+ 
+         return errors
++
++    def _mw_section(self, section):
++        """Translates the section name in the one expected by MediaWiki."""
++        # Mangle the section key.
++        # Thanks for this, MediaWiki
++        if section == self.default_section:
++            return 'DEFAULT'
++        else:
++            return section
+diff --git a/conftool/tests/unit/test_dbconfig.py b/conftool/tests/unit/test_dbconfig.py
+index 711e091..5270d4d 100644
+--- a/conftool/tests/unit/test_dbconfig.py
++++ b/conftool/tests/unit/test_dbconfig.py
+@@ -463,7 +463,7 @@ class TestDbConfig(TestCase):
+                 's4': [{'db2': 10}, {}]},
+              'groupLoadsBySection': {},
+              'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333'},
+-             'readOnlyBySection': {'s3': 'Some reason.'}}
++             'readOnlyBySection': {'DEFAULT': 'Some reason.'}}
+         }
+         res1 = self.config.compute_config(sections, instances)
+         self.assertEqual(res1, expected)
+-- 
+2.23.0
+
