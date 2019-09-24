@@ -1,3 +1,34 @@
+conftool (1.2.0-1) stretch-wikimedia; urgency=medium
+
+  * dbctl: schema upgrade required!
+    https://wikitech.wikimedia.org/wiki/Dbctl#Schema_upgrades
+    - supports recording notes on instances (dbctl instance FOO set-note)
+    - dbctl supports marking an instance as a candidate master for a section
+      (dbctl instance FOO set-candidate-master s1)
+
+  * confctl: needs testing before rollout!
+    - service objects & "static value" objects removed
+
+  * confctl and dbctl no longer need to be invoked with 'sudo -i'
+    to find the appropriate etcd credentials in WMF production.
+    A simple 'sudo' is enough.
+  * confctl and dbctl will no longer write to etcd during an 'edit' action
+    if the $EDITOR command returned nonzero.
+  * dbctl: generate a hostsByName key in the Mediawiki config output.
+    Not yet complete, not yet ready for use by Mediawiki; not yet used
+    there either.
+  * dbctl: fix as to when JSON validation happens
+  * dbctl: improvement to SAL !logging
+  * dbctl: improvements to --help output
+
+ -- Chris Danis <cdanis@wikimedia.org>  Tue, 24 Sep 2019 11:55:57 -0400
+
+conftool (1.1.4-3) stretch-wikimedia; urgency=medium
+
+  * Added backport of patch to fix ReadOnlyBySection
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 24 Sep 2019 08:40:34 +0200
+
 conftool (1.1.4-2) stretch-wikimedia; urgency=medium
 
   * Re-add the tests directory in the generated package
