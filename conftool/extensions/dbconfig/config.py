@@ -96,7 +96,8 @@ class DbConfig:
         for obj in sections:
             if not obj.readonly:
                 continue
-            config[obj.tags['datacenter']]['readOnlyBySection'][obj.name] = obj.ro_reason
+            section = self._mw_section(obj.name)
+            config[obj.tags['datacenter']]['readOnlyBySection'][section] = obj.ro_reason
 
         # now fill them with the content of instances
         for instance in instances:
@@ -120,12 +121,7 @@ class DbConfig:
                     continue
 
                 fraction = section['percentage']/100
-                # Mangle the key.
-                # Thanks for this, MediaWiki
-                if section_name == self.default_section:
-                    section_key = 'DEFAULT'
-                else:
-                    section_key = section_name
+                section_key = self._mw_section(section_name)
 
                 main_weight = int(section['weight'] * fraction)
                 section_load_index = 1
@@ -475,3 +471,12 @@ class DbConfig:
                 name=name, masters=sorted(section[0].keys())))
 
         return errors
+
+    def _mw_section(self, section):
+        """Translates the section name in the one expected by MediaWiki."""
+        # Mangle the section key.
+        # Thanks for this, MediaWiki
+        if section == self.default_section:
+            return 'DEFAULT'
+        else:
+            return section

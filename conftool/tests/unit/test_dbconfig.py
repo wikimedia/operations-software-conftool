@@ -463,7 +463,7 @@ class TestDbConfig(TestCase):
                 's4': [{'db2': 10}, {}]},
              'groupLoadsBySection': {},
              'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333'},
-             'readOnlyBySection': {'s3': 'Some reason.'}}
+             'readOnlyBySection': {'DEFAULT': 'Some reason.'}}
         }
         res1 = self.config.compute_config(sections, instances)
         self.assertEqual(res1, expected)
