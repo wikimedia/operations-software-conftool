@@ -85,7 +85,7 @@ class TestAction(TestCase):
         self.entity.validate = mock.Mock(side_effect=ValueError)
         self.assertRaises(ActionValidationError, a.run)
 
-    @mock.patch('subprocess.call')
+    @mock.patch('subprocess.call', return_value=0)
     @mock.patch('conftool.action.yaml_safe_load')
     def test_edit(self, yaml_mock, mocker):
         a = get_action(self.entity, 'edit')
@@ -96,6 +96,11 @@ class TestAction(TestCase):
         self.assertEqual(a.edited, {'a': 1, 'b': 'hello'})
         os.environ['EDITOR'] = 'testmewell --verbose -t'
         a._edit()
+        mocker.assert_called_with(['testmewell', '--verbose', '-t', 'test'])
+        mocker.reset_mock()
+        mocker.return_value = 1
+        with self.assertRaises(ActionError, msg='Editor testmewell returned nonzero 1'):
+            a._edit()
         mocker.assert_called_with(['testmewell', '--verbose', '-t', 'test'])
 
     def test_edit_to_file(self):

@@ -127,7 +127,9 @@ class EditAction(GetAction):
         editor = os.environ.get('EDITOR', self.DEFAULT_EDITOR)
         editor_cmd = shlex.split(editor)
         editor_cmd.append(self.temp)
-        subprocess.call(editor_cmd)
+        rv = subprocess.call(editor_cmd)
+        if rv != 0:
+            raise ActionError('Editor {} returned nonzero {}'.format(editor, rv))
         self.edited = yaml_safe_load(self.temp)
 
 
