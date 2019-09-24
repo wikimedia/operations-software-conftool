@@ -5,17 +5,11 @@ Subject: [PATCH] Translate the default section name to DEFAULT in
  ReadOnlyBySection too
 
 Bug: T233679
-Change-Id: I05914e2b3cd4086c9373227cff4fcd2d4107e3e0
----
- conftool/extensions/dbconfig/config.py | 19 ++++++++++++-------
- conftool/tests/unit/test_dbconfig.py   |  2 +-
- 2 files changed, 13 insertions(+), 8 deletions(-)
-
-diff --git a/conftool/extensions/dbconfig/config.py b/conftool/extensions/dbconfig/config.py
-index 9754e15..9ec13df 100644
---- a/conftool/extensions/dbconfig/config.py
-+++ b/conftool/extensions/dbconfig/config.py
-@@ -96,7 +96,8 @@ class DbConfig:
+Index: b/conftool/extensions/dbconfig/config.py
+===================================================================
+--- a/conftool/extensions/dbconfig/config.py	2019-09-24 11:50:11.778266782 +0200
++++ b/conftool/extensions/dbconfig/config.py	2019-09-24 11:50:11.778266782 +0200
+@@ -94,7 +94,8 @@
          for obj in sections:
              if not obj.readonly:
                  continue
@@ -25,7 +19,7 @@ index 9754e15..9ec13df 100644
  
          # now fill them with the content of instances
          for instance in instances:
-@@ -120,12 +121,7 @@ class DbConfig:
+@@ -111,12 +112,7 @@
                      continue
  
                  fraction = section['percentage']/100
@@ -39,7 +33,7 @@ index 9754e15..9ec13df 100644
  
                  main_weight = int(section['weight'] * fraction)
                  section_load_index = 1
-@@ -475,3 +471,12 @@ class DbConfig:
+@@ -452,3 +448,12 @@
                  name=name, masters=sorted(section[0].keys())))
  
          return errors
@@ -53,18 +47,15 @@ index 9754e15..9ec13df 100644
 +        else:
 +            return section
 diff --git a/conftool/tests/unit/test_dbconfig.py b/conftool/tests/unit/test_dbconfig.py
-index 711e091..5270d4d 100644
+index 010156e..53a942a 100644
 --- a/conftool/tests/unit/test_dbconfig.py
 +++ b/conftool/tests/unit/test_dbconfig.py
-@@ -463,7 +463,7 @@ class TestDbConfig(TestCase):
+@@ -429,7 +429,7 @@ class TestDbConfig(TestCase):
+                 'DEFAULT': [{'db3': 10}, {'db1': 10, 'db2': 10}],
                  's4': [{'db2': 10}, {}]},
               'groupLoadsBySection': {},
-              'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333'},
 -             'readOnlyBySection': {'s3': 'Some reason.'}}
 +             'readOnlyBySection': {'DEFAULT': 'Some reason.'}}
          }
          res1 = self.config.compute_config(sections, instances)
          self.assertEqual(res1, expected)
--- 
-2.23.0
-
