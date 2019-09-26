@@ -1,4 +1,47 @@
-"dbconfig-instance":
+# Discovery objects. they will represent a sequence of cluster/service/dc combinations
+discovery:
+  path: "discovery"
+  tags:
+    - dnsdisc
+  schema:
+    pooled:
+      type: "bool"
+      default: false
+    references:
+      type: "list"
+      default: []
+    ttl:
+      type: "int"
+      default: 300
+
+# Etcd-based configuration for Mediawiki, read by appservers using EtcdConfig.
+mwconfig:
+  path: "mediawiki-config"
+  tags:
+    - scope
+  json_schema:
+    base_path: "conftool/tests/fixtures/dbconfig/schemas/mediawiki-config"
+    rules:
+      dbconfig:
+        # Database instance/group/section configuration.
+        # https://wikitech.wikimedia.org/wiki/Dbctl
+        schema: "dbconfig.schema"
+        selector: "name=dbconfig"
+      db_read_only:
+        schema: "db_readonly.schema"
+        selector: "name=ReadOnly"
+      wmf_datacenter:
+        schema: "wmf_datacenter.schema"
+        selector: "name=WMFMasterDatacenter"
+  schema:
+    val:
+      type: "any"
+      default: null
+
+# Database instance/group/section configuration.
+# Not read by appservers; manipulated by dbctl and later pushed into mwconfig.
+# https://wikitech.wikimedia.org/wiki/Dbctl
+dbconfig-instance:
   path: "dbconfig-instance"
   tags:
     - datacenter
@@ -17,7 +60,7 @@
       default: {}
     note:
       default: ""
-"dbconfig-section":
+dbconfig-section:
   path: "dbconfig-section"
   tags:
     - datacenter
@@ -36,17 +79,3 @@
       default: false
     ro_reason:
       default: "PLACEHOLDER"
-"mwconfig":
-  path: "mediawiki-config"
-  tags:
-    - scope
-  json_schema:
-    base_path: "conftool/tests/fixtures/dbconfig/schemas/mediawiki-config"
-    rules:
-      catchall:
-        selector: 'name=dbconfig'
-        schema: 'dbconfig.schema'
-  schema:
-    val:
-      type: "any"
-      default: null
