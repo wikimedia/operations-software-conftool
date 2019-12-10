@@ -27,6 +27,11 @@ class DbConfig:
     object_name = 'dbconfig'
     cache_file_suffix = '.json'
     cache_file_datetime_format = '%Y%m%d-%H%M%S'
+    # section.schema prevents a KeyError from happening here.
+    flavor_to_dbconfig_key = {
+        'regular': 'sectionLoads',
+        'external': 'externalLoads',
+    }
 
     def __init__(self, schema, instance, section):
         # TODO: we don't actually use schema, only schema.entities; maybe take that as arg instead?
@@ -80,20 +85,27 @@ class DbConfig:
 
         The output data structure is the same returned from `DbConfig.live_config`
         """
-        # The master for each section
+        # The master for and the flavor of each section
         section_masters = defaultdict(dict)
+        section_flavors = defaultdict(dict)
         for obj in sections:
             section_masters[obj.tags['datacenter']][obj.name] = obj.master
+            section_flavors[obj.tags['datacenter']][obj.name] = obj.flavor
         config = {}
         # Let's initialize the variables
         for dc in section_masters.keys():
-            config[dc] = {'sectionLoads': defaultdict(lambda: [{}, {}]), 'groupLoadsBySection': {},
-                          'readOnlyBySection': {},
-                          'hostsByName': {},
-                          }
+            config[dc] = {
+                'externalLoads': defaultdict(lambda: [{}, {}]),
+                'sectionLoads': defaultdict(lambda: [{}, {}]),
+                'groupLoadsBySection': {},
+                'readOnlyBySection': {},
+                'hostsByName': {},
+            }
 
         # Fill in the readonlybysection data
         for obj in sections:
+            if obj.flavor != 'regular':
+                continue
             if not obj.readonly:
                 continue
             section = self._mw_section(obj.name)
@@ -127,10 +139,13 @@ class DbConfig:
                 section_load_index = 1
                 if instance.name == masters[section_name]:
                     section_load_index = 0
-                section_load = config[datacenter]['sectionLoads'][section_key]
+                section_flavor = section_flavors[datacenter][section_name]
+                output_key = self.flavor_to_dbconfig_key[section_flavor]
+                section_load = config[datacenter][output_key][section_key]
                 section_load[section_load_index][instance.name] = main_weight
 
-                if 'groups' not in section:
+                # Groups only work in regular-flavored sections.
+                if section_flavor != 'regular' or 'groups' not in section:
                     continue
                 for group_name, group in section['groups'].items():
                     # Instances can be pooled for a section, but depooled from a given group.

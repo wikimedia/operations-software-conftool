@@ -417,6 +417,11 @@ class TestDbConfig(TestCase):
         db3.sections = {
             's3': {'weight': 10, 'pooled': True, 'percentage': 100},
         }
+        esdb1 = self.schema.entities['dbconfig-instance']('test', 'esdb1')
+        esdb1.host_ip = '11.11.11.11'
+        esdb1.sections = {
+            'es1': {'weight': 0, 'pooled': True, 'percentage': 100},
+        }
 
         s1 = self.schema.entities['dbconfig-section']('test', 's1')
         s1.master = 'db1'
@@ -427,7 +432,10 @@ class TestDbConfig(TestCase):
         s4 = self.schema.entities['dbconfig-section']('test', 's4')
         s4.master = 'db2'
         s4.min_replicas = 1
-        return ([db1, db2, db3], [s1, s3, s4])
+        es1 = self.schema.entities['dbconfig-section']('test', 'es1')
+        es1.flavor = 'external'
+        es1.master = 'esdb1'
+        return ([db1, db2, db3, esdb1], [es1, s1, s3, s4])
 
     def test_init(self):
         self.assertEqual(self.config.entity.__name__, 'Mwconfig')
@@ -462,8 +470,10 @@ class TestDbConfig(TestCase):
                 'DEFAULT': [{'db3': 10}, {'db1': 10, 'db2': 10}],
                 's4': [{'db2': 10}, {}]},
              'groupLoadsBySection': {},
-             'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333'},
-             'readOnlyBySection': {'DEFAULT': 'Some reason.'}}
+             'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333', 'esdb1': '11.11.11.11'},
+             'readOnlyBySection': {'DEFAULT': 'Some reason.'},
+             'externalLoads': {'es1': [{'esdb1': 0}, {}]},
+             }
         }
         res1 = self.config.compute_config(sections, instances)
         self.assertEqual(res1, expected)
@@ -528,13 +538,13 @@ class TestDbConfig(TestCase):
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
         # Let's test if we re-pass the original instances
-        self.assertEqual(self.config.check_section(sections[2]),
+        self.assertEqual(self.config.check_section(sections[3]),
                          ['Section s4 is supposed to have minimum 1 replicas, found 0'])
 
         # Now let's reduce the minimum number of replicas in s4
         _, new_sections = self._mock_objects()
-        new_sections[2].min_replicas = 0
-        self.assertEqual(self.config.check_section(new_sections[2]), [])
+        new_sections[3].min_replicas = 0
+        self.assertEqual(self.config.check_section(new_sections[3]), [])
 
     def test_diff(self):
         instances, sections = self._mock_objects()
