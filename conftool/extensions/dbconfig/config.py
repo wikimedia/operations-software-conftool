@@ -459,8 +459,8 @@ class DbConfig:
 
         return ActionResult(True, 0)
 
-    def _ask_confirmation(self, message, *, yes_response='y'):
-        """Display message to the user and prompt for confirmation, expecting yes_response.
+    def _ask_confirmation(self, message, *, yes_responses=['y', 'yes']):
+        """Display message to the user and prompt for confirmation, expecting yes_responses.
 
         Returns (success, error) where success is a boolean and error is a string.
         """
@@ -468,10 +468,10 @@ class DbConfig:
             return (False, 'Could not prompt for confirmation, stdin not a TTY.')
 
         print(message)
-        prompt = 'Enter {} to confirm: '.format(yes_response)
+        prompt = 'Enter {} to confirm: '.format(' or '.join(yes_responses))
         resp = input(prompt)
 
-        if resp != yes_response:
+        if resp.lower() not in yes_responses:
             return (False, 'User did not confirm')
 
         return (True, '')
