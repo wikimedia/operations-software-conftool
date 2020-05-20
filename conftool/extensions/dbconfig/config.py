@@ -1,6 +1,5 @@
 import difflib
 import json
-import itertools
 import re
 import sys
 
@@ -312,7 +311,7 @@ class DbConfig:
             b_lines = _to_json_lines(_get(b, branches))
             a_descr = ' '.join([path, a_name])
             b_descr = ' '.join([path, b_name])
-            rv.append([line + '\n' for line in difflib.unified_diff(
+            rv.extend([line + '\n' for line in difflib.unified_diff(
                 a_lines,
                 b_lines,
                 lineterm='',
@@ -331,8 +330,7 @@ class DbConfig:
                 else:
                     _diff_leaf(a, b, branches + [next_branch])
 
-        # _diff_leaf accumulates output into here, a list of lists of diff lines
-        # which will be flattened before being returned.
+        # _diff_leaf accumulates output into here, a list of diff lines.
         rv = []
 
         # While it is unlikely that a and b have non-overlapping datacenters,
@@ -345,8 +343,7 @@ class DbConfig:
                     continue
             _recursively_diff(a, b, [dc])
 
-        has_diff = any(i for i in rv)
-        return (has_diff, itertools.chain(*rv))
+        return (bool(rv), rv)
 
     def commit(self, *, batch=False, datacenter=None, comment=None):
         """
