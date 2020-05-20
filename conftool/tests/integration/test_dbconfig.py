@@ -140,8 +140,8 @@ class ConftoolTestCase(IntegrationTestBase):
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             cli = self.get_cli('config', 'diff')
             self.assertEqual(cli.run_action(), 1)
-            # We should see a diff header indicating changes in dcA/sectionLoads
-            self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\+\+ dcA/sectionLoads generated$')
+            # We should see a diff header indicating changes in dcA/sectionLoads/s1
+            self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\+\+ dcA/sectionLoads/s1 generated$')
             # and the addition of a 0 weight for the new master
             self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\s+ "dba2:3307": 0$')
             # and the addition of a 5 weight for the old master, with the trailing comma subtly

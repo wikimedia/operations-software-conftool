@@ -304,27 +304,46 @@ class DbConfig:
         def _to_json_lines(tree):
             return json.dumps(tree, indent=4, sort_keys=True).splitlines()
 
+        def _diff_leaf(a, b, branches):
+            """Given an 'a' tree and a 'b' tree, compute a diff of _get(a, branches) against
+            _get(b, branches)."""
+            path = '/'.join(branches)
+            a_lines = _to_json_lines(_get(a, branches))
+            b_lines = _to_json_lines(_get(b, branches))
+            a_descr = ' '.join([path, a_name])
+            b_descr = ' '.join([path, b_name])
+            rv.append([line + '\n' for line in difflib.unified_diff(
+                a_lines,
+                b_lines,
+                lineterm='',
+                fromfile=a_descr,
+                tofile=b_descr)])
+
+        def _recursively_diff(a, b, branches):
+            """Diff the sub-trees of 'a' and 'b', recursing an extra time for keys_with_subtrees."""
+            # These keys have sub-trees with non-trivial structure, so we recurse into them to
+            # separately present their leaves to difflib.
+            keys_with_subtrees = ('externalLoads', 'groupLoadsBySection', 'sectionLoads')
+
+            for next_branch in sorted(_get(a, branches).keys() | _get(b, branches).keys()):
+                if next_branch in keys_with_subtrees:
+                    _recursively_diff(a, b, branches + [next_branch])
+                else:
+                    _diff_leaf(a, b, branches + [next_branch])
+
+        # _diff_leaf accumulates output into here, a list of lists of diff lines
+        # which will be flattened before being returned.
+        rv = []
+
         # While it is unlikely that a and b have non-overlapping datacenters,
         # and because of the schema it should be impossible for a[dc] and b[dc] to have
         # non-overlapping sub-keys (e.g. sectionLoads), we should handle both possibilities anyway.
         # We also take care to order sections deterministically in the output.
-        rv = []
         for dc in sorted(a.keys() | b.keys()):
             if datacenter is not None:
                 if dc != datacenter:
                     continue
-            for stanza in sorted(_get(a, [dc]).keys() | _get(b, [dc]).keys()):
-                path = '{}/{}'.format(dc, stanza)  # e.g. 'eqiad/sectionLoads'
-                # When generating diffs we ask for extra context lines, so that output
-                # for sectionLoads is helpful.  It may be necessary to instead recurse
-                # into each section of sectionLoads -- so then we'd emit diffs for e.g.
-                # eqiad/sectionLoads/s1.
-                rv.append([line + '\n' for line in difflib.unified_diff(
-                    _to_json_lines(_get(a, [dc, stanza])),
-                    _to_json_lines(_get(b, [dc, stanza])),
-                    n=10, lineterm='',
-                    fromfile=' '.join([path, a_name]),
-                    tofile=' '.join([path, b_name]))])
+            _recursively_diff(a, b, [dc])
 
         has_diff = any(i for i in rv)
         return (has_diff, itertools.chain(*rv))

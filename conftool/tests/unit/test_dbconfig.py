@@ -560,9 +560,9 @@ class TestDbConfig(TestCase):
         has_diff, diff = self.config.diff_configs(a, b)
         diff = list(diff)
         self.assertTrue(has_diff)
-        self.assertIn('+++ test/sectionLoads generated\n', diff)
-        self.assertIn('-            "db2": 10\n', diff)
-        self.assertIn('+            "db2": 1\n', diff)
+        self.assertIn('+++ test/sectionLoads/DEFAULT generated\n', diff)
+        self.assertIn('-        "db2": 10\n', diff)
+        self.assertIn('+        "db2": 1\n', diff)
 
     @mock.patch('builtins.open')
     @mock.patch('conftool.extensions.dbconfig.config.Path.mkdir')
