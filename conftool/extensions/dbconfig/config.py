@@ -1,5 +1,6 @@
 import difflib
 import json
+import os
 import re
 import sys
 
@@ -9,6 +10,13 @@ from pathlib import Path
 
 from conftool import get_username
 from conftool.extensions.dbconfig.action import ActionResult, phaste
+
+# If we have icdiff installed, use it for interactive output.
+# If we don't, fall back to difflib.unified_diff().
+try:
+    import icdiff
+except ImportError:
+    icdiff = None
 
 
 class DbConfig:
@@ -270,7 +278,8 @@ class DbConfig:
         errors.extend(self._validate(config))
         return (config, errors)
 
-    def diff_configs(self, a, b, *, a_name='live', b_name='generated', datacenter=None):
+    def diff_configs(self, a, b, *, a_name='live', b_name='generated', datacenter=None,
+                     force_unified=False):
         """
         Returns a 2-element tuple. The first element is a boolean, True if there is any diff,
         False otherwise. The second element is a generator that yields unified diff lines of
@@ -311,12 +320,26 @@ class DbConfig:
             b_lines = _to_json_lines(_get(b, branches))
             a_descr = ' '.join([path, a_name])
             b_descr = ' '.join([path, b_name])
-            rv.extend([line + '\n' for line in difflib.unified_diff(
-                a_lines,
-                b_lines,
-                lineterm='',
-                fromfile=a_descr,
-                tofile=b_descr)])
+            if icdiff is not None and not force_unified:
+                consolediff = icdiff.ConsoleDiff(cols=self._terminal_columns())
+                difflines = list([line + '\n' for line in consolediff.make_table(
+                    a_lines,
+                    b_lines,
+                    context=True,
+                    fromdesc=a_descr,
+                    todesc=b_descr,
+                )])
+                # Unlike difflib.unified_diff, icdiff outputs a header regardless of whether or
+                # not there was a diff between contents.  Suppress header-only output sections.
+                if len(difflines) > 1:
+                    rv.extend(difflines)
+            else:
+                rv.extend([line + '\n' for line in difflib.unified_diff(
+                    a_lines,
+                    b_lines,
+                    lineterm='',
+                    fromfile=a_descr,
+                    tofile=b_descr)])
 
         def _recursively_diff(a, b, branches):
             """Diff the sub-trees of 'a' and 'b', recursing an extra time for keys_with_subtrees."""
@@ -374,6 +397,10 @@ class DbConfig:
         if not has_diff:
             return ActionResult(True, 0, messages=['Nothing to commit'])
 
+        # We want to Phab-paste a unified diff, not the two-column icdiff.
+        _, unified_diff = self.diff_configs(previous_config, config,
+                                            datacenter=datacenter, force_unified=True)
+
         diff_text = ''.join(diff)
         if batch and comment is None:
             return ActionResult(False, 4, messages=['--message required for batch commits'])
@@ -422,7 +449,7 @@ class DbConfig:
         message_prefix = '{}dbctl commit'.format('' if result.success else 'FAILED ')
         phaste_title = "{prefix} (dc={dc}): '{msg}'".format(
             prefix=message_prefix, dc=datacenter_label, msg=comment)
-        phaste_url = phaste(phaste_title, diff_text)
+        phaste_url = phaste(phaste_title, ''.join(unified_diff))
         # Set the announce message
         result.announce_message = ("{prefix} (dc={dc}): '{msg}', diff saved to "
                                    '{url} and previous config saved to {f}').format(
@@ -491,6 +518,14 @@ class DbConfig:
             return (False, 'User did not confirm')
 
         return (True, '')
+
+    def _terminal_columns(self, minimum=100):
+        """Get the number of columns on the user's tty, if any, or return minimum."""
+
+        try:
+            return max(minimum, os.get_terminal_size().columns)
+        except OSError:
+            return minimum
 
     def _check_section(self, name, section):
         """Checks the validity of a section in sectionLoads."""

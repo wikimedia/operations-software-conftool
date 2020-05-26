@@ -138,7 +138,7 @@ class ConftoolTestCase(IntegrationTestBase):
         self.assertEqual(cli.run_action(), 0)
         # Do a cursory test of our diff we've built up.
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-            cli = self.get_cli('config', 'diff')
+            cli = self.get_cli('config', 'diff', '-u')
             self.assertEqual(cli.run_action(), 1)
             # We should see a diff header indicating changes in dcA/sectionLoads/s1
             self.assertRegex(mock_stdout.getvalue(), r'(?m)^\+\+\+ dcA/sectionLoads/s1 generated$')

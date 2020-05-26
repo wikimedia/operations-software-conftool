@@ -550,14 +550,14 @@ class TestDbConfig(TestCase):
         instances, sections = self._mock_objects()
         a = self.config.compute_config(sections, instances)
         # Identical input should yield empty diff output.
-        has_diff, diff = self.config.diff_configs(a, a)
+        has_diff, diff = self.config.diff_configs(a, a, force_unified=True)
         self.assertFalse(has_diff)
         self.assertEqual(list(diff), [])
 
         # Changing the weight of an instance should yield a diff.
         instances[1].sections['s3']['percentage'] = 10
         b = self.config.compute_config(sections, instances)
-        has_diff, diff = self.config.diff_configs(a, b)
+        has_diff, diff = self.config.diff_configs(a, b, force_unified=True)
         diff = list(diff)
         self.assertTrue(has_diff)
         self.assertIn('+++ test/sectionLoads/DEFAULT generated\n', diff)

@@ -127,6 +127,8 @@ def parse_args(cmdline):
                                help='Show deltas between the live config and the generated config')
     diff.add_argument('-q', '--quiet', action='store_true',
                       help='Suppress diff output')
+    diff.add_argument('-u', '--unified', action='store_true',
+                      help='Force the use of a unified diff format, even if icdiff is available.')
     commands.add_parser('generate',
                         help='Compute and show the would-be-committed configuration')
     commands.add_parser('get', help='Get the live configuration as seen by MediaWiki')

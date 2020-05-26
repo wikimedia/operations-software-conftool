@@ -21,6 +21,7 @@ Description: Set of tools to configure the WMF kv config store.
 Package: python3-conftool-dbctl
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}, python3-conftool
+Suggests: icdiff
 Description: Set of tools to manage MediaWiki databases.
  It installs an extension to python3-conftool that allows one
  to manage the MediaWiki database dynamic live state stored

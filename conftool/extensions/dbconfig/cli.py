@@ -153,7 +153,8 @@ class DbConfigCli(ToolCliBase):
                     return ActionResult(False, 2, messages=['Datacenter {} not found'.format(dc)])
 
             has_diff, diff = self.db_config.diff_configs(
-                self.db_config.live_config, config, datacenter=dc)
+                self.db_config.live_config, config, datacenter=dc,
+                force_unified=self.args.unified)
 
             if has_diff and not self.args.quiet:
                 sys.stdout.writelines(diff)

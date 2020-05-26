@@ -249,9 +249,11 @@ To show the diff between the configuration that is live, and what would be gener
 
     dbctl config diff
 
-TODO: In the future, this will exit with status code 0 on identical configurations, exit code 1 on diffs, and other codes on error.
+If installed, this will use [icdiff](https://www.jefftk.com/icdiff) to generate a two-column colorized diff.  Otherwise, or if you specify `-u`/`--unified`, a unified diff will be produced.
 
-This command also accepts a `-q`/`--quiet` argument, which suppresses diff output, useful in scripts or conditionals.
+Exits with status code 0 on identical configurations, exit code 1 on diffs, and other codes on error.
+
+This command also accepts a `-q`/`--quiet` argument which suppresses diff output; useful in scripts or conditionals.
 
 #### Synchronizing your changes
 
