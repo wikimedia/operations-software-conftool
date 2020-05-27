@@ -1,3 +1,10 @@
+conftool (1.3.1-1) stretch-wikimedia; urgency=medium
+
+  * dbctl is now mildly smarter about how it constructs diffs.
+  * dbctl will prefer icdiff for interactive output, when available.
+
+ -- Chris Danis <cdanis@wikimedia.org>  Wed, 27 May 2020 09:16:34 -0400
+
 conftool (1.3.0-1) stretch-wikimedia; urgency=medium
 
   * dbctl: schema upgrade required!
