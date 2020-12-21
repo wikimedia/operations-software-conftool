@@ -53,6 +53,8 @@ A section object has the following properties:
 * `min_replicas` (integer) minimum number of replicas acceptable for this section
 * `readonly` (boolean) if the section should be set to read-only or not
 * `reason` The reason for the read-only state, if any
+* `flavor` Either `regular` for a core metadata section (given to Mediawiki in `sectionLoads`),
+  or `external` for an external data section (given to Mediawiki in `externalLoads`).
 
 You can interact with section objects with `dbctl` as follows:
 
