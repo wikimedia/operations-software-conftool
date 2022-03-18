@@ -11,52 +11,56 @@ from conftool import configuration, setup_irc, IRCSocketHandler
 from conftool.kvobject import KVObject
 
 
-test_base = os.path.realpath(os.path.join(
-    os.path.dirname(__file__), '..'))
+test_base = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 class EtcdProcessHelper:
-
     def __init__(
-            self,
-            base_directory,
-            proc_name='etcd',
-            port=2379,
-            internal_port=2380,
-            cluster=False,
-            tls=False
+        self,
+        base_directory,
+        proc_name="etcd",
+        port=2379,
+        internal_port=2380,
+        cluster=False,
+        tls=False,
     ):
-        self.log = logging.getLogger(__name__ + '.' + self.__class__.__name__)
+        self.log = logging.getLogger(__name__ + "." + self.__class__.__name__)
         self.base_directory = base_directory
         self.proc_name = proc_name
         self.port = port
         self.internal_port = internal_port
         self.proc = None
         self.cluster = cluster
-        self.schema = 'http://'
+        self.schema = "http://"
         if tls:
-            self.schema = 'https://'
+            self.schema = "https://"
 
     def run(self, proc_args=None):
         if self.proc is not None:
             raise Exception("etcd already running with pid %d", self.proc.pid)
-        client = '%s127.0.0.1:%d' % (self.schema, self.port)
-        peers = '%s127.0.0.1:%d' % (self.schema, self.internal_port)
+        client = "%s127.0.0.1:%d" % (self.schema, self.port)
+        peers = "%s127.0.0.1:%d" % (self.schema, self.internal_port)
         daemon_args = [
             self.proc_name,
-            '-data-dir', self.base_directory,
-            '-name', 'test-node',
-            '-advertise-client-urls', client,
-            '-listen-client-urls', client,
-            '-listen-peer-urls', peers,
-            '-initial-advertise-peer-urls', peers,
+            "-data-dir",
+            self.base_directory,
+            "-name",
+            "test-node",
+            "-advertise-client-urls",
+            client,
+            "-listen-client-urls",
+            client,
+            "-listen-peer-urls",
+            peers,
+            "-initial-advertise-peer-urls",
+            peers,
         ]
         if proc_args:
             daemon_args.extend(proc_args)
 
         daemon = subprocess.Popen(daemon_args)
-        self.log.debug('Started etcd with pid %d' % daemon.pid)
-        self.log.debug('etcd params: %s' % daemon_args)
+        self.log.debug("Started etcd with pid %d" % daemon.pid)
+        self.log.debug("etcd params: %s" % daemon_args)
         time.sleep(2)
         self.proc = daemon
 
@@ -69,34 +73,43 @@ class EtcdProcessHelper:
 class IntegrationTestBase(TestCase):
 
     log = logging.getLogger(__name__)
+    fixture_dir = os.path.join(test_base, "fixtures")
+
+    @classmethod
+    def get_config(cls):
+        config_file = os.path.join(cls.fixture_dir, "etcd_testrc")
+        return configuration.Config(
+            driver_options={"etcd_config_file": config_file},
+            cache_path=cls.directory,
+            tcpircbot_host="example.com",
+            tcpircbot_port=1111,
+        )
 
     @classmethod
     def setUpClass(cls):
         cls.init_failed = False
         program = cls._get_exe()
-        cls.directory = tempfile.mkdtemp(prefix='conftool')
+        cls.directory = tempfile.mkdtemp(prefix="conftool")
         cls.processHelper = EtcdProcessHelper(
-            cls.directory,
-            proc_name=program, port=23790, internal_port=23800)
+            cls.directory, proc_name=program, port=23790, internal_port=23800
+        )
         cls.processHelper.run()
-        cls.fixture_dir = os.path.join(test_base, 'fixtures')
-        config_file = os.path.join(cls.fixture_dir, 'etcd_testrc')
-        conf = configuration.Config(
-            driver_options={'etcd_config_file': config_file}, cache_path=cls.directory,
-            tcpircbot_host='example.com', tcpircbot_port=1111)
+        cls.fixture_dir = os.path.join(test_base, "fixtures")
+        config_file = os.path.join(cls.fixture_dir, "etcd_testrc")
+        conf = cls.get_config()
         try:
             KVObject.setup(conf)
             KVObject.setup = mock.MagicMock()
             setup_irc(conf)
         except SystemExit as system_exit:
-            cls.log.critical("KVObject.setup() failed. sys.exit(%s)"
-                             % system_exit,
-                             exc_info=1)
+            cls.log.critical(
+                "KVObject.setup() failed. sys.exit(%s)" % system_exit, exc_info=1
+            )
             cls.init_failed = True
 
     def setUp(self):
         # Intercept IRC messages
-        logger = logging.getLogger('conftool.announce')
+        logger = logging.getLogger("conftool.announce")
         self.irc = logger.handlers[0]
         self.irc.emit = mock.MagicMock(spec=IRCSocketHandler.emit)
         if self.init_failed:
@@ -113,7 +126,7 @@ class IntegrationTestBase(TestCase):
 
     @classmethod
     def _get_exe(cls):
-        PROGRAM = 'etcd'
+        PROGRAM = "etcd"
         program_path = None
         for path in os.environ["PATH"].split(os.pathsep):
             path = path.strip('"')
@@ -122,13 +135,12 @@ class IntegrationTestBase(TestCase):
                 program_path = exe_file
                 break
         if not program_path:
-            raise Exception('etcd not in path!!')
+            raise Exception("etcd not in path!!")
         return program_path
 
     def tearDown(self):
         path = KVObject.backend.driver.base_path
         try:
-            KVObject.backend.driver.client.delete(
-                path, recursive=True, dir=True)
+            KVObject.backend.driver.client.delete(path, recursive=True, dir=True)
         except Exception:
             pass

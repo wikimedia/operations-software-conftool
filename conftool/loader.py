@@ -12,32 +12,32 @@ def factory(name, defs):
     based on the inputs
     """
     properties = {
-        '_tags': defs['tags'],
-        '_base_path': defs['path'],
-        'depends': defs.get('depends', []),
-        '_schema': {},
-        '_default_values': {}
+        "_tags": defs["tags"],
+        "_base_path": defs["path"],
+        "depends": defs.get("depends", []),
+        "_schema": {},
+        "_default_values": {},
     }
 
-    json_schema = defs.get('json_schema', False)
+    json_schema = defs.get("json_schema", False)
     if json_schema:
         cls = JsonSchemaEntity
-        properties['loader'] = get_json_schema(json_schema)
-    elif defs.get('free_form', False):
+        properties["loader"] = get_json_schema(json_schema)
+    elif defs.get("free_form", False):
         cls = FreeSchemaEntity
     else:
         cls = Entity
 
-    properties['_schema'] = {}
-    properties['_default_values'] = {}
+    properties["_schema"] = {}
+    properties["_default_values"] = {}
 
-    for k, v in defs['schema'].items():
+    for k, v in defs["schema"].items():
         if json_schema:
             # Validation is done with json schema
-            properties['_schema'][k] = get_validator('any')
+            properties["_schema"][k] = get_validator("any")
         else:
-            properties['_schema'][k] = get_validator(v['type'])
-        properties['_default_values'][k] = v['default']
+            properties["_schema"][k] = get_validator(v["type"])
+        properties["_default_values"][k] = v["default"]
 
     def base_path(cls):
         return cls._base_path
@@ -45,8 +45,8 @@ def factory(name, defs):
     def get_default(self, what):
         return self._default_values[what]
 
-    properties['get_default'] = get_default
-    properties['base_path'] = classmethod(base_path)
+    properties["get_default"] = get_default
+    properties["base_path"] = classmethod(base_path)
     return type(name, (cls,), properties)
 
 
@@ -55,11 +55,12 @@ class Schema:
     Allows loading entities definitions from a file declaration
     """
 
-    def __init__(self):
+    def __init__(self, default_entities=True):
         self.entities = {}
         self.has_errors = False
-        # Add the special entities that have dedicated classes
-        self._add_default_entities()
+        if default_entities:
+            # Add the special entities that have dedicated classes
+            self._add_default_entities()
 
     @classmethod
     def from_file(cls, filename):
@@ -77,15 +78,35 @@ class Schema:
 
         for objname, defs in data.items():
             try:
-                _log.debug('Loading entity %s', objname)
-                entity_name = re.sub(r'\W', '_', objname.capitalize())
+                _log.debug("Loading entity %s", objname)
+                entity_name = re.sub(r"\W", "_", objname.capitalize())
                 entity = factory(entity_name, defs)
                 instance.entities[objname] = entity
             except Exception as e:
-                _log.error('Could not load entity %s: %s', objname,
-                           e, exc_info=True)
+                _log.error("Could not load entity %s: %s", objname, e, exc_info=True)
+                instance.has_errors = True
+        return instance
+
+    @classmethod
+    def from_data(cls, data, default_entities=True):
+        """
+        Load from a python data structure
+        """
+        instance = cls(default_entities=default_entities)
+        if not data:
+            instance.has_errors = True
+            return instance
+
+        for objname, defs in data.items():
+            try:
+                _log.debug("Loading entity %s", objname)
+                entity_name = re.sub(r"\W", "_", objname.capitalize())
+                entity = factory(entity_name, defs)
+                instance.entities[objname] = entity
+            except Exception as e:
+                _log.error("Could not load entity %s: %s", objname, e, exc_info=True)
                 instance.has_errors = True
         return instance
 
     def _add_default_entities(self):
-        self.entities['node'] = node.Node
+        self.entities["node"] = node.Node

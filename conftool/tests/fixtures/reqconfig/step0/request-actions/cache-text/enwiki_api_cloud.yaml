@@ -1,0 +1,12 @@
+cache_miss_only: true
+comment: Limit access to the enwiki api from the clouds
+do_throttle: true
+enabled: true
+expression: ( pattern@cache-text/action_api OR pattern@cache-text/restbase ) AND ( ipblock@cloud/aws OR ipblock@cloud/azure OR ipblock@cloud/ovh )
+resp_reason: We don't like clouds
+resp_status: 429
+sites: []
+throttle_duration: 300
+throttle_interval: 30
+throttle_per_ip: false
+throttle_requests: 5000

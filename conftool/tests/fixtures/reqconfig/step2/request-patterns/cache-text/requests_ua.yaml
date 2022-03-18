@@ -1,0 +1,7 @@
+header: User-Agent
+header_value: python-requests.*
+method: ''
+query_parameter: ''
+query_parameter_value: ''
+request_body: ''
+url_path: ''

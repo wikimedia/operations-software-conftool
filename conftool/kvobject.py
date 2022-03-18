@@ -3,10 +3,14 @@ import os
 
 from collections import OrderedDict
 
+from typing import Dict
+
 from conftool import _log, backend, drivers
 
 
 class KVObject:
+    """Basic key-value object implementation."""
+
     backend = None
     config = None
     _schema = {}
@@ -29,7 +33,7 @@ class KVObject:
         If any tag (or the object name) are omitted, all of them are supposed to
         get selected.
         """
-        tags = cls._tags + ['name']
+        tags = cls._tags + ["name"]
         for labels in cls.backend.driver.all_keys(cls.base_path()):
             is_matching = True
             for i, tag in enumerate(tags):
@@ -38,8 +42,9 @@ class KVObject:
                     # Label selector not specified, we catch anything
                     continue
                 if not regex.match(labels[i]):
-                    _log.debug("label %s did not match regex %s", labels[i],
-                               regex.pattern)
+                    _log.debug(
+                        "label %s did not match regex %s", labels[i], regex.pattern
+                    )
                     is_matching = False
                     break
             if is_matching:
@@ -67,8 +72,7 @@ class KVObject:
         res = {}
         # The current key, minus the basepath, is the list of tags +
         # the node name
-        tags = self.key.replace(
-            self.base_path(), '').lstrip('/').split('/')[:-1]
+        tags = self.key.replace(self.base_path(), "").lstrip("/").split("/")[:-1]
         for i in range(len(self._tags)):
             res[self._tags[i]] = tags[i]
         return res
@@ -98,9 +102,11 @@ class KVObject:
     @classmethod
     def parse_tags(cls, taglist):
         """Given a taglist as a string, return an ordered list of tags"""
+
         def tuplestrip(tup):
             return tuple([x.strip() for x in tup])
-        tagdict = dict([tuplestrip(el.split('=')) for el in taglist])
+
+        tagdict = dict([tuplestrip(el.split("=")) for el in taglist])
         # will raise a KeyError if not all tags are matched
         return [tagdict[t] for t in cls._tags]
 
@@ -113,6 +119,23 @@ class KVObject:
                 continue
             self._set_value(k, self._schema[k], {k: v}, set_defaults=False)
         self.write()
+
+    def changed(self, values: Dict) -> Dict:
+        """
+        Give a set of values, check if it would change the object.
+
+        Arguments:
+          values (dict): the values to compare and set
+
+        Returns:
+          Dict of values that would actually change
+        """
+        changed = {}
+        for k in self._schema:
+            current = getattr(self, k)
+            if k in values and values[k] != current:
+                changed[k] = values[k]
+        return changed
 
     def validate(self, values):
         """
@@ -140,8 +163,7 @@ class KVObject:
             data = tmpdict
         tmpdict = {}
         for tags, names in data.items():
-            tmpdict.update(
-                dict([("%s/%s" % (tags, name), None) for name in names]))
+            tmpdict.update(dict([("%s/%s" % (tags, name), None) for name in names]))
         return tmpdict
 
     def from_net(self, values):
@@ -162,8 +184,9 @@ class KVObject:
 
     def _set_value(self, key, validator, values, set_defaults=True):
         # When initializing a object, we don't really care
-        # about logging warnings
-        if values is None:
+        # about logging warnings.
+        # Same thing when an object has no value.
+        if values is None or values.get(key) is None:
             if set_defaults:
                 setattr(self, key, self.get_default(key))
             return
@@ -171,12 +194,10 @@ class KVObject:
         try:
             setattr(self, key, validator(values[key]))
         except Exception as e:
-            _log.info("Value for key %s is invalid: %s",
-                      key, e, exc_info=True)
+            _log.info("Value for key %s is invalid: %s", key, e, exc_info=True)
             if set_defaults:
                 val = self.get_default(key)
-                _log.warn("Setting %s to the default value %s",
-                          key, val)
+                _log.warn("Setting %s to the default value %s", key, val)
                 setattr(self, key, val)
             else:  # pragma: no cover
                 _log.warn("Not setting a value")
@@ -185,30 +206,34 @@ class KVObject:
         d = OrderedDict()
         d[self.name] = self._to_net()
         tags = self.tags
-        d['tags'] = ','.join(["%s=%s" % (k, tags[k]) for k in self._tags])
+        d["tags"] = ",".join(["%s=%s" % (k, tags[k]) for k in self._tags])
         return d
 
     def __str__(self):
         return json.dumps(self.asdict())
 
     def __eq__(self, obj):
-        return (self.__class__ == obj.__class__ and
-                self.name == obj.name and
-                self.tags == obj.tags and
-                self._to_net() == obj._to_net())
+        return (
+            self.__class__ == obj.__class__
+            and self.name == obj.name
+            and self.tags == obj.tags
+            and self._to_net() == obj._to_net()
+        )
 
 
 class Entity(KVObject):
     """
     General-purpose entity with a strict schema
     """
+
     # Allows to store dependencies
     depends = []
 
     def __init__(self, *tags):
         if len(tags) != (len(self._tags) + 1):
             raise ValueError(
-                "Need %s as tags, %s provided" % (",".join(self._tags), ",".join(tags[:-1]))
+                "Need %s as tags, %s provided"
+                % (",".join(self._tags), ",".join(tags[:-1]))
             )
         self._name = tags[-1]
         self._key = self.kvpath(*tags)
@@ -243,6 +268,7 @@ class JsonSchemaEntity(Entity):
     """
     Specific class for json-schema based entities
     """
+
     # loader gets injected into the derived classes when they get generated
     # by loader.factory
     loader = None

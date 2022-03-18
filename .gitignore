@@ -7,3 +7,5 @@ __pycache__/
 *.swp
 /build
 /dist
+.vscode
+.pybuild
