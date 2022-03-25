@@ -1,0 +1,2 @@
+conftool/extensions/reqconfig/* /usr/lib/python3/dist-packages/conftool/extensions/reqconfig
+usr/bin/requestctl usr/bin
