@@ -1,3 +1,9 @@
+conftool (2.0.1-2) buster-wikimedia; urgency=medium
+
+  * Support pyparsing 2.x
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Mon, 28 Mar 2022 12:24:18 +0200
+
 conftool (2.0.0-1) buster-wikimedia; urgency=medium
 
   * switch to requiring python 3.7+
