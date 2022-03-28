@@ -251,7 +251,7 @@ class Requestctl:
         If the expression is not balanced, or has references to inexistent ipblocks or patterns,
         an error will be raised.
         """
-        parsed = self.expression_grammar.parse_string(expression, parse_all=True)
+        parsed = self.expression_grammar.parseString(expression, parseAll=True)
         # If this didn't raise an exception, the string was valid. Now let's put it in normalized
         # form like it needs to be in etcd
 
@@ -283,10 +283,10 @@ class Requestctl:
         rpar = pp.Literal(")")
         element = pp.Word(pp.alphanums + "/-_")
         pattern = pp.Combine(
-            "pattern@" + element.set_parse_action(self._validate_pattern)
+            "pattern@" + element.setParseAction(self._validate_pattern)
         )
         ipblock = pp.Combine(
-            "ipblock@" + element.set_parse_action(self._validate_ipblock)
+            "ipblock@" + element.setParseAction(self._validate_ipblock)
         )
         grm = pp.Forward()
         item = pattern | ipblock | lpar + grm + rpar
@@ -336,7 +336,7 @@ class Requestctl:
             # We never sync the enabled state from disk.
             del changes["enabled"]
             return changes
-        except pp.exceptions.ParseException as e:
+        except pp.ParseException as e:
             raise RequestctlError(e) from e
 
     def _object_diff(self, entity: Entity, to_load: Dict[str, Any]):

@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="conftool",
-    version="2.0.0",
+    version="2.0.1",
     description="Tools to interoperate with distributed k/v stores",
     author="Joe",
     author_email="joe@wikimedia.org",
@@ -27,7 +27,7 @@ setup(
     extras_require={
         "with_dbctl": [],  # No extra dependencies, but allow to mark it
         "with_requestctl": [
-            "pyparsing",
+            "pyparsing<3.0.0",
             "tabulate",
             "wmflib",
         ],  # ditto
