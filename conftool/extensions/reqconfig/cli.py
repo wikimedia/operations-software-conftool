@@ -157,17 +157,16 @@ class Requestctl:
                     failed = True
                     logger.error("Error parsing %s, skipping: %s", obj.pprint(), e)
                     continue
-                if self.args.interactive:
+                changes = self._object_diff(obj, to_load)
+                if changes:
                     try:
-                        self._object_diff(obj, to_load)
-                    except AbortError:
+                        self._write(obj, to_load)
+                    except BackendError as e:
+                        logger.error(
+                            "Error writing to etcd for %s: %s", obj.pprint(), e
+                        )
+                        failed = True
                         continue
-                try:
-                    self._write(obj, to_load)
-                except BackendError as e:
-                    logger.error("Error writing to etcd for %s: %s", obj.pprint(), e)
-                    failed = True
-                    continue
 
         # If we're not purging, let's stop here.
         if not self.args.purge:
@@ -333,25 +332,38 @@ class Requestctl:
             return changes
         try:
             changes["expression"] = self._parse_and_check(changes["expression"])
-            # We never sync the enabled state from disk.
-            del changes["enabled"]
-            return changes
         except pp.ParseException as e:
             raise RequestctlError(e) from e
+        try:
+            # We never sync the enabled state from disk.
+            del changes["enabled"]
+        except KeyError:
+            pass
+        return changes
 
-    def _object_diff(self, entity: Entity, to_load: Dict[str, Any]):
+    def _object_diff(self, entity: Entity, to_load: Dict[str, Any]) -> Dict:
         """Asks for confirmation of changes if needed."""
         if entity.exists:
-            action = "modify"
             changes = entity.changed(to_load)
-            print(f"{self.object_type.capitalize()} {entity.pprint()} will be changed:")
+            action = "modify"
+            msg = f"{self.object_type.capitalize()} {entity.pprint()} will be changed:"
         else:
             action = "create"
             changes = to_load
-            print(f"{self.object_type.capitalize()} will be created:")
-        for key, value in changes.items():
-            print(f"{entity.name}.{key}: '{getattr(entity, key)}' => {changes[key]}")
-        ask_confirmation(f"Do you want to {action} this object?")
+            msg = f"{self.object_type.capitalize()} will be created:"
+
+        if self.args.interactive and changes:
+            print(msg)
+            for key, value in changes.items():
+                print(
+                    f"{entity.name}.{key}: '{getattr(entity, key)}' => {changes[key]}"
+                )
+            try:
+                ask_confirmation(f"Do you want to {action} this object?")
+            except AbortError:
+                # act like there were no changes
+                return {}
+        return changes
 
     def _write(self, entity: Entity, to_load: Dict[str, Any]):
         """Write the object to the datastore."""
