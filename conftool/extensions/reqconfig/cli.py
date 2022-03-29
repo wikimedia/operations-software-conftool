@@ -297,18 +297,19 @@ class Requestctl:
         for pattern in tokens:
             obj = get_obj_from_slug(self.schema.entities["pattern"], pattern)
             if not obj.exists:
-                raise pp.ParseException(
-                    f"The pattern {pattern} is not present on the backend."
-                )
+                msg = f"The pattern {pattern} is not present on the backend."
+                logger.error(msg)
+                # also raise an exception to make parsing fail.
+                raise pp.ParseException(msg)
 
     def _validate_ipblock(self, _all, _pos, tokens):
         """Ensure an ipblock referenced exists."""
         for ipblock in tokens:
             obj = get_obj_from_slug(self.schema.entities["ipblock"], ipblock)
             if not obj.exists:
-                raise pp.ParseException(
-                    f"The ipblock {ipblock} is not present on the backend."
-                )
+                msg = f"The ipblock {ipblock} is not present on the backend."
+                logger.error(msg)
+                raise pp.ParseException(msg)
 
     def _pprint(self, entities: List[Entity]):
         """Pretty print the results."""
