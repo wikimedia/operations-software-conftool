@@ -71,7 +71,8 @@ def parse_args(args) -> ArgumentParser:
     get.add_argument(
         "-o",
         "--output",
-        help="Choose the format for output: pretty, json, yaml",
+        help="Choose the format for output: pretty, json, yaml. "
+        "Pretty output is disabled for actions at the moment.",
         choices=["pretty", "json", "yaml"],
         default="pretty",
     )

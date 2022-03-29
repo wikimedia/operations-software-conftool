@@ -313,7 +313,13 @@ class Requestctl:
 
     def _pprint(self, entities: List[Entity]):
         """Pretty print the results."""
-        print(view.get(self.args.output).render(entities, self.object_type))
+        # temporary while we iron out the issues with old versions of tabulate
+        if self.object_type == "action" and self.args.output == "pretty":
+            out = "yaml"
+        else:
+            out = self.args.output
+
+        print(view.get(out).render(entities, self.object_type))
 
     def _entity_from_file(
         self, tag: str, file_path: pathlib.Path
