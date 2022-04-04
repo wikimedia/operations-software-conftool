@@ -23,6 +23,8 @@ from . import view
 irc = logging.getLogger("reqctl.announce")
 logger = logging.getLogger("reqctl")
 config = configuration.Config()
+VARNISH_LOG_FORMAT = '%{X-Client-IP}i %l %u %t "%r" %s %b "%{Referer}i" '
+'"%{User-agent}i" "%{X-Public-Cloud}i"'
 # requestctl has its own schema and we don't want to have to configure it.
 empty_string = {"type": "string", "default": ""}
 empty_list = {"type": "list", "default": []}
@@ -128,7 +130,7 @@ class Requestctl:
     @property
     def object_type(self) -> str:
         """The object type we're operating on."""
-        if self.args.command in ["enable", "disable"]:
+        if self.args.command in ["enable", "disable", "log"]:
             return "action"
         return self.args.object_type
 
@@ -235,6 +237,21 @@ class Requestctl:
 
         self._pprint(objs)
 
+    def log(self):
+        """Print out the varnishlog command corresponding to the selected action."""
+        entity = self.schema.entities["action"]
+        obj = get_obj_from_slug(entity, self.args.object_path)
+        if obj.exists:
+            vsl = self._vsl_from_expression(obj.expression)
+            print(
+                "You can monitor requests matching this action using the following command:"
+            )
+            print("sudo varnishncsa -n frontend -g request \\")
+            print(f"  -F '{VARNISH_LOG_FORMAT}' \\")
+            print(f"  -q '{vsl} and VCL_acl eq \"NO_MATCH wikimedia_nets\"'")
+        else:
+            raise RequestctlError("Action {self.args.object_path} not found.")
+
     # End public interface
 
     def _enable(self, enable: bool):
@@ -244,7 +261,7 @@ class Requestctl:
             raise RequestctlError(f"{self.args.action} does not exist, cannot enable.")
         action.update({"enabled": enable})
 
-    def _parse_and_check(self, expression):
+    def _parse_and_check(self, expression) -> List[str]:
         """Parse the expression and check if it's valid at all.
 
         If the expression is not balanced, or has references to inexistent ipblocks or patterns,
@@ -263,7 +280,7 @@ class Requestctl:
                     res.append(el)
             return res
 
-        return " ".join(flatten(parsed.asList()))
+        return flatten(parsed.asList())
 
     def grammar(self) -> pp.Forward:
         """
@@ -335,10 +352,12 @@ class Requestctl:
         Verifies a change is ok. Eitehr Raises an exception
         or returns the valid changes.
         """
-        if not self.object_type == "action":
+        if self.object_type != "action":
             return changes
         try:
-            changes["expression"] = self._parse_and_check(changes["expression"])
+            changes["expression"] = " ".join(
+                self._parse_and_check(changes["expression"])
+            )
         except pp.ParseException as e:
             raise RequestctlError(e) from e
         try:
@@ -362,9 +381,7 @@ class Requestctl:
         if self.args.interactive and changes:
             print(msg)
             for key, value in changes.items():
-                print(
-                    f"{entity.name}.{key}: '{getattr(entity, key)}' => {changes[key]}"
-                )
+                print(f"{entity.name}.{key}: '{getattr(entity, key)}' => {value}")
             try:
                 ask_confirmation(f"Do you want to {action} this object?")
             except AbortError:
@@ -402,3 +419,39 @@ class Requestctl:
             )
             return False
         return True
+
+    def _vsl_from_expression(self, expression: str) -> str:
+        """Obtain the vsl query from the expression"""
+        query = []
+        parsed = self._parse_and_check(expression)
+        for token in parsed:
+            if token in ["(", ")", "AND", "OR"]:
+                query.append(token.lower())
+            elif token.startswith("ipblock@"):
+                what, name = token.split("/")
+                if what == "ipblock@cloud":
+                    query.append(f'ReqHeader:X-Public-Cloud ~ "{name}"')
+                elif what == "ipblock@abuse":
+                    query.append(f'VCL_acl eq "MATCH {name}"')
+            elif token.startswith("pattern@"):
+                slug = token.replace("pattern@", "")
+                obj = get_obj_from_slug(self.schema.entities["pattern"], slug)
+                if obj.method:
+                    query.append(f'ReqMethod ~ "{obj.method}"')
+                if obj.header:
+                    if obj.header_value != "":
+                        query.append(f'ReqHeader:{obj.header} ~ "{obj.header_value}"')
+                    else:
+                        query.append(f"not ReqHeader:{obj.header}")
+                if obj.url_path:
+                    if obj.query_parameter:
+                        qs = f"[?&]{obj.query_parameter}={obj.query_parameter_value}"
+                        query.append(f'ReqURL ~ "{obj.url_path}.*{qs}"')
+                    else:
+                        query.append(f'ReqURL ~ "{obj.url_path}"')
+                # We need to use else if because we don't want to act if uri_path was defined.
+                elif obj.query_parameter:
+                    query.append(
+                        f'ReqURL ~ "[?&]{obj.query_parameter}={obj.query_parameter_value}"'
+                    )
+        return " ".join(query)

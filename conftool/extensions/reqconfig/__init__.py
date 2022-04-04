@@ -1,6 +1,6 @@
 """This extension generates the requestctl tool."""
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 import logging
 import sys
 
@@ -11,13 +11,15 @@ from .cli import Requestctl, RequestctlError, SCHEMA
 from .cli import get_schema  # noqa: F401
 
 
-def parse_args(args) -> ArgumentParser:
+def parse_args(args) -> Namespace:
     """Parse command-line arguments."""
     parser = ArgumentParser(
         "requestctl",
         description="Tool to control/ratelimit/ban web requests dynamically",
     )
-    parser.add_argument("--config", "-c", help="Configuration file")
+    parser.add_argument(
+        "--config", "-c", help="Configuration file", default="/etc/conftool/config.yaml"
+    )
     parser.add_argument("--debug", action="store_true")
     command = parser.add_subparsers(help="Command to execute", dest="command")
     command.required = True
@@ -75,6 +77,14 @@ def parse_args(args) -> ArgumentParser:
         "Pretty output is disabled for actions at the moment.",
         choices=["pretty", "json", "yaml"],
         default="pretty",
+    )
+    # Log command. Outputs a typical varnishncsa command to log the selected action
+    log = command.add_parser(
+        "log", help="Get the varnishncsa to log requests matching an object."
+    )
+    log.add_argument(
+        "object_path",
+        help="The full name of the object",
     )
     return parser.parse_args(args)
 
