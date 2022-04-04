@@ -1,3 +1,9 @@
+conftool (2.0.3-1) buster-wikimedia; urgency=medium
+
+  * Add log command.
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Mon, 04 Apr 2022 09:51:48 +0200
+
 conftool (2.0.2-1) buster-wikimedia; urgency=medium
 
   * requestctl upstream bugfixes
