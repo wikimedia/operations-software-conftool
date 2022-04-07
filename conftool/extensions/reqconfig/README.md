@@ -18,6 +18,10 @@ two types of data. It manages 3 types of objects:
 * `action` objects describe an action to be performed on a request matching
   specific combinations of patterns and ipblocks.
 
+There is an additional derived data type, called `vcl`, which is generated automatically
+when the `requestctl commit` command is issued. This is what gets then injected into
+varnish.
+
 `requestctl` allows you to edit the data you want to store in etcd in a
 directory tree, and to `sync` such data to the datastore, and to also `dump` the
 directory tree corresponding to the current state of the datastore.
@@ -31,6 +35,7 @@ On a given varnish host, we will have:
 * A netmapper file containing all the `ipblock` entries defined under the
   *cloud* scope
 * A vcl list of ACLs, one for each `ipblock` entry under the *abuse* scope
+* Possibly more netmapper files for things like crawlers.
 
 For more information about the object model, see the section below.
 ### requestctl get
@@ -107,6 +112,62 @@ Enable / disable actions (the `enabled` field in actions is explicitly excluded 
 ```bash
 $ requestctl enable cache-text/foobar  # enables cache-text/foobar
 $ requestctl disable cache-text/foobar # disables the same action.
+```
+
+### requestctl log
+Output the varnishncsa command to run on a cache host to see requests matching our action.
+```bash
+$ requestctl log cache-text/requests_ua_api
+
+You can monitor requests matching this action using the following command:
+sudo varnishncsa -n frontend -g request \
+  -F '"%{X-Client-IP}i" %l %u %t "%r" %s %b "%{Referer}i" "%{User-agent}i" "%{X-Public-Cloud}i"' \
+  -q 'ReqHeader:User-Agent ~ "^python-requests" and ( ReqURL ~ "^/api/rest_v1/" or ReqURL ~ "/w/api.php" ) and VCL_ACL eq "NO_MATCH wikimedia_nets"'
+
+```
+
+### requestctl vcl
+Output the vcl fragment generated from the action.
+```bash
+$ requestctl vcl cache-text/requests_ua_api
+
+// FILTER requests_ua_api
+// Disallow python-requests to access restbase or the action api
+// This filter is generated from data in etcd. To disable it, run the following command:
+// sudo requestctl disable 'cache-text/requests_ua_api'
+if (req.http.User-Agent ~ "^python-requests" && (req.url ~ "^/api/rest_v1/" || req.url ~ "/w/api.php") && vsthrottle.is_denied("requestctl:requests_ua_api", 500, 30s, 1000s)) {
+    return (synth(429, "Please see our UA policy"));
+}
+
+```
+
+### requestctl commit
+Commit changes to actions to the compiled vcl datastore. By default it's interactive, you need to pass `-b` if you want to run in batch mode.
+```
+$ requestctl enable cache-text/requests_ua_api
+$ requestctl commit
+--- cache-text/global.old
+
++++ cache-text/global.new
+
+@@ -1,3 +1,12 @@
+
++
++// FILTER requests_ua_api
++// Disallow python-requests to access restbase or the action api
++// This filter is generated from data in etcd. To disable it, run the following command:
++// sudo requestctl disable 'cache-text/requests_ua_api'
++if (req.http.User-Agent ~ "^python-requests" && (req.url ~ "^/api/rest_v1/" || req.url ~ "/w/api.php") && vsthrottle.is_denied("requestctl:requests_ua_api", 500, 30s, 1000s)) {
++    return (synth(429, "Please see our UA policy"));
++}
++
+
+ // FILTER enwiki_api_cloud
+ // Limit access to the enwiki api from the clouds
+
+==> Ok to commit these changes?
+Type "go" to proceed or "abort" to interrupt the execution
+>
 ```
 
 

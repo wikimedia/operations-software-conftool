@@ -5,26 +5,28 @@ We don't necessarily derive it from the base cli tools.
 """
 
 import argparse
+import difflib
 import logging
 import pathlib
 import re
-from typing import List, Optional, Tuple, Dict, Any
+from collections import defaultdict
+from typing import Any, Dict, List, Optional, Tuple
 
 import pyparsing as pp
 import yaml
+from wmflib.interactive import AbortError, ask_confirmation
+
 from conftool import IRCSocketHandler, configuration, yaml_safe_load
 from conftool.drivers import BackendError
 from conftool.kvobject import Entity, KVObject
 from conftool.loader import Schema
-from wmflib.interactive import AbortError, ask_confirmation
 
 from . import view
 
 irc = logging.getLogger("reqctl.announce")
 logger = logging.getLogger("reqctl")
 config = configuration.Config()
-VARNISH_LOG_FORMAT = '%{X-Client-IP}i %l %u %t "%r" %s %b "%{Referer}i" '
-'"%{User-agent}i" "%{X-Public-Cloud}i"'
+
 # requestctl has its own schema and we don't want to have to configure it.
 empty_string = {"type": "string", "default": ""}
 empty_list = {"type": "list", "default": []}
@@ -69,6 +71,13 @@ SCHEMA: Dict = {
             "throttle_per_ip": bool_false,
         },
     },
+    "vcl": {
+        "path": "request-vcl",
+        "tags": ["cluster"],
+        "schema": {
+            "vcl": empty_string,
+        },
+    },
 }
 
 
@@ -93,6 +102,8 @@ class RequestctlError(Exception):
 
 class Requestctl:
     """Cli tool to interact with the dynamic banning of urls."""
+
+    ACTION_ONLY_CMD = ["enable", "disable", "commit", "vcl", "log"]
 
     def __init__(self, args: argparse.Namespace) -> None:
         if args.debug:
@@ -130,7 +141,7 @@ class Requestctl:
     @property
     def object_type(self) -> str:
         """The object type we're operating on."""
-        if self.args.command in ["enable", "disable", "log"]:
+        if self.args.command in self.ACTION_ONLY_CMD:
             return "action"
         return self.args.object_type
 
@@ -226,33 +237,108 @@ class Requestctl:
 
     def get(self):
         """Get an object, or an entire class of them, print them out."""
-        entity = self.schema.entities[self.object_type]
-        if self.args.object_path:
-            objs = []
-            obj = get_obj_from_slug(entity, self.args.object_path)
-            if obj.exists:
-                objs.append(obj)
-        else:
-            objs = list(entity.query({"name": re.compile(".")}))
-
-        self._pprint(objs)
+        self._pprint(self._get())
 
     def log(self):
         """Print out the varnishlog command corresponding to the selected action."""
-        entity = self.schema.entities["action"]
-        obj = get_obj_from_slug(entity, self.args.object_path)
-        if obj.exists:
-            vsl = self._vsl_from_expression(obj.expression)
-            print(
-                "You can monitor requests matching this action using the following command:"
-            )
-            print("sudo varnishncsa -n frontend -g request \\")
-            print(f"  -F '{VARNISH_LOG_FORMAT}' \\")
-            print(f"  -q '{vsl} and VCL_acl eq \"NO_MATCH wikimedia_nets\"'")
-        else:
-            raise RequestctlError("Action {self.args.object_path} not found.")
+        objs = self._get(must_exist=True)
+        objs[0].vsl_expression = self._vsl_from_expression(objs[0].expression)
+        print(view.get("vsl").render(objs, "action"))
+
+    def vcl(self):
+        """Print out the VCL for a specific action."""
+        objs = self._get(must_exist=True)
+        objs[0].vcl_expression = self._vcl_from_expression(objs[0].expression)
+        print(view.get("vcl").render(objs, "action"))
+
+    def commit(self):
+        """Commit the enabled actions to vcl, asking confirmation with a diff."""
+        # First we need to build the vcl groups:
+        # - one cache-$cluster/global key with all vcl rules that go to all sites
+        # - one cache-$cluster/$dc key for every datacenter named in "sites" of any
+        #   action
+        batch = self.args.batch
+        vcl = self.schema.entities["vcl"]
+        actions_by_tag_site = defaultdict(lambda: defaultdict(list))
+        for action in self._get():
+            if not action.enabled:
+                continue
+            action.vcl_expression = self._vcl_from_expression(action.expression)
+            cluster = action.tags["cluster"]
+            if not action.sites:
+
+                actions_by_tag_site[cluster]["global"].append(action)
+            else:
+                for site in action.sites:
+                    actions_by_tag_site[cluster][site].append(action)
+        for cluster, entries in actions_by_tag_site.items():
+            for name, actions in entries.items():
+                vcl_content = view.get("vcl").render(actions, "action")
+                obj = vcl(cluster, name)
+                if not batch:
+                    if obj.exists:
+                        prev_vcl = obj.vcl
+                    else:
+                        prev_vcl = ""
+                    print(
+                        self._vcl_diff(
+                            prev_vcl,
+                            vcl_content,
+                            obj.pprint(),
+                        )
+                    )
+                    try:
+                        ask_confirmation("Ok to commit these changes?")
+                    except AbortError:
+                        continue
+                obj.vcl = vcl_content
+                obj.write()
+        # Now clean up things that are leftover
+        for rules in vcl.query({"name": re.compile(".*")}):
+            cluster = rules.tags["cluster"]
+            if rules.name not in actions_by_tag_site[cluster]:
+                if not batch:
+                    print(self._vcl_diff(rules.vcl, "", obj.pprint()))
+                    try:
+                        ask_confirmation("Ok to commit these changes?")
+                    except AbortError:
+                        continue
+                obj.vcl = vcl_content
+                obj.write()
+                rules.update({"vcl": ""})
 
     # End public interface
+    def _vcl_diff(self, old: str, new: str, slug: str) -> str:
+        """Diffs between two pieces of VCL."""
+        if old == "":
+            fromfile = "null"
+        else:
+            fromfile = f"{slug}.old"
+        if new == "":
+            tofile = "null"
+        else:
+            tofile = f"{slug}.new"
+        return "".join(
+            [
+                line + "\n"
+                for line in difflib.unified_diff(
+                    old.splitlines(), new.splitlines(), fromfile=fromfile, tofile=tofile
+                )
+            ]
+        )
+
+    def _get(self, must_exist: bool = False):
+        """Get an object, or all of them, return them as a list."""
+        if "object_path" in self.args and self.args.object_path:
+            objs = []
+            obj = get_obj_from_slug(self.cls, self.args.object_path)
+            if obj.exists:
+                objs.append(obj)
+            elif must_exist:
+                raise RequestctlError("{self.object_type} {obj.pprint()} not found.")
+        else:
+            objs = list(self.cls.query({"name": re.compile(".")}))
+        return objs
 
     def _enable(self, enable: bool):
         """Ban a type of request."""
@@ -330,12 +416,19 @@ class Requestctl:
 
     def _pprint(self, entities: List[Entity]):
         """Pretty print the results."""
-        # temporary while we iron out the issues with old versions of tabulate
-        if self.object_type == "action" and self.args.output == "pretty":
-            out = "yaml"
-        else:
-            out = self.args.output
-
+        # VCL and VSL output modes are only supported for "action"
+        # Also, pretty mode is disabled for all but patterns and ipblocks.
+        # Actions should be supported, but is temporarily disabled
+        #  while we iron out the issues with old versions of tabulate
+        output_config = {
+            "action": {"allowed": ["vsl", "vcl", "yaml", "json"], "default": "yaml"},
+            "vcl": {"allowed": ["yaml", "json"], "default": "json"},
+        }
+        out = self.args.output
+        if self.object_type in output_config:
+            conf = output_config[self.object_type]
+            if out not in conf["allowed"]:
+                out = conf["default"]
         print(view.get(out).render(entities, self.object_type))
 
     def _entity_from_file(
@@ -455,3 +548,64 @@ class Requestctl:
                         f'ReqURL ~ "[?&]{obj.query_parameter}={obj.query_parameter_value}"'
                     )
         return " ".join(query)
+
+    def _vcl_from_expression(self, expression: str) -> str:
+        translations = {"(": "(", ")": ")", "AND": " && ", "OR": " || "}
+        vcl_expression = ""
+        parsed = self._parse_and_check(expression)
+        for token in parsed:
+            if token in translations:
+                vcl_expression += translations[token]
+            elif token.startswith("pattern@"):
+                slug = token.replace("pattern@", "")
+                vcl_expression += self._vcl_from_pattern(slug)
+            elif token.startswith("ipblock@"):
+                slug = token.replace("ipblock@", "")
+                vcl_expression += self._vcl_from_ipblock(slug)
+        return vcl_expression
+
+    def _vcl_from_pattern(self, slug: str) -> str:
+        out_vcl = []
+        obj = get_obj_from_slug(self.schema.entities["pattern"], slug)
+        if obj.method:
+            out_vcl.append('req.method == "{obj.method}"')
+        url_rule = vcl_url_match(
+            obj.url_path, obj.query_parameter, obj.query_parameter_value
+        )
+        if url_rule != "":
+            out_vcl.append(url_rule)
+        if obj.header:
+            if obj.header_value:
+                out_vcl.append(f'req.http.{obj.header} ~ "{obj.header_value}"')
+            # Header with no value means absence of the header
+            else:
+                out_vcl.append(f"!req.http.{obj.header}")
+        # Do not add a request_body filter to anything but POST.
+        if obj.request_body and obj.method == "POST":
+            out_vcl.append(f'req.body ~ "{obj.request_body}"')
+        return " && ".join(out_vcl)
+
+    def _vcl_from_ipblock(self, slug: str) -> str:
+        scope, value = slug.split("/")
+        if scope == "cloud":
+            return f'req.http.X-Public-Cloud ~ "{value}"'
+        elif scope == "abuse":
+            return f'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ {value}'
+
+
+def vcl_url_match(url: str, param: str, value: str) -> str:
+    """Return the query corresponding to the pattern."""
+    if not any([url, param, value]):
+        return ""
+    out = 'req.url ~ "'
+    if url != "":
+        out += url
+        if param != "":
+            out += ".*"
+    if param != "":
+        out += f"[?&]{param}"
+        if value != "":
+            out += value
+    # close the quotes
+    out += '"'
+    return out

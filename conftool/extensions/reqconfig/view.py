@@ -1,11 +1,11 @@
 """Views for requestctl."""
 import json
 import textwrap
-import yaml
+from string import Template
+from typing import Dict, List
 
 import tabulate
-
-from typing import Dict, List
+import yaml
 from conftool.kvobject import Entity
 
 
@@ -20,6 +20,10 @@ def get(fmt: str) -> "View":
         return YamlView
     elif fmt == "pretty":
         return PrettyView
+    elif fmt == "vcl":
+        return VCLView
+    elif fmt == "vsl":
+        return VSLView
     else:
         raise ValueError(f"Unsupported format '{format}'")
 
@@ -100,3 +104,82 @@ class PrettyView(View):
         if entity.query_parameter:
             out.append(f"?{entity.query_parameter}={entity.query_parameter_value}")
         return "\n".join(out)
+
+
+class VCLView(View):
+    """Renders an action as VCL."""
+
+    tpl_ban = Template(
+        """
+// FILTER $name
+// $comment
+// This filter is generated from data in $driver. To disable it, run the following command:
+// sudo requestctl disable '$pprint'
+if ($expression) {
+    return (synth($status, "$reason"));
+}
+"""
+    )
+    tpl_throttle = Template(
+        """
+// FILTER $name
+// $comment
+// This filter is generated from data in $driver. To disable it, run the following command:
+// sudo requestctl disable '$pprint'
+if ($expression && $throttle) {
+    return (synth($status, "$reason"));
+}
+"""
+    )
+
+    @classmethod
+    def render(cls, data: List[Entity], _: str = "") -> str:
+        out = []
+        for action in data:
+            # TODO: Check vcl_expression is there?
+            substitutions = dict(
+                name=action.name,
+                comment=action.comment,
+                pprint=action.pprint(),
+                reason=action.resp_reason,
+                status=action.resp_status,
+                expression=action.vcl_expression,
+                driver="etcd",  # TODO: get this from configuration
+            )
+            if action.do_throttle:
+                substitutions["throttle"] = cls.get_throttle(action)
+                out.append(cls.tpl_throttle.substitute(substitutions))
+            else:
+                out.append(cls.tpl_ban.substitute(substitutions))
+        return "\n".join(out)
+
+    @classmethod
+    def get_throttle(cls, action: Entity) -> str:
+        """Throttle rule for an action."""
+        key = f'"requestctl:{action.name}"'
+        if action.throttle_per_ip:
+            key = f'"requestctl:{action.name}:" + req.http.X-Client-IP'
+        args = [
+            key,
+            str(action.throttle_requests),
+            f"{action.throttle_interval}s",
+            f"{action.throttle_duration}s",
+        ]
+        return f"vsthrottle.is_denied({', '.join(args)})"
+
+
+class VSLView(View):
+    """Outputs the varnishlog command to match requests corresponding to an action."""
+
+    tpl_log = Template(
+        """
+You can monitor requests matching this action using the following command:
+sudo varnishncsa -n frontend -g request \\
+  -F '"%{X-Client-IP}i" %l %u %t "%r" %s %b "%{Referer}i" "%{User-agent}i" "%{X-Public-Cloud}i"' \\
+  -q '$vsl and VCL_ACL eq "NO_MATCH wikimedia_nets"'
+"""
+    )
+
+    @classmethod
+    def render(cls, data: List[Entity], _: str = "") -> str:
+        return cls.tpl_log.substitute(vsl=data[0].vsl_expression)
