@@ -1,7 +1,13 @@
+conftool (2.1.1-1) buster-wikimedia; urgency=medium
+
+  * Bugfixes to requestctl
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Fri, 08 Apr 2022 15:36:14 +0200
+
 conftool (2.1.0-1) buster-wikimedia; urgency=medium
 
   * Add vcl command
-  * Add commit command	
+  * Add commit command
 
  -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Thu, 07 Apr 2022 15:44:35 +0200
 
