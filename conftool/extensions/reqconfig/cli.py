@@ -201,6 +201,8 @@ class Requestctl:
                     {"name": re.compile(".*")}
                 )
             ]
+        else:
+            all_actions = []
         for reqobj in self.cls.query({"name": re.compile(".*")}):
             if not self._should_have_path(reqobj).is_file():
                 if not self._is_safe_to_remove(reqobj, all_actions):
@@ -605,7 +607,7 @@ def vcl_url_match(url: str, param: str, value: str) -> str:
     if param != "":
         out += f"[?&]{param}"
         if value != "":
-            out += value
+            out += f"={value}"
     # close the quotes
     out += '"'
     return out

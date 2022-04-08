@@ -49,7 +49,7 @@ class ReqConfigTest(IntegrationTestBase):
         all_actions = list(
             self.schema.entities["action"].query({"name": re.compile(".*")})
         )
-        assert len(all_actions) == 2
+        assert len(all_actions) == 3
         # These actions are not enabled, even if they are on disk.
         for obj in all_actions:
             assert obj.enabled is False
@@ -164,6 +164,9 @@ class ReqConfigTest(IntegrationTestBase):
             vcl,
             r'(?m)vsthrottle\.is_denied\("requestctl:enwiki_api_cloud", 5000, 30s, 300s\)',
         )
+        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+            self.get_cli("vcl", "cache-text/bad_param_q").run()
+        assert mock_stdout.getvalue().find("[?&]q=\w{12}") >= 0
 
     def test_commit(self):
         """Test the behaviour of requestctl commit."""

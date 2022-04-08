@@ -1,0 +1,12 @@
+cache_miss_only: true
+comment: Limit access to the enwiki api from the clouds
+do_throttle: true
+enabled: true
+expression: ( pattern@cache-text/bad_param_q )
+resp_reason: We don't like qs
+resp_status: 429
+sites: []
+throttle_duration: 300
+throttle_interval: 30
+throttle_per_ip: false
+throttle_requests: 5000
