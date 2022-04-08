@@ -527,7 +527,7 @@ class Requestctl:
                 if what == "ipblock@cloud":
                     query.append(f'ReqHeader:X-Public-Cloud ~ "{name}"')
                 elif what == "ipblock@abuse":
-                    query.append(f'VCL_acl eq "MATCH {name}"')
+                    query.append(f'VCL_acl ~ "^MATCH {name}"')
             elif token.startswith("pattern@"):
                 slug = token.replace("pattern@", "")
                 obj = get_obj_from_slug(self.schema.entities["pattern"], slug)
