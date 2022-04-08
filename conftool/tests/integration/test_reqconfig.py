@@ -166,7 +166,13 @@ class ReqConfigTest(IntegrationTestBase):
         )
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             self.get_cli("vcl", "cache-text/bad_param_q").run()
-        assert mock_stdout.getvalue().find("[?&]q=\w{12}") >= 0
+        rule = mock_stdout.getvalue()
+        assert (
+            rule.find(
+                'req.url ~ "[?&]q=\\w{12}" || (req.method == "POST" && req.body ~ "bAd BoDy")'
+            )
+            >= 0
+        )
 
     def test_commit(self):
         """Test the behaviour of requestctl commit."""

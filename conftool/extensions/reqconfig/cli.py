@@ -447,6 +447,11 @@ class Requestctl:
         Verifies a change is ok. Eitehr Raises an exception
         or returns the valid changes.
         """
+        if self.object_type == "pattern":
+            if changes.get("body", False) and changes.get("method", "") != "POST":
+                raise RequestctlError(
+                    "Cannot add a request body in a request other than POST."
+                )
         if self.object_type != "action":
             return changes
         try:
@@ -570,7 +575,7 @@ class Requestctl:
         out_vcl = []
         obj = get_obj_from_slug(self.schema.entities["pattern"], slug)
         if obj.method:
-            out_vcl.append('req.method == "{obj.method}"')
+            out_vcl.append(f'req.method == "{obj.method}"')
         url_rule = vcl_url_match(
             obj.url_path, obj.query_parameter, obj.query_parameter_value
         )
@@ -585,7 +590,10 @@ class Requestctl:
         # Do not add a request_body filter to anything but POST.
         if obj.request_body and obj.method == "POST":
             out_vcl.append(f'req.body ~ "{obj.request_body}"')
-        return " && ".join(out_vcl)
+        if len(out_vcl) > 1:
+            joined = " && ".join(out_vcl)
+            return f"({joined})"
+        return out_vcl.pop()
 
     def _vcl_from_ipblock(self, slug: str) -> str:
         scope, value = slug.split("/")

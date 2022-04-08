@@ -1,3 +1,9 @@
+conftool (2.1.2-1) buster-wikimedia; urgency=medium
+
+  * Various bugfixes to requestctl VCL and VSL translation layers
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Fri, 08 Apr 2022 17:55:33 +0200
+
 conftool (2.1.1-1) buster-wikimedia; urgency=medium
 
   * Bugfixes to requestctl
