@@ -83,9 +83,7 @@ class PrettyView(View):
                 element = (
                     textwrap.shorten(entity.pprint(), width=30),
                     textwrap.fill(entity.expression, width=30),
-                    textwrap.shorten(
-                        f"{entity.resp_status} {entity.resp_reason}", width=20
-                    ),
+                    textwrap.shorten(f"{entity.resp_status} {entity.resp_reason}", width=20),
                     str(entity.do_throttle).lower(),
                 )
             tabular.append(element)
@@ -135,7 +133,7 @@ if ($expression && $throttle) {
     @classmethod
     def render(cls, data: List[Entity], _: str = "") -> str:
         out = []
-        for action in data:
+        for action in sorted(data, key=lambda k: k.name):
             # TODO: Check vcl_expression is there?
             substitutions = dict(
                 name=action.name,

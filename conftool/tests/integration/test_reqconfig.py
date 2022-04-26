@@ -46,9 +46,7 @@ class ReqConfigTest(IntegrationTestBase):
         """Test syncing all properties."""
         # Now let's verify sync actually works.
         # We should have two actions defined now.
-        all_actions = list(
-            self.schema.entities["action"].query({"name": re.compile(".*")})
-        )
+        all_actions = list(self.schema.entities["action"].query({"name": re.compile(".*")}))
         assert len(all_actions) == 3
         # These actions are not enabled, even if they are on disk.
         for obj in all_actions:
@@ -153,12 +151,8 @@ class ReqConfigTest(IntegrationTestBase):
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             self.get_cli("vcl", "cache-text/enwiki_api_cloud").run()
         vcl = mock_stdout.getvalue()
-        self.assertRegex(
-            vcl, r"(?m)sudo requestctl disable 'cache-text/enwiki_api_cloud'"
-        )
-        self.assertRegex(
-            vcl, r'(?m)\(req.url ~ "/w/api.php" \|\| req.url ~ "\^/api/rest_v1/"\)'
-        )
+        self.assertRegex(vcl, r"(?m)sudo requestctl disable 'cache-text/enwiki_api_cloud'")
+        self.assertRegex(vcl, r'(?m)\(req.url ~ "/w/api.php" \|\| req.url ~ "\^/api/rest_v1/"\)')
         self.assertRegex(vcl, r'(?m)req.http.X-Public-Cloud ~ "azure"')
         self.assertRegex(
             vcl,
@@ -192,3 +186,14 @@ class ReqConfigTest(IntegrationTestBase):
             dc_vcl = self.schema.entities["vcl"]("cache-text", dc)
             self.assertRegex(dc_vcl.vcl, r"(?m)requests")
         assert global_vcl.vcl == ""
+
+    def test_commit_preserve_ordering(self):
+        """Test that requestctl commit preserves order."""
+        # Let's enable 2 rules in the same context, check that multiple commits won't change the output
+        self.get_cli("enable", "cache-text/enwiki_api_cloud").run()
+        self.get_cli("enable", "cache-text/bad_param_q").run()
+        self.get_cli("commit", "-b").run()
+        global_vcl = self.schema.entities["vcl"]("cache-text", "global")
+        for _ in range(10):
+            self.get_cli("commit", "-b").run()
+            assert global_vcl.vcl == self.schema.entities["vcl"]("cache-text", "global").vcl
