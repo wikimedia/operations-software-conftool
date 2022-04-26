@@ -1,3 +1,9 @@
+conftool (2.1.3-1) buster-wikimedia; urgency=medium
+
+  * Make ordering of requestctl commit predictable
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 26 Apr 2022 15:37:33 +0200
+
 conftool (2.1.2-1) buster-wikimedia; urgency=medium
 
   * Various bugfixes to requestctl VCL and VSL translation layers
