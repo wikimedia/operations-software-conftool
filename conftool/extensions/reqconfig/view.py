@@ -114,6 +114,7 @@ class VCLView(View):
 // This filter is generated from data in $driver. To disable it, run the following command:
 // sudo requestctl disable '$pprint'
 if ($expression) {
+    set resp.http.X-Requestctl = resp.http.X-Requestctl + ",$name";
     return (synth($status, "$reason"));
 }
 """
@@ -125,14 +126,36 @@ if ($expression) {
 // This filter is generated from data in $driver. To disable it, run the following command:
 // sudo requestctl disable '$pprint'
 if ($expression && $throttle) {
+    set resp.http.X-Requestctl = resp.http.X-Requestctl + ",$name";
     return (synth($status, "$reason"));
 }
 """
     )
+    tpl_log_only = Template(
+        """
+// FILTER $name
+// $comment
+// This filter is DISABLED. to enable it, run the following command:
+// sudo requestctl enable '$pprint'
+if ($expression) {
+    set resp.http.X-Requestctl = resp.http.X-Requestctl + ",$name";
+}
+"""
+    )
+    header = """
+// Set the header to the empty string if not present.
+if (!resp.http.X-Requestctl) {
+    set resp.http.X-Requestctl = "";
+}
+"""
+    footer = """
+// Remove the comma at the start of the line, if present.
+set resp.http.X-Requestctl = regsub(resp.http.X-Requestctl, "^,", "");
+"""
 
     @classmethod
     def render(cls, data: List[Entity], _: str = "") -> str:
-        out = []
+        out = [cls.header]
         for action in sorted(data, key=lambda k: k.name):
             # TODO: Check vcl_expression is there?
             substitutions = dict(
@@ -149,6 +172,7 @@ if ($expression && $throttle) {
                 out.append(cls.tpl_throttle.substitute(substitutions))
             else:
                 out.append(cls.tpl_ban.substitute(substitutions))
+        out.append(cls.footer)
         return "\n".join(out)
 
     @classmethod

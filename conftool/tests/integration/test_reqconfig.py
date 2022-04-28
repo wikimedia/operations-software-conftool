@@ -158,6 +158,10 @@ class ReqConfigTest(IntegrationTestBase):
             vcl,
             r'(?m)vsthrottle\.is_denied\("requestctl:enwiki_api_cloud", 5000, 30s, 300s\)',
         )
+        self.assertRegex(
+            vcl,
+            r'(?m)set resp\.http\.X-Requestctl = resp\.http\.X-Requestctl \+ ",enwiki_api_cloud"',
+        )
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             self.get_cli("vcl", "cache-text/bad_param_q").run()
         rule = mock_stdout.getvalue()
