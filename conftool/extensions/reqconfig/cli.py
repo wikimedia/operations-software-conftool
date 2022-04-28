@@ -69,6 +69,7 @@ SCHEMA: Dict = {
             "throttle_interval": {"type": "int", "default": 30},
             "throttle_duration": {"type": "int", "default": 1000},
             "throttle_per_ip": bool_false,
+            "log_matching": bool_false,
         },
     },
     "vcl": {
@@ -120,12 +121,8 @@ class Requestctl:
             self.config = configuration.get(self.args.config)
         else:
             self.config = configuration.Config()
-        if (
-            self.config.tcpircbot_host and self.config.tcpircbot_port
-        ) and not irc.handlers:
-            irc.addHandler(
-                IRCSocketHandler(config.tcpircbot_host, config.tcpircbot_port)
-            )
+        if (self.config.tcpircbot_host and self.config.tcpircbot_port) and not irc.handlers:
+            irc.addHandler(IRCSocketHandler(config.tcpircbot_host, config.tcpircbot_port))
         # Now let's load the schema
         self.schema = get_schema(self.config)
         # Load the right entity
@@ -175,9 +172,7 @@ class Requestctl:
                     try:
                         self._write(obj, to_load)
                     except BackendError as e:
-                        logger.error(
-                            "Error writing to etcd for %s: %s", obj.pprint(), e
-                        )
+                        logger.error("Error writing to etcd for %s: %s", obj.pprint(), e)
                         failed = True
                         continue
 
@@ -196,10 +191,7 @@ class Requestctl:
 
         if self.object_type != "action":
             all_actions = [
-                a
-                for a in self.schema.entities["action"].query(
-                    {"name": re.compile(".*")}
-                )
+                a for a in self.schema.entities["action"].query({"name": re.compile(".*")})
             ]
         else:
             all_actions = []
@@ -251,7 +243,7 @@ class Requestctl:
         """Print out the VCL for a specific action."""
         objs = self._get(must_exist=True)
         objs[0].vcl_expression = self._vcl_from_expression(objs[0].expression)
-        print(view.get("vcl").render(objs, "action"))
+        print(view.get("vcl").render(objs, "vcl"))
 
     def commit(self):
         """Commit the enabled actions to vcl, asking confirmation with a diff."""
@@ -263,7 +255,7 @@ class Requestctl:
         vcl = self.schema.entities["vcl"]
         actions_by_tag_site = defaultdict(lambda: defaultdict(list))
         for action in self._get():
-            if not action.enabled:
+            if not any([action.enabled, action.log_matching]):
                 continue
             action.vcl_expression = self._vcl_from_expression(action.expression)
             cluster = action.tags["cluster"]
@@ -275,7 +267,7 @@ class Requestctl:
                     actions_by_tag_site[cluster][site].append(action)
         for cluster, entries in actions_by_tag_site.items():
             for name, actions in entries.items():
-                vcl_content = view.get("vcl").render(actions, "action")
+                vcl_content = view.get("vcl").render(actions, "commit")
                 obj = vcl(cluster, name)
                 if not batch:
                     if obj.exists:
@@ -386,12 +378,8 @@ class Requestctl:
         lpar = pp.Literal("(")
         rpar = pp.Literal(")")
         element = pp.Word(pp.alphanums + "/-_")
-        pattern = pp.Combine(
-            "pattern@" + element.setParseAction(self._validate_pattern)
-        )
-        ipblock = pp.Combine(
-            "ipblock@" + element.setParseAction(self._validate_ipblock)
-        )
+        pattern = pp.Combine("pattern@" + element.setParseAction(self._validate_pattern))
+        ipblock = pp.Combine("ipblock@" + element.setParseAction(self._validate_ipblock))
         grm = pp.Forward()
         item = pattern | ipblock | lpar + grm + rpar
         grm << pp.Group(item) + pp.ZeroOrMore(pp.Group(boolean + item))
@@ -433,9 +421,7 @@ class Requestctl:
                 out = conf["default"]
         print(view.get(out).render(entities, self.object_type))
 
-    def _entity_from_file(
-        self, tag: str, file_path: pathlib.Path
-    ) -> Tuple[Entity, Optional[Dict]]:
+    def _entity_from_file(self, tag: str, file_path: pathlib.Path) -> Tuple[Entity, Optional[Dict]]:
         """Get an entity from a file path, and the corresponding data to update."""
         from_disk = yaml_safe_load(file_path, {})
         entity_name = file_path.stem
@@ -449,15 +435,11 @@ class Requestctl:
         """
         if self.object_type == "pattern":
             if changes.get("body", False) and changes.get("method", "") != "POST":
-                raise RequestctlError(
-                    "Cannot add a request body in a request other than POST."
-                )
+                raise RequestctlError("Cannot add a request body in a request other than POST.")
         if self.object_type != "action":
             return changes
         try:
-            changes["expression"] = " ".join(
-                self._parse_and_check(changes["expression"])
-            )
+            changes["expression"] = " ".join(self._parse_and_check(changes["expression"]))
         except pp.ParseException as e:
             raise RequestctlError(e) from e
         try:
@@ -576,9 +558,7 @@ class Requestctl:
         obj = get_obj_from_slug(self.schema.entities["pattern"], slug)
         if obj.method:
             out_vcl.append(f'req.method == "{obj.method}"')
-        url_rule = vcl_url_match(
-            obj.url_path, obj.query_parameter, obj.query_parameter_value
-        )
+        url_rule = vcl_url_match(obj.url_path, obj.query_parameter, obj.query_parameter_value)
         if url_rule != "":
             out_vcl.append(url_rule)
         if obj.header:

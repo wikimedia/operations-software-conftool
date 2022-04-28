@@ -154,7 +154,7 @@ set resp.http.X-Requestctl = regsub(resp.http.X-Requestctl, "^,", "");
 """
 
     @classmethod
-    def render(cls, data: List[Entity], _: str = "") -> str:
+    def render(cls, data: List[Entity], object_type: str = "") -> str:
         out = [cls.header]
         for action in sorted(data, key=lambda k: k.name):
             # TODO: Check vcl_expression is there?
@@ -167,7 +167,12 @@ set resp.http.X-Requestctl = regsub(resp.http.X-Requestctl, "^,", "");
                 expression=action.vcl_expression,
                 driver="etcd",  # TODO: get this from configuration
             )
-            if action.do_throttle:
+            if not action.enabled and object_type == "commit":
+                # If we get here, it's because the action has log_matching set to true
+                # We only want to use the log action when committing.
+                # Otherwise, we still want to show the full vcl output with the actions included.
+                out.append(cls.tpl_log_only.substitute(substitutions))
+            elif action.do_throttle:
                 substitutions["throttle"] = cls.get_throttle(action)
                 out.append(cls.tpl_throttle.substitute(substitutions))
             else:

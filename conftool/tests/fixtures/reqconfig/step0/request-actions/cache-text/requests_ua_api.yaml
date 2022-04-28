@@ -2,8 +2,7 @@ cache_miss_only: true
 comment: Disallow python-requests to access restbase or the action api
 do_throttle: true
 enabled: false
-expression: pattern@ua/requests AND (pattern@cache-text/restbase OR pattern@cache-text/action_api
-  )
+expression: pattern@ua/requests AND (pattern@cache-text/restbase OR pattern@cache-text/action_api)
 resp_reason: Please see our UA policy
 resp_status: 429
 sites: ["dc1", "dc2", "dc3"]
@@ -11,3 +10,4 @@ throttle_duration: 1000
 throttle_interval: 30
 throttle_per_ip: false
 throttle_requests: 500
+log_matching: true

@@ -181,6 +181,12 @@ class ReqConfigTest(IntegrationTestBase):
         assert global_vcl.exists
         # just to check it contains the rule we've just enabled.
         self.assertRegex(global_vcl.vcl, r'(?m)req.http.X-Public-Cloud ~ "azure"')
+        # check rules for logging requests that have log_matching true
+        dc1_vcl = self.schema.entities["vcl"]("cache-text", "dc1")
+        self.assertRegex(
+            dc1_vcl.vcl,
+            r'(?m)set resp\.http\.X-Requestctl = resp\.http\.X-Requestctl \+ ",requests_ua_api"',
+        )
         # Test 2: enable a second rule, disable the first (applied to different contexts), and the first vanishes the second is there.
         self.get_cli("disable", "cache-text/enwiki_api_cloud").run()
         self.get_cli("enable", "cache-text/requests_ua_api").run()
