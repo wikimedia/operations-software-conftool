@@ -144,7 +144,7 @@ class ReqConfigTest(IntegrationTestBase):
             log_out,
             r'(?m)\(\s*ReqURL ~ "/w/api.php" or ReqURL ~ "\^/api/rest_v1/"\s*\)',
         )
-        self.assertRegex(log_out, r'(?m)ReqHeader:X-Public-Cloud ~ "aws"')
+        self.assertRegex(log_out, r'(?m)ReqHeader:X-Public-Cloud ~ "\^aws\$"')
 
     def test_vcl(self):
         """Test the behaviour of requestctl vcl."""
@@ -153,7 +153,7 @@ class ReqConfigTest(IntegrationTestBase):
         vcl = mock_stdout.getvalue()
         self.assertRegex(vcl, r"(?m)sudo requestctl disable 'cache-text/enwiki_api_cloud'")
         self.assertRegex(vcl, r'(?m)\(req.url ~ "/w/api.php" \|\| req.url ~ "\^/api/rest_v1/"\)')
-        self.assertRegex(vcl, r'(?m)req.http.X-Public-Cloud ~ "azure"')
+        self.assertRegex(vcl, r'(?m)req.http.X-Public-Cloud ~ "\^azure\$"')
         self.assertRegex(
             vcl,
             r'(?m)vsthrottle\.is_denied\("requestctl:enwiki_api_cloud", 5000, 30s, 300s\)',
@@ -165,12 +165,7 @@ class ReqConfigTest(IntegrationTestBase):
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             self.get_cli("vcl", "cache-text/bad_param_q").run()
         rule = mock_stdout.getvalue()
-        assert (
-            rule.find(
-                'req.url ~ "[?&]q=\\w{12}" || (req.method == "POST" && req.body ~ "bAd BoDy")'
-            )
-            >= 0
-        )
+        assert rule.find('req.url ~ "[?&]q=\\w{12}" || req.method == "POST"') >= 0
 
     def test_commit(self):
         """Test the behaviour of requestctl commit."""
@@ -180,7 +175,7 @@ class ReqConfigTest(IntegrationTestBase):
         global_vcl = self.schema.entities["vcl"]("cache-text", "global")
         assert global_vcl.exists
         # just to check it contains the rule we've just enabled.
-        self.assertRegex(global_vcl.vcl, r'(?m)req.http.X-Public-Cloud ~ "azure"')
+        self.assertRegex(global_vcl.vcl, r'(?m)req.http.X-Public-Cloud ~ "\^azure\$"')
         # check rules for logging requests that have log_matching true
         dc1_vcl = self.schema.entities["vcl"]("cache-text", "dc1")
         self.assertRegex(

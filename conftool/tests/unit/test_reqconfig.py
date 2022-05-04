@@ -6,8 +6,7 @@ import pyparsing as pp
 from unittest import mock
 
 from conftool import configuration, kvobject
-from conftool.extensions.reqconfig import get_schema, Requestctl
-from conftool.extensions.reqconfig.cli import vcl_url_match
+from conftool.extensions.reqconfig import get_schema, Requestctl, translate
 from conftool.tests.unit import MockBackend
 
 
@@ -37,16 +36,31 @@ def requestctl():
 
 
 @pytest.mark.parametrize(
-    "to_parse",
+    "to_parse,expected",
     [
-        "ipblock@cloud/gcp",
-        "pattern@ua/requests",
-        "ipblock@cloud/gcp AND (pattern@ua/requests OR pattern@ua/curl)",
+        ("ipblock@cloud/gcp", ["ipblock@cloud/gcp"]),
+        ("pattern@ua/requests", ["pattern@ua/requests"]),
+        (
+            "ipblock@cloud/gcp AND (pattern@ua/requests OR pattern@ua/curl)",
+            ["ipblock@cloud/gcp", "AND", "(", "pattern@ua/requests", "OR", "pattern@ua/curl", ")"],
+        ),
+        (
+            "ipblock@cloud/gcp AND NOT (pattern@ua/requests OR NOT pattern@ua/mediawiki)",
+            [
+                "ipblock@cloud/gcp",
+                "AND NOT",
+                "(",
+                "pattern@ua/requests",
+                "OR NOT",
+                "pattern@ua/mediawiki",
+                ")",
+            ],
+        ),
     ],
 )
-def test_grammar_good(requestctl, to_parse):
+def test_grammar_good(requestctl, to_parse, expected):
     """Test grammar parses valid expressions."""
-    requestctl._parse_and_check(to_parse)
+    assert requestctl._parse_and_check(to_parse) == expected
 
 
 @pytest.mark.parametrize(
@@ -58,48 +72,75 @@ def test_grammar_bad(requestctl, to_parse):
         requestctl._parse_and_check(to_parse)
 
 
-@pytest.mark.parametrize(
-    "expr,expected",
-    [
-        # Simple and with cloud
-        (
-            "pattern@ua/requests AND ipblock@cloud/gcp",
-            'requests && req.http.X-Public-Cloud ~ "gcp"',
-        ),
-        # And/or combination with parentheses, abuse ipblock
-        (
-            "ipblock@abuse/unicorn AND (pattern@ua/curl OR pattern@ua/requests)",
-            'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ unicorn && (curl || requests)',
-        ),
-    ],
-)
-def test_vcl_from_expression(requestctl, expr, expected):
-    vcl_patterns = {"ua/requests": "requests", "ua/curl": "curl"}
-    requestctl._vcl_from_pattern = lambda slug: vcl_patterns[slug]
-    assert requestctl._vcl_from_expression(expr) == expected
-
-
 patterns = {
     "method/get": {"method": "GET"},
     "ua/unicorn": {"header": "User-Agent", "header_value": "^unicorn/"},
+    "ua/curl": {"header": "User-Agent", "header_value": "^curl-"},
+    "ua/requests": {"header": "User-Agent", "header_value": "^requests"},
     "url/page_index": {"url_path": "^/w/index.php", "query_parameter": "title", "method": "GET"},
+    "req/no_accept": {"header": "Accept"},
+    "req/body": {"method": "POST", "request_body": "foo"},
 }
+
+
+def mock_get_pattern(entity, slug):
+    """Mock a request for a specific pattern."""
+    obj = entity(*slug.split("/"))
+    obj.from_net(patterns[slug])
+    return obj
 
 
 @pytest.mark.parametrize(
     "req,expected",
     [
-        ("method/get", 'req.method == "GET"'),
-        ("ua/unicorn", 'req.http.User-Agent ~ "^unicorn/"'),
-        ("url/page_index", '(req.method == "GET" && req.url ~ "^/w/index.php.*[?&]title")'),
+        # Simple and with cloud
+        (
+            "pattern@ua/requests AND ipblock@cloud/gcp",
+            'req.http.User-Agent ~ "^requests" && req.http.X-Public-Cloud ~ "^gcp$"',
+        ),
+        # And/or combination with parentheses, abuse ipblock
+        (
+            "ipblock@abuse/unicorn AND (pattern@ua/curl OR pattern@ua/requests)",
+            'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ unicorn && (req.http.User-Agent ~ "^curl-" || req.http.User-Agent ~ "^requests")',
+        ),
+        # With negative conditions
+        (
+            "(pattern@ua/curl AND NOT pattern@ua/requests) AND NOT ipblock@abuse/unicorn",
+            '(req.http.User-Agent ~ "^curl-" && !(req.http.User-Agent ~ "^requests")) && std.ip(req.http.X-Client-IP, "192.0.2.1") !~ unicorn',
+        ),
+        # Negative conditions with parentheses
+        (
+            "ipblock@abuse/unicorn AND NOT (pattern@ua/curl OR pattern@ua/requests)",
+            'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ unicorn && !(req.http.User-Agent ~ "^curl-" || req.http.User-Agent ~ "^requests")',
+        ),
     ],
 )
-def test_vcl_from_pattern(requestctl, req, expected):
-    with mock.patch("conftool.extensions.reqconfig.cli.get_obj_from_slug") as get_obj:
-        to_return = requestctl.schema.entities["pattern"](*req.split("/"))
-        to_return.from_net(patterns[req])
-        get_obj.return_value = to_return
-        assert requestctl._vcl_from_pattern(req) == expected
+def test_vcl_from_expression(requestctl, req, expected):
+    with mock.patch("conftool.extensions.reqconfig.translate.get_obj_from_slug") as get_obj:
+        get_obj.side_effect = mock_get_pattern
+        assert requestctl._vcl_from_expression(req) == expected
+
+
+@pytest.mark.parametrize(
+    "req, expected, negation",
+    [
+        ("method/get", 'req.method == "GET"', '!(req.method == "GET")'),
+        ("ua/unicorn", 'req.http.User-Agent ~ "^unicorn/"', '!(req.http.User-Agent ~ "^unicorn/")'),
+        (
+            "url/page_index",
+            '(req.method == "GET" && req.url ~ "^/w/index.php.*[?&]title")',
+            '!(req.method == "GET" && req.url ~ "^/w/index.php.*[?&]title")',
+        ),
+        ("req/no_accept", "!req.http.Accept", "!(!req.http.Accept)"),
+        ("req/body", 'req.method == "POST"', '!(req.method == "POST")'),
+    ],
+)
+def test_vcl_from_pattern(requestctl, req, expected, negation):
+    with mock.patch("conftool.extensions.reqconfig.translate.get_obj_from_slug") as get_obj:
+        get_obj.side_effect = mock_get_pattern
+        tr = translate.VCLTranslator(requestctl.schema)
+        assert tr.from_pattern(req, False) == expected
+        assert tr.from_pattern(req, True) == negation
 
 
 @pytest.mark.parametrize(
@@ -111,5 +152,63 @@ def test_vcl_from_pattern(requestctl, req, expected):
         ("/url", "foo", "bar", "/url.*[?&]foo=bar"),
     ],
 )
-def test_vcl_url_match(path, param, value, expected):
-    assert vcl_url_match(path, param, value) == f'req.url ~ "{expected}"'
+def test_url_match(requestctl, path, param, value, expected):
+    tr = translate.VCLTranslator(requestctl.schema)
+    assert tr._url_match(path, param, value) == f'req.url ~ "{expected}"'
+
+
+@pytest.mark.parametrize(
+    "req,expected",
+    [
+        # Simple and with cloud
+        (
+            "pattern@ua/unicorn AND ipblock@cloud/gcp",
+            'ReqHeader:User-Agent ~ "^unicorn/" and ReqHeader:X-Public-Cloud ~ "^gcp$"',
+        ),
+        # And/or combination with parentheses, abuse ipblock
+        (
+            "ipblock@abuse/unicorn AND (pattern@ua/unicorn OR pattern@url/page_index)",
+            'VCL_acl ~ "^MATCH unicorn.*" and (ReqHeader:User-Agent ~ "^unicorn/" or (ReqMethod == "GET" and ReqURL ~ "^/w/index.php.*[?&]title"))',
+        ),
+        # With negative conditions
+        (
+            "(pattern@ua/curl AND NOT pattern@ua/requests) AND NOT ipblock@abuse/unicorn",
+            '(ReqHeader:User-Agent ~ "^curl-" and not (ReqHeader:User-Agent ~ "^requests")) and VCL_acl ~ "^NO_MATCH unicorn"',
+        ),
+        # Negative conditions with parentheses
+        (
+            "ipblock@abuse/unicorn AND NOT (pattern@ua/curl OR pattern@ua/requests)",
+            'VCL_acl ~ "^MATCH unicorn.*" and not (ReqHeader:User-Agent ~ "^curl-" or ReqHeader:User-Agent ~ "^requests")',
+        ),
+    ],
+)
+def test_vsl_from_expression(requestctl, req, expected):
+    with mock.patch("conftool.extensions.reqconfig.translate.get_obj_from_slug") as get_obj:
+        get_obj.side_effect = mock_get_pattern
+        assert requestctl._vsl_from_expression(req) == expected
+
+
+@pytest.mark.parametrize(
+    "req, expected, negation",
+    [
+        ("method/get", 'ReqMethod == "GET"', 'not (ReqMethod == "GET")'),
+        (
+            "ua/unicorn",
+            'ReqHeader:User-Agent ~ "^unicorn/"',
+            'not (ReqHeader:User-Agent ~ "^unicorn/")',
+        ),
+        (
+            "url/page_index",
+            '(ReqMethod == "GET" and ReqURL ~ "^/w/index.php.*[?&]title")',
+            'not (ReqMethod == "GET" and ReqURL ~ "^/w/index.php.*[?&]title")',
+        ),
+        ("req/no_accept", "not ReqHeader:Accept", "not (not ReqHeader:Accept)"),
+        ("req/body", 'ReqMethod == "POST"', 'not (ReqMethod == "POST")'),
+    ],
+)
+def test_vsl_from_pattern(requestctl, req, expected, negation):
+    with mock.patch("conftool.extensions.reqconfig.translate.get_obj_from_slug") as get_obj:
+        get_obj.side_effect = mock_get_pattern
+        tr = translate.VSLTranslator(requestctl.schema)
+        assert tr.from_pattern(req, False) == expected
+        assert tr.from_pattern(req, True) == negation

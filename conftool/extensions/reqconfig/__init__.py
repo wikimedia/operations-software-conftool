@@ -5,7 +5,9 @@ import logging
 import sys
 
 
-from .cli import Requestctl, RequestctlError, SCHEMA
+from .cli import Requestctl
+from .error import RequestctlError
+from .schema import SCHEMA
 
 # public api
 from .cli import get_schema  # noqa: F401
@@ -32,12 +34,8 @@ def parse_args(args) -> Namespace:
     sync.add_argument(
         "--git-repo", "-g", help="location on disc of the git repository", required=True
     )
-    sync.add_argument(
-        "object_type", help="What object type to sync", choices=SYNC_ENTITIES
-    )
-    sync.add_argument(
-        "--purge", "-p", help="Also delete removed objects.", action="store_true"
-    )
+    sync.add_argument("object_type", help="What object type to sync", choices=SYNC_ENTITIES)
+    sync.add_argument("--purge", "-p", help="Also delete removed objects.", action="store_true")
     sync.add_argument(
         "--interactive",
         "-i",
@@ -52,9 +50,7 @@ def parse_args(args) -> Namespace:
     dump.add_argument(
         "--git-repo", "-g", help="location on disc of the git repository", required=True
     )
-    dump.add_argument(
-        "object_type", help="What object type to sync", choices=SYNC_ENTITIES
-    )
+    dump.add_argument("object_type", help="What object type to sync", choices=SYNC_ENTITIES)
     # Enable command. Enables a request action.
     enable = command.add_parser("enable", help="Turns on a specific action")
     enable.add_argument("action", help="Action to enable")
@@ -62,9 +58,7 @@ def parse_args(args) -> Namespace:
     disable = command.add_parser("disable", help="Turns off a specific action")
     disable.add_argument("action", help="Action to enable")
     # Commit command. Actually compiles the enabled actions to VCL.
-    commit = command.add_parser(
-        "commit", help="Actually write your changes to the edges."
-    )
+    commit = command.add_parser("commit", help="Actually write your changes to the edges.")
     commit.add_argument(
         "--batch",
         "-b",
@@ -79,9 +73,7 @@ def parse_args(args) -> Namespace:
     # requestctl get action cache-text/block_cloud -o yaml
     get = command.add_parser("get", help="Get an object")
     get.add_argument("object_type", help="What objects to get", choices=SCHEMA.keys())
-    get.add_argument(
-        "object_path", help="The full name of the object", nargs="?", default=""
-    )
+    get.add_argument("object_path", help="The full name of the object", nargs="?", default="")
     get.add_argument(
         "-o",
         "--output",
@@ -91,9 +83,7 @@ def parse_args(args) -> Namespace:
         default="pretty",
     )
     # Log command. Outputs a typical varnishncsa command to log the selected action
-    log = command.add_parser(
-        "log", help="Get the varnishncsa to log requests matching an object."
-    )
+    log = command.add_parser("log", help="Get the varnishncsa to log requests matching an object.")
     log.add_argument(
         "object_path",
         help="The full name of the object",

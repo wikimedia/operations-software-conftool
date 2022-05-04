@@ -18,87 +18,16 @@ from wmflib.interactive import AbortError, ask_confirmation
 
 from conftool import IRCSocketHandler, configuration, yaml_safe_load
 from conftool.drivers import BackendError
-from conftool.kvobject import Entity, KVObject
-from conftool.loader import Schema
+from conftool.extensions.reqconfig.translate import VCLTranslator, VSLTranslator
+from conftool.kvobject import Entity
 
 from . import view
+from .schema import SCHEMA, get_schema, get_obj_from_slug
+from .error import RequestctlError
 
 irc = logging.getLogger("reqctl.announce")
 logger = logging.getLogger("reqctl")
 config = configuration.Config()
-
-# requestctl has its own schema and we don't want to have to configure it.
-empty_string = {"type": "string", "default": ""}
-empty_list = {"type": "list", "default": []}
-bool_false = {"type": "bool", "default": False}
-SCHEMA: Dict = {
-    "ipblock": {
-        "path": "request-ipblocks",
-        "tags": ["scope"],
-        "schema": {
-            "cidrs": empty_list,
-            "comment": empty_string,
-        },
-    },
-    "pattern": {
-        "path": "request-patterns",
-        "tags": ["scope"],
-        "schema": {
-            "method": empty_string,
-            "request_body": empty_string,
-            "url_path": empty_string,
-            "header": empty_string,
-            "header_value": empty_string,
-            "query_parameter": empty_string,
-            "query_parameter_value": empty_string,
-        },
-    },
-    "action": {
-        "path": "request-actions",
-        "tags": ["cluster"],
-        "schema": {
-            "enabled": bool_false,
-            "cache_miss_only": {"type": "bool", "default": True},
-            "comment": empty_string,
-            "expression": empty_string,
-            "resp_status": {"type": "int", "default": 429},
-            "resp_reason": empty_string,
-            "sites": empty_list,
-            "do_throttle": bool_false,
-            "throttle_requests": {"type": "int", "default": 500},
-            "throttle_interval": {"type": "int", "default": 30},
-            "throttle_duration": {"type": "int", "default": 1000},
-            "throttle_per_ip": bool_false,
-            "log_matching": bool_false,
-        },
-    },
-    "vcl": {
-        "path": "request-vcl",
-        "tags": ["cluster"],
-        "schema": {
-            "vcl": empty_string,
-        },
-    },
-}
-
-
-def get_schema(conf: configuration.Config) -> Schema:
-    """Get the schema for requestctl."""
-    KVObject.setup(conf)
-    return Schema.from_data(SCHEMA, default_entities=False)
-
-
-def get_obj_from_slug(entity, slug: str) -> Entity:
-    """Get an object given a string slug."""
-    try:
-        tag, name = slug.split("/")
-    except ValueError as e:
-        raise RequestctlError(f"{slug} doesn't contain a path separator") from e
-    return entity(tag, name)
-
-
-class RequestctlError(Exception):
-    """Local wrapper class for managed exceptions."""
 
 
 class Requestctl:
@@ -371,10 +300,12 @@ class Requestctl:
         <item> ::= <pattern> | <ipblock> | "(" <grammar> ")"
         <pattern> ::= "pattern@" <pattern_path>
         <ipblock> ::= "ipblock@"<ipblock_path>
-        <boolean> ::= "AND" | "OR"
+        <boolean> ::= "AND" | "OR" | "AND NOT" | "OR NOT"
 
         """
-        boolean = pp.Keyword("AND") | pp.Keyword("OR")
+        boolean = (
+            pp.Keyword("AND NOT") | pp.Keyword("OR NOT") | pp.Keyword("AND") | pp.Keyword("OR")
+        )
         lpar = pp.Literal("(")
         rpar = pp.Literal(")")
         element = pp.Word(pp.alphanums + "/-_")
@@ -503,99 +434,11 @@ class Requestctl:
         return True
 
     def _vsl_from_expression(self, expression: str) -> str:
-        """Obtain the vsl query from the expression"""
-        query = []
         parsed = self._parse_and_check(expression)
-        for token in parsed:
-            if token in ["(", ")", "AND", "OR"]:
-                query.append(token.lower())
-            elif token.startswith("ipblock@"):
-                what, name = token.split("/")
-                if what == "ipblock@cloud":
-                    query.append(f'ReqHeader:X-Public-Cloud ~ "{name}"')
-                elif what == "ipblock@abuse":
-                    query.append(f'VCL_acl ~ "^MATCH {name}"')
-            elif token.startswith("pattern@"):
-                slug = token.replace("pattern@", "")
-                obj = get_obj_from_slug(self.schema.entities["pattern"], slug)
-                if obj.method:
-                    query.append(f'ReqMethod ~ "{obj.method}"')
-                if obj.header:
-                    if obj.header_value != "":
-                        query.append(f'ReqHeader:{obj.header} ~ "{obj.header_value}"')
-                    else:
-                        query.append(f"not ReqHeader:{obj.header}")
-                if obj.url_path:
-                    if obj.query_parameter:
-                        qs = f"[?&]{obj.query_parameter}={obj.query_parameter_value}"
-                        query.append(f'ReqURL ~ "{obj.url_path}.*{qs}"')
-                    else:
-                        query.append(f'ReqURL ~ "{obj.url_path}"')
-                # We need to use else if because we don't want to act if uri_path was defined.
-                elif obj.query_parameter:
-                    query.append(
-                        f'ReqURL ~ "[?&]{obj.query_parameter}={obj.query_parameter_value}"'
-                    )
-        return " ".join(query)
+        vsl = VSLTranslator(self.schema)
+        return vsl.from_expression(parsed)
 
     def _vcl_from_expression(self, expression: str) -> str:
-        translations = {"(": "(", ")": ")", "AND": " && ", "OR": " || "}
-        vcl_expression = ""
         parsed = self._parse_and_check(expression)
-        for token in parsed:
-            if token in translations:
-                vcl_expression += translations[token]
-            elif token.startswith("pattern@"):
-                slug = token.replace("pattern@", "")
-                vcl_expression += self._vcl_from_pattern(slug)
-            elif token.startswith("ipblock@"):
-                slug = token.replace("ipblock@", "")
-                vcl_expression += self._vcl_from_ipblock(slug)
-        return vcl_expression
-
-    def _vcl_from_pattern(self, slug: str) -> str:
-        out_vcl = []
-        obj = get_obj_from_slug(self.schema.entities["pattern"], slug)
-        if obj.method:
-            out_vcl.append(f'req.method == "{obj.method}"')
-        url_rule = vcl_url_match(obj.url_path, obj.query_parameter, obj.query_parameter_value)
-        if url_rule != "":
-            out_vcl.append(url_rule)
-        if obj.header:
-            if obj.header_value:
-                out_vcl.append(f'req.http.{obj.header} ~ "{obj.header_value}"')
-            # Header with no value means absence of the header
-            else:
-                out_vcl.append(f"!req.http.{obj.header}")
-        # Do not add a request_body filter to anything but POST.
-        if obj.request_body and obj.method == "POST":
-            out_vcl.append(f'req.body ~ "{obj.request_body}"')
-        if len(out_vcl) > 1:
-            joined = " && ".join(out_vcl)
-            return f"({joined})"
-        return out_vcl.pop()
-
-    def _vcl_from_ipblock(self, slug: str) -> str:
-        scope, value = slug.split("/")
-        if scope == "cloud":
-            return f'req.http.X-Public-Cloud ~ "{value}"'
-        elif scope == "abuse":
-            return f'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ {value}'
-
-
-def vcl_url_match(url: str, param: str, value: str) -> str:
-    """Return the query corresponding to the pattern."""
-    if not any([url, param, value]):
-        return ""
-    out = 'req.url ~ "'
-    if url != "":
-        out += url
-        if param != "":
-            out += ".*"
-    if param != "":
-        out += f"[?&]{param}"
-        if value != "":
-            out += f"={value}"
-    # close the quotes
-    out += '"'
-    return out
+        vcl = VCLTranslator(self.schema)
+        return vcl.from_expression(parsed)
