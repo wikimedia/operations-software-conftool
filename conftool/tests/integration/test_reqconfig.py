@@ -202,3 +202,20 @@ class ReqConfigTest(IntegrationTestBase):
         for _ in range(10):
             self.get_cli("commit", "-b").run()
             assert global_vcl.vcl == self.schema.entities["vcl"]("cache-text", "global").vcl
+
+    def test_find(self):
+        """Test finding objects"""
+        no_data = self.get_cli("find", "enwiki_api_cloud")
+        one_match = self.get_cli("find", "cloud/ovh")
+        multi_match = self.get_cli("find", "cache-text/action_api")
+        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+            no_data.run()
+            assert mock_stdout.getvalue() == "No entries found.\n"
+            mock_stdout.truncate(0)
+            one_match.run()
+            assert mock_stdout.getvalue().endswith(
+                "action: cache-text/enwiki_api_cloud, expression: ( pattern@cache-text/action_api OR pattern@cache-text/restbase ) AND ( ipblock@cloud/aws OR ipblock@cloud/azure OR ipblock@cloud/ovh )\n"
+            )
+            mock_stdout.truncate(0)
+            multi_match.run()
+            assert len(mock_stdout.getvalue().splitlines()) == 2

@@ -33,7 +33,7 @@ config = configuration.Config()
 class Requestctl:
     """Cli tool to interact with the dynamic banning of urls."""
 
-    ACTION_ONLY_CMD = ["enable", "disable", "commit", "vcl", "log"]
+    ACTION_ONLY_CMD = ["enable", "disable", "commit", "vcl", "log", "find"]
 
     def __init__(self, args: argparse.Namespace) -> None:
         if args.debug:
@@ -167,6 +167,19 @@ class Requestctl:
         objs = self._get(must_exist=True)
         objs[0].vsl_expression = self._vsl_from_expression(objs[0].expression)
         print(view.get("vsl").render(objs, "action"))
+
+    def find(self):
+        """Find actions that correspond to the searched pattern."""
+        pattern = f"pattern@{self.args.search_string}"
+        ipblock = f"ipblock@{self.args.search_string}"
+        matches = 0
+        for action in self._get():
+            tokens = self._parse_and_check(action.expression)
+            if pattern in tokens or ipblock in tokens:
+                matches += 1
+                print(f"action: {action.pprint()}, expression: {action.expression}")
+        if not matches:
+            print("No entries found.")
 
     def vcl(self):
         """Print out the VCL for a specific action."""

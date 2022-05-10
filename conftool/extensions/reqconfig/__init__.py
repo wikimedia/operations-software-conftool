@@ -96,6 +96,13 @@ def parse_args(args) -> Namespace:
         "object_path",
         help="The full name of the object",
     )
+    # find command. Returns the actions that include a specific pattern/ipblock
+    find = command.add_parser("find", help="Find which actions include a specific pattern/ipblock")
+    find.add_argument(
+        "search_string",
+        help="The string to search in the expression. Must be in the format <scope>/<name>."
+        "No regex matching or partial string match is performed.",
+    )
     return parser.parse_args(args)
 
 
