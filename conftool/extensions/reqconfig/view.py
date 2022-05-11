@@ -114,7 +114,7 @@ class VCLView(View):
 // This filter is generated from data in $driver. To disable it, run the following command:
 // sudo requestctl disable '$pprint'
 if ($expression) {
-    set resp.http.X-Requestctl = resp.http.X-Requestctl + ",$name";
+    set req.http.X-Requestctl = req.http.X-Requestctl + ",$name";
     return (synth($status, "$reason"));
 }
 """
@@ -126,7 +126,8 @@ if ($expression) {
 // This filter is generated from data in $driver. To disable it, run the following command:
 // sudo requestctl disable '$pprint'
 if ($expression && $throttle) {
-    set resp.http.X-Requestctl = resp.http.X-Requestctl + ",$name";
+    set req.http.X-Requestctl = req.http.X-Requestctl + ",$name";
+    set req.http.Retry-After = $retry_after;
     return (synth($status, "$reason"));
 }
 """
@@ -138,19 +139,19 @@ if ($expression && $throttle) {
 // This filter is DISABLED. to enable it, run the following command:
 // sudo requestctl enable '$pprint'
 if ($expression) {
-    set resp.http.X-Requestctl = resp.http.X-Requestctl + ",$name";
+    set req.http.X-Requestctl = req.http.X-Requestctl + ",$name";
 }
 """
     )
     header = """
 // Set the header to the empty string if not present.
-if (!resp.http.X-Requestctl) {
-    set resp.http.X-Requestctl = "";
+if (!req.http.X-Requestctl) {
+    set req.http.X-Requestctl = "";
 }
 """
     footer = """
 // Remove the comma at the start of the line, if present.
-set resp.http.X-Requestctl = regsub(resp.http.X-Requestctl, "^,", "");
+set req.http.X-Requestctl = regsub(req.http.X-Requestctl, "^,", "");
 """
 
     @classmethod
@@ -165,6 +166,7 @@ set resp.http.X-Requestctl = regsub(resp.http.X-Requestctl, "^,", "");
                 reason=action.resp_reason,
                 status=action.resp_status,
                 expression=action.vcl_expression,
+                retry_after=max(1, action.throttle_duration),
                 driver="etcd",  # TODO: get this from configuration
             )
             if not action.enabled and object_type == "commit":

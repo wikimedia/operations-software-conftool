@@ -160,8 +160,9 @@ class ReqConfigTest(IntegrationTestBase):
         )
         self.assertRegex(
             vcl,
-            r'(?m)set resp\.http\.X-Requestctl = resp\.http\.X-Requestctl \+ ",enwiki_api_cloud"',
+            r'(?m)set req\.http\.X-Requestctl = req\.http\.X-Requestctl \+ ",enwiki_api_cloud"',
         )
+        self.assertRegex(vcl, r"(?m) set req\.http\.Retry-After = 300;")
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             self.get_cli("vcl", "cache-text/bad_param_q").run()
         rule = mock_stdout.getvalue()
@@ -180,7 +181,7 @@ class ReqConfigTest(IntegrationTestBase):
         dc1_vcl = self.schema.entities["vcl"]("cache-text", "dc1")
         self.assertRegex(
             dc1_vcl.vcl,
-            r'(?m)set resp\.http\.X-Requestctl = resp\.http\.X-Requestctl \+ ",requests_ua_api"',
+            r'(?m)set req\.http\.X-Requestctl = req\.http\.X-Requestctl \+ ",requests_ua_api"',
         )
         # Test 2: enable a second rule, disable the first (applied to different contexts), and the first vanishes the second is there.
         self.get_cli("disable", "cache-text/enwiki_api_cloud").run()
