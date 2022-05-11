@@ -34,6 +34,11 @@ class KVObject:
         get selected.
         """
         tags = cls._tags + ["name"]
+        non_existent = set(query.keys()) - set(tags)
+        if non_existent:
+            raise ValueError(
+                "The query includes non-existent tags: {}".format(",".join(non_existent))
+            )
         for labels in cls.backend.driver.all_keys(cls.base_path()):
             is_matching = True
             for i, tag in enumerate(tags):
@@ -42,9 +47,7 @@ class KVObject:
                     # Label selector not specified, we catch anything
                     continue
                 if not regex.match(labels[i]):
-                    _log.debug(
-                        "label %s did not match regex %s", labels[i], regex.pattern
-                    )
+                    _log.debug("label %s did not match regex %s", labels[i], regex.pattern)
                     is_matching = False
                     break
             if is_matching:
@@ -232,8 +235,7 @@ class Entity(KVObject):
     def __init__(self, *tags):
         if len(tags) != (len(self._tags) + 1):
             raise ValueError(
-                "Need %s as tags, %s provided"
-                % (",".join(self._tags), ",".join(tags[:-1]))
+                "Need %s as tags, %s provided" % (",".join(self._tags), ",".join(tags[:-1]))
             )
         self._name = tags[-1]
         self._key = self.kvpath(*tags)
@@ -258,9 +260,7 @@ class Entity(KVObject):
     @classmethod
     def dir(cls, *tags):
         if len(tags) != len(cls._tags):
-            raise ValueError(
-                "Need %s as tags, %s provided" % (",".join(cls._tags), ",".join(tags))
-            )
+            raise ValueError("Need %s as tags, %s provided" % (",".join(cls._tags), ",".join(tags)))
         return os.path.join(cls.base_path(), *tags)
 
 
