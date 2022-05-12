@@ -85,6 +85,14 @@ Examples:
 
 ```
 
+### requestctl validate
+Validate objects written in a repository, useful for CI:
+```bash
+$ requestctl validate base_dir
+$
+```
+It will exit with non-zero exit status if any error is present.
+
 ### requestctl sync/dump
 For each category of objects, you can sync from a specific repository, like follows:
 
@@ -158,6 +166,7 @@ $ requestctl commit
 +// This filter is generated from data in etcd. To disable it, run the following command:
 +// sudo requestctl disable 'cache-text/requests_ua_api'
 +if (req.http.User-Agent ~ "^python-requests" && (req.url ~ "^/api/rest_v1/" || req.url ~ "/w/api.php") && vsthrottle.is_denied("requestctl:requests_ua_api", 500, 30s, 1000s)) {
++    set req.http.Requestctl = req.http.Requestctl + ",requests_ua_api";
 +    return (synth(429, "Please see our UA policy"));
 +}
 +
@@ -170,6 +179,12 @@ Type "go" to proceed or "abort" to interrupt the execution
 >
 ```
 
+### requestctl find
+You can find which actions include a specific pattern/ipblock using the find command:
+```bash
+$ requestctl find ua/requests
+action: generic_ua_aws, expression: (pattern@ua/requests OR pattern@ua/curl) AND ipblock@cloud/aws
+```
 
 ## Object Model
 We don't use the shared conftool schema for reqconfig, but rather a specialized schema contained in `conftool.extensions.reqconfig.cli.SCHEMA`.
@@ -211,13 +226,13 @@ The objects are associated to a specific *cluster* (`cache-text` or
   `cli.Requestctl.grammar`, but in short:
   * A pattern is referenced with the keyword `pattern@<scope>/<name>`
   * An ipblock is referenced with the keyword `ipblock@<scope>/<name>`
-  * patterns and ipblocks can be combined with `AND` and `OR` logic and groups
-    can be organized using parentheses
+  * patterns and ipblocks can be combined with `AND`/`AND NOT` and `OR`/`OR NOT` logic and groups
+    can be organized using parentheses.
 
   So for example, a valid expression could look like:
   ```
   ( pattern@ua/requests OR pattern@ua/curl ) AND ipblock@cloud/aws
-    AND pattern@site/commons
+    AND  NOT pattern@site/commons
   ```
 * `resp_status` the http status code to send as a response
 * `resp_reason` the text to send as a reason with the response
@@ -227,6 +242,8 @@ The objects are associated to a specific *cluster* (`cache-text` or
   arguments of `vsthrottle` in VCL to control the rate-limiting behaviour.
 * `throttle_per_ip` boolean makes the rate-limiting per-ip rather than
   per-cache-server
+* `log_matching` if true, it will record in X-Requestctl if a request matches the rule. It will thus be included
+  into the `vcl` objects even if disabled; it will just not perform any banning / ratelimiting action.
 
 ### Use as library
 ```python
