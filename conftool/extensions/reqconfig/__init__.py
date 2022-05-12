@@ -1,18 +1,16 @@
 """This extension generates the requestctl tool."""
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, SUPPRESS
 import logging
 import sys
 
 
 from .cli import Requestctl
 from .error import RequestctlError
-from .schema import SCHEMA
+from .schema import SCHEMA, SYNC_ENTITIES
 
 # public api
 from .cli import get_schema  # noqa: F401
-
-SYNC_ENTITIES = sorted(set(SCHEMA.keys()) - {"vcl"})
 
 
 def parse_args(args) -> Namespace:
@@ -42,6 +40,14 @@ def parse_args(args) -> Namespace:
         help="Interactively sync objects if needed.",
         action="store_true",
     )
+    # Validate command. Validates that the contents of a directory are all valid and syncable to
+    # the datastore. Useful for CI purposes.
+    validate = command.add_parser(
+        "validate", help="Validate the contents of a directory are valid/syncable."
+    )
+    validate.add_argument("basedir", help="The directory to check for files.")
+    # hidden argument used just for compliance with requestctl
+    parser.add_argument('--object_type', default="action", help=SUPPRESS)
     # Dump command. Dumps the datastore to a directory that can be used with sync.
     dump = command.add_parser(
         "dump",

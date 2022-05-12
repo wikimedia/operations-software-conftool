@@ -59,6 +59,7 @@ SCHEMA: Dict = {
         },
     },
 }
+SYNC_ENTITIES = sorted(set(SCHEMA.keys()) - {"vcl"})
 
 
 def get_schema(conf: configuration.Config) -> Schema:

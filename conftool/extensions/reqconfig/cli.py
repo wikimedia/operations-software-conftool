@@ -10,7 +10,7 @@ import logging
 import pathlib
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import pyparsing as pp
 import yaml
@@ -22,7 +22,7 @@ from conftool.extensions.reqconfig.translate import VCLTranslator, VSLTranslator
 from conftool.kvobject import Entity
 
 from . import view
-from .schema import SCHEMA, get_schema, get_obj_from_slug
+from .schema import SCHEMA, get_schema, get_obj_from_slug, SYNC_ENTITIES
 from .error import RequestctlError
 
 irc = logging.getLogger("reqctl.announce")
@@ -62,6 +62,13 @@ class Requestctl:
             )
         else:
             self.base_path = None
+        # Load the parsing grammar. If the command is validate, use on-disk check of existence for
+        # patterns.
+        # Otherwise, check on the datastore.
+        if self.args.command == "validate":
+            self._obj_exist = self._is_obj_on_fs
+        else:
+            self._obj_exist = self._is_obj_on_backend
         self.expression_grammar = self.grammar()
 
     @property
@@ -79,31 +86,49 @@ class Requestctl:
             raise RequestctlError(f"Command {self.args.command} not implemented") from e
         command()
 
+    def validate(self):
+        """Scans a directory, checks validity of the objects.
+
+        Raises an exception if invalid objects have been found.
+        """
+        # The code is quite similar to the one in sync; however abstracting it
+        # gets ugly fast. I chose code readability over DRY here consciously.
+        root_path = pathlib.Path(self.args.basedir)
+        failed = False
+        for obj_type in SYNC_ENTITIES:
+            self.cls = self.schema.entities[obj_type]
+            for tag, fpath in self._get_files_for_object_type(root_path, obj_type):
+                obj, from_disk = self._entity_from_file(tag, fpath)
+                try:
+                    self._verify_change(from_disk, obj_type)
+                except RequestctlError as e:
+                    failed = True
+                    logger.error("%s %s is invalid: %s", obj_type, obj.pprint(), e)
+                    continue
+        if failed:
+            raise RequestctlError("Validation failed, see above.")
+
     def sync(self):
         """Synchronizes entries for an entity from files on disk."""
         # Let's keep things simple, we only have one layer of tags
         # for request objects.
         failed = False
-        for tag_path in self.base_path.iterdir():
-            if not tag_path.is_dir() or tag_path.parts[-1].startswith("."):
+        for tag, fpath in self._get_files_for_object_type(pathlib.Path(self.args.git_repo)):
+            obj, from_disk = self._entity_from_file(tag, fpath)
+            try:
+                to_load = self._verify_change(from_disk)
+            except RequestctlError as e:
+                failed = True
+                logger.error("Error parsing %s, skipping: %s", obj.pprint(), e)
                 continue
-            tag = tag_path.name
-            for fpath in tag_path.glob("*.yaml"):
-                obj, from_disk = self._entity_from_file(tag, fpath)
+            changes = self._object_diff(obj, to_load)
+            if changes:
                 try:
-                    to_load = self._verify_change(from_disk)
-                except RequestctlError as e:
+                    self._write(obj, to_load)
+                except BackendError as e:
+                    logger.error("Error writing to etcd for %s: %s", obj.pprint(), e)
                     failed = True
-                    logger.error("Error parsing %s, skipping: %s", obj.pprint(), e)
                     continue
-                changes = self._object_diff(obj, to_load)
-                if changes:
-                    try:
-                        self._write(obj, to_load)
-                    except BackendError as e:
-                        logger.error("Error writing to etcd for %s: %s", obj.pprint(), e)
-                        failed = True
-                        continue
 
         # If we're not purging, let's stop here.
         if not self.args.purge:
@@ -244,6 +269,22 @@ class Requestctl:
                 rules.update({"vcl": ""})
 
     # End public interface
+    def _get_files_for_object_type(
+        self, root_path: pathlib.Path, obj_type: Optional[str] = None
+    ) -> Generator[Tuple[str, pathlib.Path], None, None]:
+        """Gets files in a directory that can contain objects."""
+        if obj_type is None:
+            obj_type = self.object_type
+        entity_path: pathlib.Path = root_path / self.schema.entities[obj_type].base_path()
+        for tag_path in entity_path.iterdir():
+            # skip files in the root dir, including any hidden dirs and the special
+            # .. and . references
+            if not tag_path.is_dir() or tag_path.parts[-1].startswith("."):
+                continue
+            tag = tag_path.name
+            for fpath in tag_path.glob("*.yaml"):
+                yield (tag, fpath)
+
     def _vcl_diff(self, old: str, new: str, slug: str) -> str:
         """Diffs between two pieces of VCL."""
         if old == "":
@@ -332,8 +373,7 @@ class Requestctl:
     def _validate_pattern(self, _all, _pos, tokens):
         """Ensure a pattern referenced exists."""
         for pattern in tokens:
-            obj = get_obj_from_slug(self.schema.entities["pattern"], pattern)
-            if not obj.exists:
+            if not self._obj_exist("pattern", pattern):
                 msg = f"The pattern {pattern} is not present on the backend."
                 logger.error(msg)
                 # also raise an exception to make parsing fail.
@@ -342,11 +382,23 @@ class Requestctl:
     def _validate_ipblock(self, _all, _pos, tokens):
         """Ensure an ipblock referenced exists."""
         for ipblock in tokens:
-            obj = get_obj_from_slug(self.schema.entities["ipblock"], ipblock)
-            if not obj.exists:
+            if not self._obj_exist("ipblock", ipblock):
                 msg = f"The ipblock {ipblock} is not present on the backend."
                 logger.error(msg)
                 raise pp.ParseException(msg)
+
+    def _is_obj_on_backend(self, obj_type: str, slug: str) -> bool:
+        """Checks if the pattern exists on the backend."""
+        obj = get_obj_from_slug(self.schema.entities[obj_type], slug)
+        return obj.exists
+
+    def _is_obj_on_fs(self, obj_type: str, slug: str) -> bool:
+        on_disk: pathlib.Path = (
+            pathlib.Path(self.args.basedir)
+            / self.schema.entities[obj_type].base_path()
+            / f"{slug}.yaml"
+        )
+        return on_disk.is_file()
 
     def _pprint(self, entities: List[Entity]):
         """Pretty print the results."""
@@ -372,15 +424,17 @@ class Requestctl:
         entity = self.cls(tag, entity_name)
         return (entity, from_disk)
 
-    def _verify_change(self, changes: Dict[str, Any]) -> Dict:
+    def _verify_change(self, changes: Dict[str, Any], object_type: Optional[str] = None) -> Dict:
         """
         Verifies a change is ok. Eitehr Raises an exception
         or returns the valid changes.
         """
-        if self.object_type == "pattern":
+        if object_type is None:
+            object_type = self.object_type
+        if object_type == "pattern":
             if changes.get("body", False) and changes.get("method", "") != "POST":
                 raise RequestctlError("Cannot add a request body in a request other than POST.")
-        if self.object_type != "action":
+        if object_type != "action":
             return changes
         try:
             changes["expression"] = " ".join(self._parse_and_check(changes["expression"]))

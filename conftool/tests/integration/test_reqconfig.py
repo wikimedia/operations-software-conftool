@@ -16,22 +16,14 @@ fixtures_base = os.path.realpath(
 )
 
 
-class ReqConfigTest(IntegrationTestBase):
-    """Test requestctl."""
+class ReqConfigTestBase(IntegrationTestBase):
+    """Test requestctl base."""
 
     @classmethod
     def setUpClass(cls):
         """method to run before the test suite runs."""
         super().setUpClass()
         cls.schema = reqconfig.get_schema(cls.get_config())
-
-    def setUp(self):
-        """Method run before every test."""
-        super().setUp()
-        # Run sync.
-        step0_path = os.path.join(fixtures_base, "step0")
-        for what in reversed(reqconfig.SYNC_ENTITIES):
-            self.get_cli("sync", "-g", step0_path, what).run()
 
     def get_cli(self, *argv):
         """Get a requestctl instance from args."""
@@ -41,6 +33,18 @@ class ReqConfigTest(IntegrationTestBase):
     def get(self, what, *tags):
         """Get a conftool object."""
         return self.schema.entities[what](*tags)
+
+
+class ReqConfigTest(ReqConfigTestBase):
+    """Test requestctl."""
+
+    def setUp(self):
+        """Method run before every test."""
+        super().setUp()
+        # Run sync.
+        step0_path = os.path.join(fixtures_base, "step0")
+        for what in reversed(reqconfig.SYNC_ENTITIES):
+            self.get_cli("sync", "-g", step0_path, what).run()
 
     def test_sync_all(self):
         """Test syncing all properties."""
@@ -220,3 +224,14 @@ class ReqConfigTest(IntegrationTestBase):
             mock_stdout.truncate(0)
             multi_match.run()
             assert len(mock_stdout.getvalue().splitlines()) == 2
+
+
+class ReqConfigTestNoSync(ReqConfigTestBase):
+    def test_validate(self):
+        # Step 0 should verify without issues.
+        step0_path = os.path.join(fixtures_base, "step0")
+        self.get_cli("validate", step0_path).run()
+        # Now let's try the step1, where we were removing an object that we needed:
+        bad_expr_path = os.path.join(fixtures_base, "step1")
+        with self.assertRaises(reqconfig.cli.RequestctlError):
+            self.get_cli("validate", bad_expr_path).run()
