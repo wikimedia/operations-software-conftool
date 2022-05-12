@@ -1,3 +1,14 @@
+conftool (2.2.0-1) buster-wikimedia; urgency=medium
+
+  * T305824: provide a meaningful Retry-After value
+  * T305582: add a request header X-Requestctl with all matching rules
+  * T305607: support NOT in the DSL grammar
+  * T305638: add find command
+  * T307905: add validate command
+  * T308100: Invalid confctl selector should either error out or select nothing
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Thu, 12 May 2022 15:08:35 +0200
+
 conftool (2.1.3-1) buster-wikimedia; urgency=medium
 
   * Make ordering of requestctl commit predictable
