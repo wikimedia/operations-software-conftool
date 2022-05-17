@@ -1,13 +1,13 @@
 import argparse
 from unicodedata import name
-import pytest
-import pyparsing as pp
-
 from unittest import mock
 
+import pyparsing as pp
+import pytest
 from conftool import configuration, kvobject
-from conftool.extensions.reqconfig import get_schema, Requestctl, translate
+from conftool.extensions.reqconfig import Requestctl, get_schema, translate
 from conftool.tests.unit import MockBackend
+from wmflib.interactive import AbortError
 
 
 @pytest.fixture
@@ -212,3 +212,14 @@ def test_vsl_from_pattern(requestctl, req, expected, negation):
         tr = translate.VSLTranslator(requestctl.schema)
         assert tr.from_pattern(req, False) == expected
         assert tr.from_pattern(req, True) == negation
+
+
+def test_confirm_diff(requestctl):
+    with mock.patch("conftool.extensions.reqconfig.cli.ask_confirmation") as m:
+        # Diff present, return true
+        assert requestctl._confirm_diff("foo", "bar", "foobar")
+        # no diff return false
+        assert requestctl._confirm_diff("foo", "foo", "foobar") is False
+        # Cancelled, return false
+        m.side_effect = AbortError("test!")
+        assert requestctl._confirm_diff("foo", "bar", "foobar") is False

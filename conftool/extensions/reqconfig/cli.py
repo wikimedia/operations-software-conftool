@@ -241,16 +241,7 @@ class Requestctl:
                         prev_vcl = obj.vcl
                     else:
                         prev_vcl = ""
-                    print(
-                        self._vcl_diff(
-                            prev_vcl,
-                            vcl_content,
-                            obj.pprint(),
-                        )
-                    )
-                    try:
-                        ask_confirmation("Ok to commit these changes?")
-                    except AbortError:
+                    if not self._confirm_diff(prev_vcl, vcl_content, obj.pprint()):
                         continue
                 obj.vcl = vcl_content
                 obj.write()
@@ -258,12 +249,9 @@ class Requestctl:
         for rules in vcl.query({"name": re.compile(".*")}):
             cluster = rules.tags["cluster"]
             if rules.name not in actions_by_tag_site[cluster]:
-                if not batch:
-                    print(self._vcl_diff(rules.vcl, "", obj.pprint()))
-                    try:
-                        ask_confirmation("Ok to commit these changes?")
-                    except AbortError:
-                        continue
+                if not batch and not self._confirm_diff(rules.vcl, "", obj.pprint()):
+                    continue
+
                 obj.vcl = vcl_content
                 obj.write()
                 rules.update({"vcl": ""})
@@ -284,6 +272,18 @@ class Requestctl:
             tag = tag_path.name
             for fpath in tag_path.glob("*.yaml"):
                 yield (tag, fpath)
+
+    def _confirm_diff(self, old: str, new: str, slug: str) -> bool:
+        """Confirm if a change needs to be carried on or not."""
+        diff = self._vcl_diff(old, new, slug)
+        if not diff:
+            return False
+        print(diff)
+        try:
+            ask_confirmation("Ok to commit these changes?")
+        except AbortError:
+            return False
+        return True
 
     def _vcl_diff(self, old: str, new: str, slug: str) -> str:
         """Diffs between two pieces of VCL."""
