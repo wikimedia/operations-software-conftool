@@ -1,3 +1,11 @@
+conftool (2.2.1-1) buster-wikimedia; urgency=medium
+
+  * Bugfixes for VSL translation in requestctl
+  * Always set X-Requestctl when ratelimiting
+  * Do not ask confirmation for empty changes
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 17 May 2022 09:11:00 +0200
+
 conftool (2.2.0-1) buster-wikimedia; urgency=medium
 
   * T305824: provide a meaningful Retry-After value
