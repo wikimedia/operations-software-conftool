@@ -75,7 +75,7 @@ def test_grammar_bad(requestctl, to_parse):
 patterns = {
     "method/get": {"method": "GET"},
     "ua/unicorn": {"header": "User-Agent", "header_value": "^unicorn/"},
-    "ua/curl": {"header": "User-Agent", "header_value": "^curl-"},
+    "ua/curl": {"header": "User-Agent", "header_value": "^curl-\w"},
     "ua/requests": {"header": "User-Agent", "header_value": "^requests"},
     "url/page_index": {"url_path": "^/w/index.php", "query_parameter": "title", "method": "GET"},
     "req/no_accept": {"header": "Accept"},
@@ -101,17 +101,17 @@ def mock_get_pattern(entity, slug):
         # And/or combination with parentheses, abuse ipblock
         (
             "ipblock@abuse/unicorn AND (pattern@ua/curl OR pattern@ua/requests)",
-            'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ unicorn && (req.http.User-Agent ~ "^curl-" || req.http.User-Agent ~ "^requests")',
+            'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ unicorn && (req.http.User-Agent ~ "^curl-\\w" || req.http.User-Agent ~ "^requests")',
         ),
         # With negative conditions
         (
             "(pattern@ua/curl AND NOT pattern@ua/requests) AND NOT ipblock@abuse/unicorn",
-            '(req.http.User-Agent ~ "^curl-" && !(req.http.User-Agent ~ "^requests")) && std.ip(req.http.X-Client-IP, "192.0.2.1") !~ unicorn',
+            '(req.http.User-Agent ~ "^curl-\\w" && !(req.http.User-Agent ~ "^requests")) && std.ip(req.http.X-Client-IP, "192.0.2.1") !~ unicorn',
         ),
         # Negative conditions with parentheses
         (
             "ipblock@abuse/unicorn AND NOT (pattern@ua/curl OR pattern@ua/requests)",
-            'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ unicorn && !(req.http.User-Agent ~ "^curl-" || req.http.User-Agent ~ "^requests")',
+            'std.ip(req.http.X-Client-IP, "192.0.2.1") ~ unicorn && !(req.http.User-Agent ~ "^curl-\\w" || req.http.User-Agent ~ "^requests")',
         ),
     ],
 )
@@ -168,17 +168,17 @@ def test_url_match(requestctl, path, param, value, expected):
         # And/or combination with parentheses, abuse ipblock
         (
             "ipblock@abuse/unicorn AND (pattern@ua/unicorn OR pattern@url/page_index)",
-            'VCL_acl ~ "^MATCH unicorn.*" and (ReqHeader:User-Agent ~ "^unicorn/" or (ReqMethod == "GET" and ReqURL ~ "^/w/index.php.*[?&]title"))',
+            'VCL_acl ~ "^MATCH unicorn.*" and (ReqHeader:User-Agent ~ "^unicorn/" or (ReqMethod ~ "GET" and ReqURL ~ "^/w/index.php.*[?&]title"))',
         ),
         # With negative conditions
         (
             "(pattern@ua/curl AND NOT pattern@ua/requests) AND NOT ipblock@abuse/unicorn",
-            '(ReqHeader:User-Agent ~ "^curl-" and not (ReqHeader:User-Agent ~ "^requests")) and VCL_acl ~ "^NO_MATCH unicorn"',
+            '(ReqHeader:User-Agent ~ "^curl-\\\\w" and not (ReqHeader:User-Agent ~ "^requests")) and VCL_acl ~ "^NO_MATCH unicorn"',
         ),
         # Negative conditions with parentheses
         (
             "ipblock@abuse/unicorn AND NOT (pattern@ua/curl OR pattern@ua/requests)",
-            'VCL_acl ~ "^MATCH unicorn.*" and not (ReqHeader:User-Agent ~ "^curl-" or ReqHeader:User-Agent ~ "^requests")',
+            'VCL_acl ~ "^MATCH unicorn.*" and not (ReqHeader:User-Agent ~ "^curl-\\\\w" or ReqHeader:User-Agent ~ "^requests")',
         ),
     ],
 )
@@ -191,7 +191,7 @@ def test_vsl_from_expression(requestctl, req, expected):
 @pytest.mark.parametrize(
     "req, expected, negation",
     [
-        ("method/get", 'ReqMethod == "GET"', 'not (ReqMethod == "GET")'),
+        ("method/get", 'ReqMethod ~ "GET"', 'not (ReqMethod ~ "GET")'),
         (
             "ua/unicorn",
             'ReqHeader:User-Agent ~ "^unicorn/"',
@@ -199,11 +199,11 @@ def test_vsl_from_expression(requestctl, req, expected):
         ),
         (
             "url/page_index",
-            '(ReqMethod == "GET" and ReqURL ~ "^/w/index.php.*[?&]title")',
-            'not (ReqMethod == "GET" and ReqURL ~ "^/w/index.php.*[?&]title")',
+            '(ReqMethod ~ "GET" and ReqURL ~ "^/w/index.php.*[?&]title")',
+            'not (ReqMethod ~ "GET" and ReqURL ~ "^/w/index.php.*[?&]title")',
         ),
         ("req/no_accept", "not ReqHeader:Accept", "not (not ReqHeader:Accept)"),
-        ("req/body", 'ReqMethod == "POST"', 'not (ReqMethod == "POST")'),
+        ("req/body", 'ReqMethod ~ "POST"', 'not (ReqMethod ~ "POST")'),
     ],
 )
 def test_vsl_from_pattern(requestctl, req, expected, negation):

@@ -29,6 +29,10 @@ class DSLTranslator:
     header_prefix = ""
     # Body selector. Set to None if body inspection is not supported.
     body: Optional[str] = ""
+    # Equality operator. Sadly VSL doesn't have one so it will be overridden there.
+    equality = "=="
+    # Set to true if we need to escape backslashes
+    escape_backslash = False
 
     def __init__(self, schema: Schema) -> None:
         self._pattern = schema.entities["pattern"]
@@ -79,18 +83,29 @@ class DSLTranslator:
                 oper = "!~"
             return f'{self.header_prefix}{self.custom_header_scopes[scope]} {oper} "^{value}$"'
 
+    def _escape(self, expr: str) -> str:
+        """Escape a regex, if needed."""
+        if self.escape_backslash:
+            return expr.replace("\\", "\\\\")
+        else:
+            return expr
+
     def from_pattern(self, pattern: str, negation: bool) -> str:
         output = []
         slug = pattern.replace(self.pattern, "")
         obj = get_obj_from_slug(self._pattern, slug)
         if obj.method:
-            output.append(f'{self.method} == "{obj.method}"')
-        url_rule = self._url_match(obj.url_path, obj.query_parameter, obj.query_parameter_value)
+            output.append(f'{self.method} {self.equality} "{obj.method}"')
+        url_rule = self._url_match(
+            obj.url_path, obj.query_parameter, self._escape(obj.query_parameter_value)
+        )
         if url_rule != "":
             output.append(url_rule)
         if obj.header:
             if obj.header_value:
-                output.append(f'{self.header_prefix}{obj.header} ~ "{obj.header_value}"')
+                output.append(
+                    f'{self.header_prefix}{obj.header} ~ "{self._escape(obj.header_value)}"'
+                )
             # Header with no value means absence of the header
             else:
                 output.append(f"{self.no}{self.header_prefix}{obj.header}")
@@ -145,6 +160,10 @@ class VSLTranslator(DSLTranslator):
     header_prefix = "ReqHeader:"
     # Body selector
     body = None
+    # escape backslash
+    escape_backslash = True
+    # No equal sign in VSL
+    equality = "~"
 
 
 class VCLTranslator(DSLTranslator):
