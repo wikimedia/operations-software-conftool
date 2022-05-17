@@ -125,10 +125,12 @@ if ($expression) {
 // $comment
 // This filter is generated from data in $driver. To disable it, run the following command:
 // sudo requestctl disable '$pprint'
-if ($expression && $throttle) {
+if ($expression) {
     set req.http.X-Requestctl = req.http.X-Requestctl + ",$name";
-    set req.http.Retry-After = $retry_after;
-    return (synth($status, "$reason"));
+    if ($throttle) {
+        set req.http.Retry-After = $retry_after;
+        return (synth($status, "$reason"));
+    }
 }
 """
     )
