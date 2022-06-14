@@ -30,7 +30,8 @@ def parse_args(args) -> Namespace:
     # Example: requestctl sync --purge ipblock .
     sync = command.add_parser("sync", help="Synchronize data in the git repo to etcd.")
     sync.add_argument(
-        "--git-repo", "-g", help="location on disc of the git repository", required=True
+        "--git-repo", "-g", help="location on disc of the git repository", required=True,
+        default="/var/lib/operations/private/requestctl"
     )
     sync.add_argument("object_type", help="What object type to sync", choices=SYNC_ENTITIES)
     sync.add_argument("--purge", "-p", help="Also delete removed objects.", action="store_true")
