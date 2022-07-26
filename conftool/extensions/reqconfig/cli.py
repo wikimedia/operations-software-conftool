@@ -323,6 +323,10 @@ class Requestctl:
         if not action.exists:
             raise RequestctlError(f"{self.args.action} does not exist, cannot enable.")
         action.update({"enabled": enable})
+        # Printing this unconditionally *might* be confusing, as there's nothing to commit if
+        # enabling an already-enabled action. So we could check first, with action.changed(), but it
+        # probably isn't worth the extra roundtrip.
+        print("Remember to commit the change to VCL with: sudo requestctl commit")
 
     def _parse_and_check(self, expression) -> List[str]:
         """Parse the expression and check if it's valid at all.
