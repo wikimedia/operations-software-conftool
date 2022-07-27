@@ -312,7 +312,7 @@ class Requestctl:
             if obj.exists:
                 objs.append(obj)
             elif must_exist:
-                raise RequestctlError("{self.object_type} {obj.pprint()} not found.")
+                raise RequestctlError(f"{self.object_type} {obj.pprint()} not found.")
         else:
             objs = list(self.cls.query({"name": re.compile(".")}))
         return objs
