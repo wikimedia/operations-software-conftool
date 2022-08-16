@@ -39,6 +39,21 @@ class FieldValidatorsTestCase(TestCase):
         self.assertEqual('c', validator('c'))
         self.assertRaises(ValueError, validator, 'd')
 
+    def test_cidr_list_validator(self):
+        validator = types.get_validator("cidr_list")
+        self.assertEqual(['192.0.2.1'], validator(['192.0.2.1']))
+        self.assertEqual(['2001:db8::1'], validator(['2001:db8::1']))
+        self.assertEqual(['192.0.2.0/24'], validator(['192.0.2.0/24']))
+        self.assertEqual(['2001:db8::/64'], validator(['2001:db8::/64']))
+        self.assertEqual(['192.0.2.0/32', '198.51.100.1'], validator(['192.0.2.0/32', '198.51.100.1']))
+        self.assertEqual(['2001:db8::/128', '198.51.100.1'], validator(['2001:db8::/128', '198.51.100.1']))
+        self.assertEqual([], validator(['not an ip']))
+        self.assertEqual([], validator(['192.0.2.0/33']))
+        self.assertEqual([], validator(['2001:db8::/129']))
+        self.assertRaises(ValueError, validator, '2001:db8::1')
+        self.assertRaises(ValueError, validator, '192.0.2.1')
+
+
     def test_any_validator(self):
         validator = types.get_validator("any")
         self.assertEqual("a string", validator("a string"))

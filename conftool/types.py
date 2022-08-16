@@ -1,8 +1,13 @@
 import json
+import ipaddress
+import logging
 import os
 import re
 
 import jsonschema
+
+
+_log = logging.getLogger(__name__)
 
 
 def choice(arg):
@@ -27,6 +32,22 @@ def dict_validator(data):
     return data
 
 
+def cidr_list_validator(data):
+    """Validate we have a list of ip addresses"""
+    if not isinstance(data, list):
+        raise ValueError('values need to be a list')
+    clean_data = []
+    for element in data:
+        try:
+            # use strict false to ensure we can accept simple errors like 192.168.1.1/24
+            # which would get converted to 192.168.1.0/24
+            ipaddress.ip_network(element, strict=False)
+            clean_data.append(element)
+        except ValueError:
+            _log.warning('cidr_list reject invalid network: %s', element)
+    return clean_data
+
+
 def any_validator(data):
     """Any value that can be translated to json is ok."""
     try:
@@ -43,6 +64,7 @@ validators = {
     'bool': bool_validator,
     'enum': choice,
     'dict': dict_validator,
+    'cidr_list': cidr_list_validator,
     'any': any_validator,
 }
 
