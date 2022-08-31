@@ -95,9 +95,11 @@ class DbConfig:
         # The master for and the flavor of each section
         section_masters = defaultdict(dict)
         section_flavors = defaultdict(dict)
+        section_omit_replicas = defaultdict(dict)
         for obj in sections:
             section_masters[obj.tags['datacenter']][obj.name] = obj.master
             section_flavors[obj.tags['datacenter']][obj.name] = obj.flavor
+            section_omit_replicas[obj.tags['datacenter']][obj.name] = obj.omit_replicas_in_mwconfig
         config = {}
         # Let's initialize the variables
         for dc in section_masters.keys():
@@ -146,6 +148,8 @@ class DbConfig:
                 section_load_index = 1
                 if instance.name == masters[section_name]:
                     section_load_index = 0
+                elif section_omit_replicas[datacenter][section_name]:
+                    continue
                 section_flavor = section_flavors[datacenter][section_name]
                 output_key = self.flavor_to_dbconfig_key[section_flavor]
                 section_load = config[datacenter][output_key][section_key]

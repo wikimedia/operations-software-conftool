@@ -81,3 +81,5 @@ dbconfig-section:
       default: "PLACEHOLDER"
     flavor:
       default: "regular"
+    omit_replicas_in_mwconfig:
+      default: false

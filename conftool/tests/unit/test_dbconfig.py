@@ -422,6 +422,22 @@ class TestDbConfig(TestCase):
         esdb1.sections = {
             'es1': {'weight': 0, 'pooled': True, 'percentage': 100},
         }
+        esdb2 = self.schema.entities['dbconfig-instance']('test', 'esdb2')
+        esdb2.host_ip = '11.11.11.12'
+        esdb2.sections = {
+            'es1': {'weight': 0, 'pooled': True, 'percentage': 100},
+        }
+        x2db1 = self.schema.entities['dbconfig-instance']('test', 'xtwodb1')
+        x2db1.host_ip = '22.22.22.11'
+        x2db1.sections = {
+            'x2': {'weight': 0, 'pooled': True, 'percentage': 100},
+        }
+        x2db2 = self.schema.entities['dbconfig-instance']('test', 'xtwodb2')
+        x2db2.host_ip = '22.22.22.12'
+        x2db2.sections = {
+            'x2': {'weight': 0, 'pooled': True, 'percentage': 100},
+        }
+
 
         s1 = self.schema.entities['dbconfig-section']('test', 's1')
         s1.master = 'db1'
@@ -435,7 +451,11 @@ class TestDbConfig(TestCase):
         es1 = self.schema.entities['dbconfig-section']('test', 'es1')
         es1.flavor = 'external'
         es1.master = 'esdb1'
-        return ([db1, db2, db3, esdb1], [es1, s1, s3, s4])
+        x2 = self.schema.entities['dbconfig-section']('test', 'x2')
+        x2.flavor = 'external'
+        x2.master = 'xtwodb1'
+        x2.omit_replicas_in_mwconfig = True
+        return ([db1, db2, db3, esdb1, esdb2, x2db1, x2db2], [x2, es1, s1, s3, s4])
 
     def test_init(self):
         self.assertEqual(self.config.entity.__name__, 'Mwconfig')
@@ -470,9 +490,13 @@ class TestDbConfig(TestCase):
                 'DEFAULT': [{'db3': 10}, {'db1': 10, 'db2': 10}],
                 's4': [{'db2': 10}, {}]},
              'groupLoadsBySection': {},
-             'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333', 'esdb1': '11.11.11.11'},
+             'hostsByName': {'db1': '1.1.1.1', 'db2': '2.2.2.2', 'db3': '3.3.3.3:3333',
+                             'esdb1': '11.11.11.11', 'esdb2': '11.11.11.12',
+                             'xtwodb1': '22.22.22.11', 'xtwodb2': '22.22.22.12'},
              'readOnlyBySection': {'DEFAULT': 'Some reason.'},
-             'externalLoads': {'es1': [{'esdb1': 0}, {}]},
+             'externalLoads': {
+                 'es1': [{'esdb1': 0}, {'esdb2': 0}],
+                 'x2': [{'xtwodb1': 0}, {}]},
              }
         }
         res1 = self.config.compute_config(sections, instances)
@@ -538,13 +562,13 @@ class TestDbConfig(TestCase):
         self.config.instance.get_all.return_value = instances
         self.config.section.get_all.return_value = sections
         # Let's test if we re-pass the original instances
-        self.assertEqual(self.config.check_section(sections[3]),
+        self.assertEqual(self.config.check_section(sections[-1]),
                          ['Section s4 is supposed to have minimum 1 replicas, found 0'])
 
         # Now let's reduce the minimum number of replicas in s4
         _, new_sections = self._mock_objects()
-        new_sections[3].min_replicas = 0
-        self.assertEqual(self.config.check_section(new_sections[3]), [])
+        new_sections[-1].min_replicas = 0
+        self.assertEqual(self.config.check_section(new_sections[-1]), [])
 
     def test_diff(self):
         instances, sections = self._mock_objects()
