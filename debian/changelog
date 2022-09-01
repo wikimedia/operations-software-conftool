@@ -1,3 +1,9 @@
+conftool (2.2.2-1) buster-wikimedia; urgency=medium
+
+  * T316482: dbctl: add omit_replicas_in_mwconfig
+
+ -- Chris Danis <cdanis@wikimedia.org>  Thu, 01 Sep 2022 06:52:06 -0400
+
 conftool (2.2.1-1) buster-wikimedia; urgency=medium
 
   * Bugfixes for VSL translation in requestctl
