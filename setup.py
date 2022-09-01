@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="conftool",
-    version="2.2.1",
+    version="2.2.2",
     description="Tools to interoperate with distributed k/v stores",
     author="Joe",
     author_email="joe@wikimedia.org",
