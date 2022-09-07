@@ -151,10 +151,6 @@ if (!req.http.X-Requestctl) {
     set req.http.X-Requestctl = "";
 }
 """
-    footer = """
-// Remove the comma at the start of the line, if present.
-set req.http.X-Requestctl = regsub(req.http.X-Requestctl, "^,", "");
-"""
 
     @classmethod
     def render(cls, data: List[Entity], object_type: str = "") -> str:
@@ -181,7 +177,6 @@ set req.http.X-Requestctl = regsub(req.http.X-Requestctl, "^,", "");
                 out.append(cls.tpl_throttle.substitute(substitutions))
             else:
                 out.append(cls.tpl_ban.substitute(substitutions))
-        out.append(cls.footer)
         return "\n".join(out)
 
     @classmethod
