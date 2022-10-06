@@ -9,13 +9,14 @@ from .error import RequestctlError
 # requestctl has its own schema and we don't want to have to configure it.
 empty_string = {"type": "string", "default": ""}
 empty_list = {"type": "list", "default": []}
+empty_cidr_list = {"type": "cidr_list", "default": []}
 bool_false = {"type": "bool", "default": False}
 SCHEMA: Dict = {
     "ipblock": {
         "path": "request-ipblocks",
         "tags": ["scope"],
         "schema": {
-            "cidrs": empty_list,
+            "cidrs": empty_cidr_list,
             "comment": empty_string,
         },
     },
