@@ -30,8 +30,11 @@ def parse_args(args) -> Namespace:
     # Example: requestctl sync --purge ipblock .
     sync = command.add_parser("sync", help="Synchronize data in the git repo to etcd.")
     sync.add_argument(
-        "--git-repo", "-g", help="location on disc of the git repository", required=True,
-        default="/var/lib/operations/private/requestctl"
+        "--git-repo",
+        "-g",
+        help="location on disc of the git repository",
+        required=True,
+        default="/var/lib/git/operations/private/requestctl",
     )
     sync.add_argument("object_type", help="What object type to sync", choices=SYNC_ENTITIES)
     sync.add_argument("--purge", "-p", help="Also delete removed objects.", action="store_true")
@@ -48,7 +51,7 @@ def parse_args(args) -> Namespace:
     )
     validate.add_argument("basedir", help="The directory to check for files.")
     # hidden argument used just for compliance with requestctl
-    parser.add_argument('--object_type', default="action", help=SUPPRESS)
+    parser.add_argument("--object_type", default="action", help=SUPPRESS)
     # Dump command. Dumps the datastore to a directory that can be used with sync.
     dump = command.add_parser(
         "dump",
