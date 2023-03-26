@@ -1,7 +1,8 @@
 from typing import Dict
 
 from conftool import configuration
-from conftool.kvobject import Entity, KVObject
+from conftool.cli import ConftoolClient
+from conftool.kvobject import Entity
 from conftool.loader import Schema
 
 from .error import RequestctlError
@@ -65,8 +66,7 @@ SYNC_ENTITIES = sorted(set(SCHEMA.keys()) - {"vcl"})
 
 def get_schema(conf: configuration.Config) -> Schema:
     """Get the schema for requestctl."""
-    KVObject.setup(conf)
-    return Schema.from_data(SCHEMA, default_entities=False)
+    return ConftoolClient(config=conf, schema=SCHEMA).schema
 
 
 def get_obj_from_slug(entity, slug: str) -> Entity:

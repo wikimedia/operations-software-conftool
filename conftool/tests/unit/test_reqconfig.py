@@ -5,7 +5,8 @@ from unittest import mock
 import pyparsing as pp
 import pytest
 from conftool import configuration, kvobject
-from conftool.extensions.reqconfig import Requestctl, get_schema, translate
+from conftool.cli import ConftoolClient
+from conftool.extensions.reqconfig import Requestctl, translate, SCHEMA
 from conftool.tests.unit import MockBackend
 from wmflib.interactive import AbortError
 
@@ -13,7 +14,7 @@ from wmflib.interactive import AbortError
 @pytest.fixture
 def schema():
     """Return the reqestctl schema with a mock backend"""
-    mock_schema = get_schema(configuration.Config(driver=""))
+    mock_schema = ConftoolClient(config=configuration.Config(driver=""), schema=SCHEMA).schema
     # Now overload the backend.
     kvobject.KVObject.backend = MockBackend({})
     return mock_schema

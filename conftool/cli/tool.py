@@ -13,23 +13,18 @@ import sys
 
 import yaml
 
-from conftool import __version__, _log, action, configuration, loader, setup_irc
+from conftool import __version__, _log, action, configuration, setup_irc
+from conftool.cli import ObjectTypeError, ConftoolClient
 from conftool.kvobject import KVObject
 from conftool.drivers import BackendError
-
-
-class ObjectTypeError(Exception):
-    """
-    Exception raised whenever an inexistent object type is raised
-    """
-    pass
 
 
 class ToolCliBase:
 
     def __init__(self, args):
         self.args = args
-        self._load_schema()
+        self.client = ConftoolClient(configfile=self.args.config, schemafile=self.args.schema)
+        self.entity = self.client.get(self.args.object_type)
         self.irc = logging.getLogger('conftool.announce')
 
     @property
@@ -42,17 +37,6 @@ class ToolCliBase:
                 "conftool action : %s; selector: %s", self._action,
                 self._namedef
             )
-
-    def _load_schema(self):
-        self._schema = loader.Schema.from_file(self.args.schema)
-        try:
-            self.entity = self._schema.entities[self.args.object_type]
-        except KeyError:
-            _log.critical(
-                "Object type %s is not available in the current schema",
-                self.args.object_type
-            )
-            raise ObjectTypeError(self.args.object_type)
 
     def setup(self):
         c = configuration.get(self.args.config)
@@ -157,12 +141,12 @@ class ToolCli(ToolCliBase):
     @staticmethod
     def raise_warning():
         if not sys.stdin.isatty() or not sys.stdout.isatty():
-            print("Destructive operations are not scriptable")
-            " and should be run from the command line"
+            print("Destructive operations are not scriptable"
+                  " and should be run from the command line")
             sys.exit(1)
 
-        print("You are operating on more than half of the objects, this is ")
-        "potentially VERY DANGEROUS: do you want to continue?"
+        print("You are operating on more than half of the objects, this is "
+              "potentially VERY DANGEROUS: do you want to continue?")
         print("If so, please type: 'Yes, I am sure of what I am doing.'")
         a = input("confctl>")
         if a == "Yes, I am sure of what I am doing.":
@@ -348,11 +332,12 @@ def main(cmdline=None):
         else:
             raise ValueError(args.mode)
     except ObjectTypeError:
+        _log.critical(
+            "Object type %s is not available in the current schema",
+            args.object_type
+        )
         sys.exit(1)
-
-    try:
-        cli.setup()
-    except Exception as e:
+    except configuration.ConfigurationError as e:
         _log.critical("Invalid configuration: %s", e)
         sys.exit(1)
 

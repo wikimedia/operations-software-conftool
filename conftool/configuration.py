@@ -2,12 +2,19 @@ import collections
 from conftool import yaml_safe_load
 
 
+class ConfigurationError(Exception):
+    """Exception raised when we fail to load the configuration."""
+
+
 def get(configfile):
     """
     Loads the config from file
     """
-    config = yaml_safe_load(configfile, default={})
-    return Config(**config)
+    try:
+        config = yaml_safe_load(configfile, default={})
+        return Config(**config)
+    except Exception as exc:
+        raise ConfigurationError(exc) from exc
 
 
 ConfigBase = collections.namedtuple('Config', [

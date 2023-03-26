@@ -10,7 +10,7 @@ from .error import RequestctlError
 from .schema import SCHEMA, SYNC_ENTITIES
 
 # public api
-from .cli import get_schema  # noqa: F401
+from .schema import get_schema  # noqa: F401
 
 
 def parse_args(args) -> Namespace:

@@ -13,6 +13,7 @@ class MockArg:
 
     def __init__(self, selector):
         self.selector = selector
+        self.config = os.path.join(fixtures_base, 'config.yaml')
 
 
 class ConftoolTestCase(IntegrationTestBase):

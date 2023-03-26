@@ -17,9 +17,10 @@ class DbConfigCli(ToolCliBase):
 
     def __init__(self, args):
         super().__init__(args)
-        self.db_config = DbConfig(self._schema, Instance(self._schema), Section(self._schema))
-        self.instance = Instance(self._schema, self.db_config.check_instance)
-        self.section = Section(self._schema, self.db_config.check_section)
+        schema = self.client.schema
+        self.db_config = DbConfig(schema, Instance(schema), Section(schema))
+        self.instance = Instance(schema, self.db_config.check_instance)
+        self.section = Section(schema, self.db_config.check_section)
 
     def run_action(self):
         """

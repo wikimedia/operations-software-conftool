@@ -17,12 +17,13 @@ import yaml
 from wmflib.interactive import AbortError, ask_confirmation
 
 from conftool import IRCSocketHandler, configuration, yaml_safe_load
+from conftool.cli import ConftoolClient
 from conftool.drivers import BackendError
 from conftool.extensions.reqconfig.translate import VCLTranslator, VSLTranslator
 from conftool.kvobject import Entity
 
 from . import view
-from .schema import SCHEMA, get_schema, get_obj_from_slug, SYNC_ENTITIES
+from .schema import SCHEMA, get_obj_from_slug, SYNC_ENTITIES
 from .error import RequestctlError
 
 irc = logging.getLogger("reqctl.announce")
@@ -53,9 +54,10 @@ class Requestctl:
         if (self.config.tcpircbot_host and self.config.tcpircbot_port) and not irc.handlers:
             irc.addHandler(IRCSocketHandler(config.tcpircbot_host, config.tcpircbot_port))
         # Now let's load the schema
-        self.schema = get_schema(self.config)
+        self.client = ConftoolClient(config=self.config, schema=SCHEMA)
+        self.schema = self.client.schema
         # Load the right entity
-        self.cls = self.schema.entities[self.object_type]
+        self.cls = self.client.get(self.object_type)
         if "git_repo" in self.args and self.args.git_repo is not None:
             self.base_path: Optional[pathlib.Path] = (
                 pathlib.Path(self.args.git_repo) / self.cls.base_path()
@@ -96,7 +98,7 @@ class Requestctl:
         root_path = pathlib.Path(self.args.basedir)
         failed = False
         for obj_type in SYNC_ENTITIES:
-            self.cls = self.schema.entities[obj_type]
+            self.cls = self.client.get(obj_type)
             for tag, fpath in self._get_files_for_object_type(root_path, obj_type):
                 obj, from_disk = self._entity_from_file(tag, fpath)
                 try:
@@ -144,9 +146,7 @@ class Requestctl:
         # Given we also need to check consistency, we need all actions too.
 
         if self.object_type != "action":
-            all_actions = [
-                a for a in self.schema.entities["action"].query({"name": re.compile(".*")})
-            ]
+            all_actions = [a for a in self.client.get("action").query({"name": re.compile(".*")})]
         else:
             all_actions = []
         for reqobj in self.cls.query({"name": re.compile(".*")}):
@@ -219,7 +219,7 @@ class Requestctl:
         # - one cache-$cluster/$dc key for every datacenter named in "sites" of any
         #   action
         batch = self.args.batch
-        vcl = self.schema.entities["vcl"]
+        vcl = self.client.get("vcl")
         actions_by_tag_site = defaultdict(lambda: defaultdict(list))
         for action in self._get():
             if not any([action.enabled, action.log_matching]):
@@ -227,7 +227,6 @@ class Requestctl:
             action.vcl_expression = self._vcl_from_expression(action.expression)
             cluster = action.tags["cluster"]
             if not action.sites:
-
                 actions_by_tag_site[cluster]["global"].append(action)
             else:
                 for site in action.sites:
@@ -263,7 +262,7 @@ class Requestctl:
         """Gets files in a directory that can contain objects."""
         if obj_type is None:
             obj_type = self.object_type
-        entity_path: pathlib.Path = root_path / self.schema.entities[obj_type].base_path()
+        entity_path: pathlib.Path = root_path / self.client.get(obj_type).base_path()
         for tag_path in entity_path.iterdir():
             # skip files in the root dir, including any hidden dirs and the special
             # .. and . references
@@ -319,7 +318,7 @@ class Requestctl:
 
     def _enable(self, enable: bool):
         """Ban a type of request."""
-        action = get_obj_from_slug(self.schema.entities["action"], self.args.action)
+        action = get_obj_from_slug(self.client.get("action"), self.args.action)
         if not action.exists:
             raise RequestctlError(f"{self.args.action} does not exist, cannot enable.")
         action.update({"enabled": enable})
@@ -393,14 +392,12 @@ class Requestctl:
 
     def _is_obj_on_backend(self, obj_type: str, slug: str) -> bool:
         """Checks if the pattern exists on the backend."""
-        obj = get_obj_from_slug(self.schema.entities[obj_type], slug)
+        obj = get_obj_from_slug(self.client.get(obj_type), slug)
         return obj.exists
 
     def _is_obj_on_fs(self, obj_type: str, slug: str) -> bool:
         on_disk: pathlib.Path = (
-            pathlib.Path(self.args.basedir)
-            / self.schema.entities[obj_type].base_path()
-            / f"{slug}.yaml"
+            pathlib.Path(self.args.basedir) / self.client.get(obj_type).base_path() / f"{slug}.yaml"
         )
         return on_disk.is_file()
 
@@ -506,10 +503,10 @@ class Requestctl:
 
     def _vsl_from_expression(self, expression: str) -> str:
         parsed = self._parse_and_check(expression)
-        vsl = VSLTranslator(self.schema)
+        vsl = VSLTranslator(self.client.schema)
         return vsl.from_expression(parsed)
 
     def _vcl_from_expression(self, expression: str) -> str:
         parsed = self._parse_and_check(expression)
-        vcl = VCLTranslator(self.schema)
+        vcl = VCLTranslator(self.client.schema)
         return vcl.from_expression(parsed)
