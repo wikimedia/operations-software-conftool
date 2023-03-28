@@ -4,7 +4,7 @@ import os
 import etcd
 import urllib3
 
-from conftool import drivers, yaml_safe_load
+from conftool import drivers, yaml_safe_load, _log
 """
 
 This driver will look at the following config files:
@@ -49,8 +49,13 @@ class Driver(drivers.BaseDriver):
             'etcd_config_file',
             '/etc/conftool/etcdrc')
         driver_config = get_config(configfile)
-        if config.driver_options.get('suppress_san_warnings', True):
-            urllib3.disable_warnings(category=urllib3.exceptions.SubjectAltNameWarning)
+        try:
+            if config.driver_options.get('suppress_san_warnings', True):
+                urllib3.disable_warnings(category=urllib3.exceptions.SubjectAltNameWarning)
+        except AttributeError:
+            _log.warning("You are using a modern version of urllib3; "
+                         "please set suppress_san_warnings to false in your driver configuration.")
+
         self.client = etcd.Client(**driver_config)
         super().__init__(config)
 
