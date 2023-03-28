@@ -1,3 +1,13 @@
+conftool (2.3.0-1) bullseye-wikimedia; urgency=medium
+
+  * Add conftool.cli.ConftoolClient for ease of initialization
+  * initial support for urllib 2.x
+  * requestctl: add default git repository
+  * T313825: requestctl: add validation for ipblocks
+  * T305582: requestctl: remove buggy comma filter footer.
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Tue, 28 Mar 2023 09:57:45 +0200
+
 conftool (2.2.2-1) buster-wikimedia; urgency=medium
 
   * T316482: dbctl: add omit_replicas_in_mwconfig
