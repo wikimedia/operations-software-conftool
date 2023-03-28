@@ -71,7 +71,6 @@ class EtcdProcessHelper:
 
 
 class IntegrationTestBase(TestCase):
-
     log = logging.getLogger(__name__)
     fixture_dir = os.path.join(test_base, "fixtures")
 
@@ -102,9 +101,7 @@ class IntegrationTestBase(TestCase):
             KVObject.setup = mock.MagicMock()
             setup_irc(conf)
         except SystemExit as system_exit:
-            cls.log.critical(
-                "KVObject.setup() failed. sys.exit(%s)" % system_exit, exc_info=1
-            )
+            cls.log.critical("KVObject.setup() failed. sys.exit(%s)" % system_exit, exc_info=1)
             cls.init_failed = True
 
     def setUp(self):

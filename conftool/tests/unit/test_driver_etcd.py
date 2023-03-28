@@ -8,7 +8,6 @@ from conftool import backend
 
 
 class EtcdDriverTestCase(TestCase):
-
     def setUp(self):
         c = configuration.Config(driver="etcd")
         b = backend.Backend(c)
@@ -17,13 +16,13 @@ class EtcdDriverTestCase(TestCase):
     def test_init(self):
         self.assertIsInstance(self.driver.client, etcd.Client)
 
-    @mock.patch('etcd.Client.read')
+    @mock.patch("etcd.Client.read")
     def test_is_dir(self, etcd_mock):
         etcd_mock.return_value.dir = True
-        self.assertTrue(self.driver.is_dir('/none'))
-        etcd_mock.assert_called_with('/none')
+        self.assertTrue(self.driver.is_dir("/none"))
+        etcd_mock.assert_called_with("/none")
         etcd_mock.side_effect = etcd.EtcdKeyNotFound
-        self.assertFalse(self.driver.is_dir('/test'))
+        self.assertFalse(self.driver.is_dir("/test"))
 
     def test_data(self):
         mockResult = mock.MagicMock()
@@ -33,5 +32,5 @@ class EtcdDriverTestCase(TestCase):
         mockResult.dir = False
         mockResult.value = '{"a": "b"}'
         self.assertEqual(self.driver._data(mockResult), {"a": "b"})
-        mockResult.value = '{]}'
+        mockResult.value = "{]}"
         self.assertRaises(BackendError, self.driver._data, mockResult)

@@ -9,7 +9,7 @@ from conftool.action import EditAction
 from conftool.drivers import BackendError
 
 
-ALL_GROUPS = 'all'  # Special group name to select all configured groups
+ALL_GROUPS = "all"  # Special group name to select all configured groups
 
 
 class DbEditAction(EditAction):
@@ -25,9 +25,9 @@ class DbEditAction(EditAction):
         if self.example is None:
             return
 
-        with open(self.temp, 'a') as f:
-            f.write('\n# Full object example (all commented lines are automatically discarded)')
-            f.write(textwrap.indent(textwrap.dedent(self.example), '#'))
+        with open(self.temp, "a") as f:
+            f.write("\n# Full object example (all commented lines are automatically discarded)")
+            f.write(textwrap.indent(textwrap.dedent(self.example), "#"))
 
     def _validate_edit(self):
         try:
@@ -47,7 +47,8 @@ class DbEditAction(EditAction):
 
 class DbObjBase(ABC):
     """Abstract base class for interacting with the db-like objects"""
-    selectors = {'datacenter': re.compile(r'^\w+$'), 'name': re.compile(r'.*')}
+
+    selectors = {"datacenter": re.compile(r"^\w+$"), "name": re.compile(r".*")}
     label = None
     example = None
 
@@ -59,10 +60,10 @@ class DbObjBase(ABC):
         * schema: a conftool schema object
         * checker: an (optional) checker for the generated global configuration
         """
-        self.entity = schema.entities['dbconfig-{}'.format(self.label)]
+        self.entity = schema.entities["dbconfig-{}".format(self.label)]
         self.checker = checker
 
-    def get_all(self, name='.*', initialized_only=False, dc=None):
+    def get_all(self, name=".*", initialized_only=False, dc=None):
         """
         Gets a range of dbconfig objects, all by default
         """
@@ -73,7 +74,7 @@ class DbObjBase(ABC):
                 yield obj
 
     def get(self, name, dc=None):
-        '''
+        """
         Gets one dbconfig object.
 
         Parameters:
@@ -82,13 +83,15 @@ class DbObjBase(ABC):
         Returns: the entity if present, None otherwise.
 
         Raises: ValueError if multiple objects by the same name exist.
-        '''
+        """
         results = list(self.get_all(name, dc=dc))
         count = len(results)
         if count > 1:
             raise ValueError(
                 "{count} {label}s found for query '{query}' and scope '{dc}', expected 1.".format(
-                    count=count, label=self.label, query=name, dc=dc))
+                    count=count, label=self.label, query=name, dc=dc
+                )
+            )
         elif count == 1:
             return results[0]
         else:
@@ -99,9 +102,9 @@ class DbObjBase(ABC):
         query = self.selectors.copy()
         # TODO: it would be nice to re.escape() name and dc before using them here,
         # but get_all() needs rethinking before that can happen.
-        query['name'] = re.compile('^{}$'.format(name))
+        query["name"] = re.compile("^{}$".format(name))
         if dc is not None:
-            query['datacenter'] = re.compile('^{}$'.format(dc))
+            query["datacenter"] = re.compile("^{}$".format(dc))
         return query
 
     def edit(self, name, datacenter=None):
@@ -110,8 +113,11 @@ class DbObjBase(ABC):
             if datacenter is None:
                 return (
                     False,
-                    ['No {} found with name "{}"; please provide a datacenter'.format(
-                        self.label, name)]
+                    [
+                        'No {} found with name "{}"; please provide a datacenter'.format(
+                            self.label, name
+                        )
+                    ],
                 )
             obj = self.entity(datacenter, name)
         act = DbEditAction(obj, self.checker, self.example)
@@ -124,7 +130,7 @@ class DbObjBase(ABC):
     def _check_state(self, obj):
         try:
             if obj is None:
-                return ['{} not found'.format(self.label)]
+                return ["{} not found".format(self.label)]
 
             # If the current object doesn't conform to the json schema
             # refuse to operate on it
@@ -134,11 +140,11 @@ class DbObjBase(ABC):
 
         if self._check_uninitialized(obj):
             # The object is uninitialized. We can't act on it
-            return ['{} is uninitialized'.format(self.label)]
+            return ["{} is uninitialized".format(self.label)]
 
     # TODO: _update and _check_uninitialized need docstrings!
     @abstractmethod
-    def _update(self,  obj, callback, **args):
+    def _update(self, obj, callback, **args):
         pass
 
     @abstractmethod
@@ -172,7 +178,8 @@ class DbObjBase(ABC):
 
 class Instance(DbObjBase):
     """Manages configurations for MediaWiki database configuration objects"""
-    label = 'instance'
+
+    label = "instance"
     example = """
     host_ip: 10.0.0.1
     port: 3306
@@ -209,18 +216,18 @@ class Instance(DbObjBase):
         Returns: a tuple (result, error)
         """
         if group is not None and section is None:
-            return (False, ['Cannot select a group but not a section'])
+            return (False, ["Cannot select a group but not a section"])
 
         def set_depooled(obj, section, group):
             if group is None:
-                obj.sections[section]['pooled'] = False
+                obj.sections[section]["pooled"] = False
             elif group == ALL_GROUPS:
-                for group_data in obj.sections[section]['groups'].values():
-                    group_data['pooled'] = False
+                for group_data in obj.sections[section]["groups"].values():
+                    group_data["pooled"] = False
             else:
-                obj.sections[section]['groups'][group]['pooled'] = False
+                obj.sections[section]["groups"][group]["pooled"] = False
 
-        return self.write_callback(set_depooled, (instance, ), section=section, group=group)
+        return self.write_callback(set_depooled, (instance,), section=section, group=group)
 
     def pool(self, instance, percentage=None, section=None, group=None):
         """
@@ -235,24 +242,24 @@ class Instance(DbObjBase):
         Returns: a tuple (result, error)
         """
         if group is not None and section is None:
-            return (False, ['Cannot select a group but not a section'])
+            return (False, ["Cannot select a group but not a section"])
         if percentage is not None and group is not None:
-            return (False, ['Percentages are only supported for global pooling'])
+            return (False, ["Percentages are only supported for global pooling"])
         # TODO: checking default values doesn't let us differentiate between
         # nothing provided vs the default values explicitly provided.
 
         def set_pooled(obj, section, group):
             if group is None:
-                obj.sections[section]['pooled'] = True
+                obj.sections[section]["pooled"] = True
                 if percentage is not None:
-                    obj.sections[section]['percentage'] = percentage
+                    obj.sections[section]["percentage"] = percentage
             elif group == ALL_GROUPS:
-                for group_data in obj.sections[section]['groups'].values():
-                    group_data['pooled'] = True
+                for group_data in obj.sections[section]["groups"].values():
+                    group_data["pooled"] = True
             else:
-                obj.sections[section]['groups'][group]['pooled'] = True
+                obj.sections[section]["groups"][group]["pooled"] = True
 
-        return self.write_callback(set_pooled, (instance, ), section=section, group=group)
+        return self.write_callback(set_pooled, (instance,), section=section, group=group)
 
     def weight(self, instance, new_weight, section=None, group=None):
         """
@@ -267,17 +274,18 @@ class Instance(DbObjBase):
         Returns: a tuple (result, error)
         """
         if group is not None and section is None:
-            return (False, ['Cannot select a group but not a section'])
+            return (False, ["Cannot select a group but not a section"])
 
         def set_weight(obj, section, group):
             if group is None:
-                obj.sections[section]['weight'] = new_weight
+                obj.sections[section]["weight"] = new_weight
             elif group == ALL_GROUPS:
-                for group_data in obj.sections[section]['groups'].values():
-                    group_data['weight'] = new_weight
+                for group_data in obj.sections[section]["groups"].values():
+                    group_data["weight"] = new_weight
             else:
-                obj.sections[section]['groups'][group]['weight'] = new_weight
-        return self.write_callback(set_weight, (instance, ), section=section, group=group)
+                obj.sections[section]["groups"][group]["weight"] = new_weight
+
+        return self.write_callback(set_weight, (instance,), section=section, group=group)
 
     def candidate_master(self, instance, candidate_status, section):
         """
@@ -291,9 +299,14 @@ class Instance(DbObjBase):
         Returns: a tuple (result, error)
         """
 
-        def set_candidate_master(obj, section, group,):
-            obj.sections[section]['candidate_master'] = candidate_status
-        return self.write_callback(set_candidate_master, (instance, ), section=section, group=None)
+        def set_candidate_master(
+            obj,
+            section,
+            group,
+        ):
+            obj.sections[section]["candidate_master"] = candidate_status
+
+        return self.write_callback(set_candidate_master, (instance,), section=section, group=None)
 
     def note(self, instance, note):
         """
@@ -306,7 +319,8 @@ class Instance(DbObjBase):
 
         def set_note(obj, section, group):
             obj.note = note
-        return self.write_callback(set_note, (instance, ), section=None, group=None)
+
+        return self.write_callback(set_note, (instance,), section=None, group=None)
 
     # "Private" methods
     def _update(self, obj, callback, section=None, group=None, **kwargs):
@@ -330,7 +344,7 @@ class Instance(DbObjBase):
                 # Manage the error scenario where we're trying to act on the
                 # wrong key.
                 missing = e.args[0].rstrip()
-                if missing == 'groups':
+                if missing == "groups":
                     # TODO: this detection can easily fail; KeyError on a nested dict will of
                     # course not give the 'full path'. We're assuming here that there will never
                     # be a nested key called 'groups', or a group named like a top-level key.
@@ -341,12 +355,14 @@ class Instance(DbObjBase):
                     )
                 else:
                     errors.extend(
-                        ['Callback failed for section {} group {}'.format(my_section, group),
-                            str(e)]
+                        [
+                            "Callback failed for section {} group {}".format(my_section, group),
+                            str(e),
+                        ]
                     )
             except Exception as e:
                 # In this specific case, we exit the loop, as an unmanaged error has happened.
-                errors.extend(['Callback failed!', str(e)])
+                errors.extend(["Callback failed!", str(e)])
                 return errors
         if errors:
             return errors
@@ -355,16 +371,17 @@ class Instance(DbObjBase):
         return self.checker(obj)
 
     def _check_uninitialized(self, obj):
-        return (obj.sections == {})
+        return obj.sections == {}
 
 
 class Section(DbObjBase):
     "Manages the configuration of a database section"
-    label = 'section'
+    label = "section"
 
     def set_master(self, section, datacenter, new_master):
         def cb_set_master(obj):
             obj.master = new_master
+
         return self.write_callback(cb_set_master, (section, datacenter))
 
     def set_readonly(self, section, datacenter, readonly, reason=None):
@@ -372,6 +389,7 @@ class Section(DbObjBase):
             obj.readonly = readonly
             if reason is not None:
                 obj.ro_reason = reason
+
         return self.write_callback(cb_set_readonly, (section, datacenter))
 
     def _update(self, obj, callback, **args):
@@ -379,9 +397,9 @@ class Section(DbObjBase):
         try:
             callback(obj)
         except Exception as e:
-            return ['Callback failed!', str(e)]
+            return ["Callback failed!", str(e)]
         # check the object
         return self.checker(obj)
 
     def _check_uninitialized(self, obj):
-        return (obj.master == 'PLACEHOLDER')
+        return obj.master == "PLACEHOLDER"

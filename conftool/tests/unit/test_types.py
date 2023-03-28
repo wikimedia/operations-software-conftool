@@ -6,17 +6,16 @@ from conftool.tests.unit import MockEntity, MockBackend
 
 
 class FieldValidatorsTestCase(TestCase):
-
     def test_str_validator(self):
-        validator = types.get_validator('string')
+        validator = types.get_validator("string")
         input_string = "abcdef gz"
         self.assertEqual(input_string, validator(input_string))
         input_list = [1, 2]
-        self.assertEqual('[1, 2]', validator(input_list))
-        self.assertEqual('string', validator.expected_type)
+        self.assertEqual("[1, 2]", validator(input_list))
+        self.assertEqual("string", validator.expected_type)
 
     def test_int_validator(self):
-        validator = types.get_validator('int')
+        validator = types.get_validator("int")
         # When a number is passed, as a string
         self.assertEqual(101, validator("101"))
         # when a random string gets passed
@@ -24,41 +23,44 @@ class FieldValidatorsTestCase(TestCase):
 
     def test_list_validator(self):
         validator = types.get_validator("list")
-        self.assertEqual(['abc', 1, 'may'], validator(['abc', 1, 'may']))
-        self.assertEqual([], validator('abcdesf'))
-        self.assertEqual([], validator(''))
+        self.assertEqual(["abc", 1, "may"], validator(["abc", 1, "may"]))
+        self.assertEqual([], validator("abcdesf"))
+        self.assertEqual([], validator(""))
 
     def test_bool_validator(self):
         validator = types.get_validator("bool")
         self.assertEqual(True, validator(True))
         self.assertEqual(False, validator(False))
-        self.assertRaises(ValueError, validator, 'definitely maybe')
+        self.assertRaises(ValueError, validator, "definitely maybe")
 
     def test_enum_validator(self):
         validator = types.get_validator("enum:a|b|c")
-        self.assertEqual('c', validator('c'))
-        self.assertRaises(ValueError, validator, 'd')
+        self.assertEqual("c", validator("c"))
+        self.assertRaises(ValueError, validator, "d")
 
     def test_cidr_list_validator(self):
         validator = types.get_validator("cidr_list")
-        self.assertEqual(['192.0.2.1'], validator(['192.0.2.1']))
-        self.assertEqual(['2001:db8::1'], validator(['2001:db8::1']))
-        self.assertEqual(['192.0.2.0/24'], validator(['192.0.2.0/24']))
-        self.assertEqual(['2001:db8::/64'], validator(['2001:db8::/64']))
-        self.assertEqual(['192.0.2.0/32', '198.51.100.1'], validator(['192.0.2.0/32', '198.51.100.1']))
-        self.assertEqual(['2001:db8::/128', '198.51.100.1'], validator(['2001:db8::/128', '198.51.100.1']))
-        self.assertEqual([], validator(['not an ip']))
-        self.assertEqual([], validator(['192.0.2.0/33']))
-        self.assertEqual([], validator(['2001:db8::/129']))
-        self.assertRaises(ValueError, validator, '2001:db8::1')
-        self.assertRaises(ValueError, validator, '192.0.2.1')
-
+        self.assertEqual(["192.0.2.1"], validator(["192.0.2.1"]))
+        self.assertEqual(["2001:db8::1"], validator(["2001:db8::1"]))
+        self.assertEqual(["192.0.2.0/24"], validator(["192.0.2.0/24"]))
+        self.assertEqual(["2001:db8::/64"], validator(["2001:db8::/64"]))
+        self.assertEqual(
+            ["192.0.2.0/32", "198.51.100.1"], validator(["192.0.2.0/32", "198.51.100.1"])
+        )
+        self.assertEqual(
+            ["2001:db8::/128", "198.51.100.1"], validator(["2001:db8::/128", "198.51.100.1"])
+        )
+        self.assertEqual([], validator(["not an ip"]))
+        self.assertEqual([], validator(["192.0.2.0/33"]))
+        self.assertEqual([], validator(["2001:db8::/129"]))
+        self.assertRaises(ValueError, validator, "2001:db8::1")
+        self.assertRaises(ValueError, validator, "192.0.2.1")
 
     def test_any_validator(self):
         validator = types.get_validator("any")
         self.assertEqual("a string", validator("a string"))
-        self.assertEqual(['a', 'list'], validator(['a', 'list']))
-        self.assertEqual({'a': 'dict'}, validator({'a': 'dict'}))
+        self.assertEqual(["a", "list"], validator(["a", "list"]))
+        self.assertEqual({"a": "dict"}, validator({"a": "dict"}))
 
         class Foo:
             pass
@@ -67,7 +69,6 @@ class FieldValidatorsTestCase(TestCase):
 
 
 class SchemaRuleTestCase(TestCase):
-
     def setUp(self):
         KVObject.backend = MockBackend({})
         KVObject.config = configuration.Config(driver="")
@@ -76,36 +77,31 @@ class SchemaRuleTestCase(TestCase):
         """
         Test initialization of a schema rule
         """
-        t = types.SchemaRule('testname', 'testkey=test.*,name=foo.*', 'testschema')
-        self.assertEqual(t.name, 'testname')
-        self.assertEqual(t.path, 'testschema')
-        self.assertEqual(set(t.selectors.keys()), set(['name', 'testkey']))
+        t = types.SchemaRule("testname", "testkey=test.*,name=foo.*", "testschema")
+        self.assertEqual(t.name, "testname")
+        self.assertEqual(t.path, "testschema")
+        self.assertEqual(set(t.selectors.keys()), set(["name", "testkey"]))
         self.assertIsNone(t._schema)
 
     def test_schema(self):
         t = types.SchemaRule(
-            'testname', 'name=foo.*',
-            'conftool/tests/fixtures/schemas/runner_horse.schema'
+            "testname", "name=foo.*", "conftool/tests/fixtures/schemas/runner_horse.schema"
         )
-        self.assertEqual(t.schema['type'], 'object')
-        self.assertEqual(t.schema['properties']['nick']['type'], 'string')
+        self.assertEqual(t.schema["type"], "object")
+        self.assertEqual(t.schema["properties"]["nick"]["type"], "string")
 
     def test_match(self):
-        m = MockEntity('FOO', 'BARBAR', 'FooBar')
-        t = types.SchemaRule('testname', 'name=Foo.*', 'random')
+        m = MockEntity("FOO", "BARBAR", "FooBar")
+        t = types.SchemaRule("testname", "name=Foo.*", "random")
         self.assertTrue(t.match(m.tags, m._name))
-        t = types.SchemaRule('testname', 'bar=barbar', 'random')
+        t = types.SchemaRule("testname", "bar=barbar", "random")
         self.assertFalse(t.match(m.tags, m._name))
 
     def test_validate(self):
         t = types.SchemaRule(
-            'testname', 'name=foo.*',
-            'conftool/tests/fixtures/schemas/runner_horse.schema'
+            "testname", "name=foo.*", "conftool/tests/fixtures/schemas/runner_horse.schema"
         )
-        valid_data = {
-            "height": 166, "nick": "Varenne",
-            "custom": {"wins": 62, "starts": 73}
-        }
+        valid_data = {"height": 166, "nick": "Varenne", "custom": {"wins": 62, "starts": 73}}
         # Valid data doesn't raise any exception
         self.assertTrue(t.validate(valid_data))
 
@@ -117,45 +113,41 @@ class SchemaRuleTestCase(TestCase):
 
 
 class JsonSchemaLoaderTestCase(TestCase):
-    @mock.patch('conftool.types.SchemaRule', autospec=True)
+    @mock.patch("conftool.types.SchemaRule", autospec=True)
     def test_init(self, rule):
         instance = mock.MagicMock()
         rule.return_value = instance
         s = types.JsonSchemaLoader(
-            base_path='conftool/tests/fixtures/schemas',
-            rules={'catchall': {'schema': 'test.schema', 'selector': 'name=.*'}}
+            base_path="conftool/tests/fixtures/schemas",
+            rules={"catchall": {"schema": "test.schema", "selector": "name=.*"}},
         )
-        rule.assert_called_with('catchall', 'name=.*',
-                                'conftool/tests/fixtures/schemas/test.schema')
+        rule.assert_called_with(
+            "catchall", "name=.*", "conftool/tests/fixtures/schemas/test.schema"
+        )
         self.assertEqual(s.rules, [instance])
 
-    @mock.patch('conftool.types.SchemaRule', autospec=True)
+    @mock.patch("conftool.types.SchemaRule", autospec=True)
     def test_rules_for(self, rule):
         instance = mock.MagicMock()
         rule.return_value = instance
         s = types.JsonSchemaLoader(
-            base_path='conftool/tests/fixtures/schemas',
-            rules={'catchall': {'schema': 'test.schema', 'selector': 'name=.*'}}
+            base_path="conftool/tests/fixtures/schemas",
+            rules={"catchall": {"schema": "test.schema", "selector": "name=.*"}},
         )
         instance.match.return_value = True
-        self.assertEqual(s.rules_for({'a': 'foo', 'b': 'bar'}, 'test'), [instance])
+        self.assertEqual(s.rules_for({"a": "foo", "b": "bar"}, "test"), [instance])
         # Returns an empty list if nothing matches.
         instance.match.return_value = False
-        self.assertEqual(s.rules_for({'a': 'foo', 'b': 'bar'}, 'test'), [])
+        self.assertEqual(s.rules_for({"a": "foo", "b": "bar"}, "test"), [])
         # exceptions are not caught
-        instance.match.side_effect = ValueError('meh')
-        self.assertRaises(ValueError, s.rules_for, {'a': 'foo', 'b': 'bar'}, 'test')
+        instance.match.side_effect = ValueError("meh")
+        self.assertRaises(ValueError, s.rules_for, {"a": "foo", "b": "bar"}, "test")
 
     def test_get_json_schema(self):
         s = types.get_json_schema(
             {
-                'base_path': "conftool/tests/fixtures/schemas",
-                'rules': {
-                    'catchall': {
-                        'selector': 'name=.*',
-                        'schema': 'string.schema'
-                    }
-                }
+                "base_path": "conftool/tests/fixtures/schemas",
+                "rules": {"catchall": {"selector": "name=.*", "schema": "string.schema"}},
             }
         )
         self.assertEqual(len(s.rules), 1)

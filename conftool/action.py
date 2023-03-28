@@ -21,15 +21,15 @@ class ActionValidationError(ActionError):
 
 
 def get_action(obj, act):
-    action, _, value = act.partition('/')
+    action, _, value = act.partition("/")
 
-    if action == 'get':
+    if action == "get":
         return GetAction(obj)
-    elif action == 'delete':
+    elif action == "delete":
         return DelAction(obj)
-    elif action == 'set':
+    elif action == "set":
         return SetAction(obj, value)
-    elif action == 'edit':
+    elif action == "edit":
         return EditAction(obj)
     else:
         raise ActionError("Could not parse action %s" % act)
@@ -54,14 +54,14 @@ class DelAction(GetAction):
 
     def run(self):
         self.entity.delete()
-        entity_type = self.entity.__class__.__name__,
-        return "Deleted %s %s." % (entity_type,
-                                   self.entity.name)
+        entity_type = (self.entity.__class__.__name__,)
+        return "Deleted %s %s." % (entity_type, self.entity.name)
 
 
 class EditAction(GetAction):
     """Edit the object in an editor"""
-    DEFAULT_EDITOR = '/usr/bin/editor'  # You all know emacs should be the default...
+
+    DEFAULT_EDITOR = "/usr/bin/editor"  # You all know emacs should be the default...
 
     def __init__(self, obj):
         self.entity = obj
@@ -102,14 +102,14 @@ class EditAction(GetAction):
 
     def _check_amend(self, exception):  # pragma: no coverage
         while True:
-            answer = input('Continue editing? [y/n] ')
+            answer = input("Continue editing? [y/n] ")
             lc_answer = answer.lower()
-            if lc_answer == 'y':
+            if lc_answer == "y":
                 break
-            elif lc_answer == 'n':
+            elif lc_answer == "n":
                 raise exception
             else:
-                print('Please answer y/n!')
+                print("Please answer y/n!")
                 continue
 
     def _to_file(self):
@@ -117,24 +117,23 @@ class EditAction(GetAction):
             f = tempfile.NamedTemporaryFile(delete=False)
             self.temp = f.name
         else:
-            f = open(self.temp, 'wb')
-        f.write("# Editing object {}\n".format(self.entity.pprint()).encode('utf-8'))
+            f = open(self.temp, "wb")
+        f.write("# Editing object {}\n".format(self.entity.pprint()).encode("utf-8"))
         self.entity.fetch()
-        yaml.safe_dump(self.entity._to_net(), stream=f, encoding='utf-8')
+        yaml.safe_dump(self.entity._to_net(), stream=f, encoding="utf-8")
         f.close()
 
     def _edit(self):
-        editor = os.environ.get('EDITOR', self.DEFAULT_EDITOR)
+        editor = os.environ.get("EDITOR", self.DEFAULT_EDITOR)
         editor_cmd = shlex.split(editor)
         editor_cmd.append(self.temp)
         rv = subprocess.call(editor_cmd)
         if rv != 0:
-            raise ActionError('Editor {} returned nonzero {}'.format(editor, rv))
+            raise ActionError("Editor {} returned nonzero {}".format(editor, rv))
         self.edited = yaml_safe_load(self.temp)
 
 
 class SetAction:
-
     def __init__(self, obj, act):
         """Action to perform when editing an object"""
         self.entity = obj
@@ -146,10 +145,10 @@ class SetAction:
 
     def _parse_action(self, arg):
         # TODO: make the parsing of the argument a bit more formal
-        if arg.startswith('@'):
+        if arg.startswith("@"):
             return self._from_file(arg)
         try:
-            values = dict((el.strip().split('=')) for el in arg.split(':'))
+            values = dict((el.strip().split("=")) for el in arg.split(":"))
         except Exception:
             raise ActionError("Could not parse set instructions: %s" % arg)
         return self._from_cli(values)
@@ -162,17 +161,17 @@ class SetAction:
                 # not in the schema, pass it down the lane as-is
                 continue
 
-            if exp_type == 'list':
-                values[k] = v.split(',')
-            elif exp_type == 'bool':
+            if exp_type == "list":
+                values[k] = v.split(",")
+            elif exp_type == "bool":
                 v = v.lower()
-                if v == 'true':
+                if v == "true":
                     values[k] = True
-                elif v == 'false':
+                elif v == "false":
                     values[k] = False
                 else:
                     raise ValueError("Booleans can only be 'true' or 'false'")
-            elif exp_type == 'dict':
+            elif exp_type == "dict":
                 raise ValueError("Dictionaries are still not supported on the command line")
         return values
 
@@ -193,12 +192,10 @@ class SetAction:
             raise ActionValidationError("The provided data is not valid: %s" % e)
 
         desc = []
-        for (k, v) in self.args.items():
+        for k, v in self.args.items():
             curval = getattr(self.entity, k)
             if v != curval:
-                msg = "%s: %s changed %s => %s" % (
-                    self.entity.pprint(), k,
-                    curval, v)
+                msg = "%s: %s changed %s => %s" % (self.entity.pprint(), k, curval, v)
                 desc.append(msg)
         self.entity.update(self.args)
         return "\n".join(desc)

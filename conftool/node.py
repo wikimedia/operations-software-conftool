@@ -6,13 +6,9 @@ from conftool.kvobject import Entity
 
 
 class Node(Entity):
-
-    _schema = {
-        'weight': get_validator('int'),
-        'pooled': get_validator("enum:yes|no|inactive")
-    }
-    _tags = ['dc', 'cluster', 'service']
-    _defaults = {'pooled': 'inactive', 'weight': 0}
+    _schema = {"weight": get_validator("int"), "pooled": get_validator("enum:yes|no|inactive")}
+    _tags = ["dc", "cluster", "service"]
+    _defaults = {"pooled": "inactive", "weight": 0}
 
     @classmethod
     def base_path(cls):

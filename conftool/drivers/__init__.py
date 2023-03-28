@@ -11,7 +11,6 @@ class NotFoundError(BackendError):
 
 
 class BaseDriver:
-
     def __init__(self, config):
         self.base_path = os.path.join(config.namespace, config.api_version)
 
@@ -19,7 +18,7 @@ class BaseDriver:
         """
         Returns an absolute path for the key
         """
-        if path.startswith('/'):
+        if path.startswith("/"):
             return path
         else:
             return os.path.join(self.base_path, path)
@@ -67,8 +66,7 @@ class BaseDriver:
         returns a list of direct children of directory.
         """
         if not self.is_dir(path):
-            raise ValueError(
-                "{} is not a directory".format(self.abspath(path)))
+            raise ValueError("{} is not a directory".format(self.abspath(path)))
 
 
 def wrap_exception(exc):
@@ -79,5 +77,7 @@ def wrap_exception(exc):
                 return fn(*args, **kwdargs)
             except exc as e:
                 raise BackendError("Backend error: {}".format(e))
+
         return _wrapper
+
     return actual_wrapper

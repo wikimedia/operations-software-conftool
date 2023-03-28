@@ -11,31 +11,32 @@ _log = logging.getLogger(__name__)
 
 
 def choice(arg):
-    args = arg.split('|')
+    args = arg.split("|")
 
     def is_in(x):
         if x not in args:
             raise ValueError("{} not in '{}'".format(x, " | ".join(args)))
         return x
+
     return is_in
 
 
 def bool_validator(data):
     if not type(data) is bool:
-        raise ValueError('Only boolean values are accepted.')
+        raise ValueError("Only boolean values are accepted.")
     return data
 
 
 def dict_validator(data):
     if not isinstance(data, dict):
-        raise ValueError('Field must be a dict')
+        raise ValueError("Field must be a dict")
     return data
 
 
 def cidr_list_validator(data):
     """Validate we have a list of ip addresses"""
     if not isinstance(data, list):
-        raise ValueError('values need to be a list')
+        raise ValueError("values need to be a list")
     clean_data = []
     for element in data:
         try:
@@ -44,7 +45,7 @@ def cidr_list_validator(data):
             ipaddress.ip_network(element, strict=False)
             clean_data.append(element)
         except ValueError:
-            _log.warning('cidr_list reject invalid network: %s', element)
+            _log.warning("cidr_list reject invalid network: %s", element)
     return clean_data
 
 
@@ -54,18 +55,18 @@ def any_validator(data):
         json.dumps(data)
         return data
     except TypeError:
-        raise ValueError('values need to be json-serializable')
+        raise ValueError("values need to be json-serializable")
 
 
 validators = {
-    'int': int,
-    'list': lambda x: x if isinstance(x, list) else [],
-    'string': str,
-    'bool': bool_validator,
-    'enum': choice,
-    'dict': dict_validator,
-    'cidr_list': cidr_list_validator,
-    'any': any_validator,
+    "int": int,
+    "list": lambda x: x if isinstance(x, list) else [],
+    "string": str,
+    "bool": bool_validator,
+    "enum": choice,
+    "dict": dict_validator,
+    "cidr_list": cidr_list_validator,
+    "any": any_validator,
 }
 
 
@@ -86,8 +87,8 @@ class Validator:
 
 def get_validator(validation_string):
     """Get the validator of choice"""
-    if validation_string.startswith('enum:'):
-        validator, arg = validation_string.split(':', 1)
+    if validation_string.startswith("enum:"):
+        validator, arg = validation_string.split(":", 1)
         callback = validators[validator](arg)
     else:
         validator = validation_string
@@ -99,10 +100,10 @@ class SchemaRule:
     def __init__(self, name, selector, schemaname):
         self.name = name
         self.selectors = {}
-        for tag in selector.split(','):
-            k, expr = tag.split('=', 1)
+        for tag in selector.split(","):
+            k, expr = tag.split("=", 1)
             # All our selector are anchored regexes
-            self.selectors[k] = '^{}$'.format(expr)
+            self.selectors[k] = "^{}$".format(expr)
         self.path = schemaname
         # This will be lazy-loaded if the rule gets ever invoked
         self._schema = None
@@ -110,7 +111,7 @@ class SchemaRule:
     @property
     def schema(self):
         if self._schema is None:
-            with open(self.path, 'r') as fh:
+            with open(self.path, "r") as fh:
                 self._schema = json.load(fh)
         return self._schema
 
@@ -127,8 +128,8 @@ class SchemaRule:
             if not re.search(self.selectors[tag], value):
                 match = False
                 break
-        if match and 'name' in self.selectors:
-            match = (re.search(self.selectors['name'], name) is not None)
+        if match and "name" in self.selectors:
+            match = re.search(self.selectors["name"], name) is not None
 
         return match
 
@@ -141,15 +142,14 @@ class SchemaRule:
 
 
 class JsonSchemaLoader:
-
-    def __init__(self, base_path='schemas', rules=None):
+    def __init__(self, base_path="schemas", rules=None):
         self.base_path = base_path
         self.rules = []  # rules stack
         if rules is None:
             return
         for name, schema_def in rules.items():
-            path = os.path.join(self.base_path, schema_def['schema'])
-            rule = SchemaRule(name, schema_def['selector'], path)
+            path = os.path.join(self.base_path, schema_def["schema"])
+            rule = SchemaRule(name, schema_def["selector"], path)
             self.rules.append(rule)
 
     def rules_for(self, tags, name):

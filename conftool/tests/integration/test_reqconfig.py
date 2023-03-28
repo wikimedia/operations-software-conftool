@@ -227,7 +227,7 @@ class ReqConfigTest(ReqConfigTestBase):
 
     def test_test_validate_bad_ip(self):
         bad_ip_path = os.path.join(fixtures_base, "bad_ip")
-        self.get_cli("--debug", "sync", "--purge", '-g', bad_ip_path, 'ipblock').run()
+        self.get_cli("--debug", "sync", "--purge", "-g", bad_ip_path, "ipblock").run()
         # ensure we can load good addresses
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
@@ -236,7 +236,8 @@ class ReqConfigTest(ReqConfigTestBase):
         # The following should all be removed
         # ['not an ip address', '1.1.1.1.1', 2001::db8::1']
 
-        self.assertEqual(data['cloud/invalid']['cidrs'], ['1.1.1.1', '2.2.2.2/8', '2001:db8::1'])
+        self.assertEqual(data["cloud/invalid"]["cidrs"], ["1.1.1.1", "2.2.2.2/8", "2001:db8::1"])
+
 
 class ReqConfigTestNoSync(ReqConfigTestBase):
     def test_validate(self):

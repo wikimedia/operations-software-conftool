@@ -18,25 +18,24 @@ def catch_and_log(log_msg):
             try:
                 return fn(*args, **kwdargs)
             except BackendError as e:
-                _log.error("%s Backend %s: %s", fn.__name__,
-                           log_msg, e)
+                _log.error("%s Backend %s: %s", fn.__name__, log_msg, e)
             except Exception as e:
-                _log.critical("%s generic %s: %s", fn.__name__,
-                              log_msg, e)
+                _log.critical("%s generic %s: %s", fn.__name__, log_msg, e)
                 raise
+
         return _catch
+
     return actual_wrapper
 
 
 class Syncer:
-
     def __init__(self, schema_file, base_path):
         self.load_order = []
         self.schema = loader.Schema.from_file(schema_file)
         self.base_path = base_path
 
     def add(self, name, entity, dep_chain=None):
-        """ Adds a class to the syncing list resolving its dependencies"""
+        """Adds a class to the syncing list resolving its dependencies"""
         if dep_chain is None:
             dep_chain = []
         # Check if we're re-adding an already inserted entity
@@ -50,13 +49,11 @@ class Syncer:
             _log.debug("Adding dependency %s first", dependency)
             if dependency in dep_chain:
                 # this is a circular dependency, it is fatal
-                raise ValueError("Dependency loop: %s=>%s" %
-                                 ("=>".join(dep_chain), dependency))
+                raise ValueError("Dependency loop: %s=>%s" % ("=>".join(dep_chain), dependency))
             if dependency in self.load_order:
                 # this is already in the list of dependencies, we can bail out
                 continue
-            self.add(dependency, self.schema.entities[dependency],
-                     dep_chain=dep_chain)
+            self.add(dependency, self.schema.entities[dependency], dep_chain=dep_chain)
         self.load_order.append(name)
 
     def load(self):
@@ -90,7 +87,6 @@ class Syncer:
 
 
 class EntitySyncer:
-
     def __init__(self, name, cls):
         self.entity = name
         self.cls = cls
@@ -102,18 +98,14 @@ class EntitySyncer:
         entity_path = os.path.join(rootdir, self.entity)
         _log.info("Loading data for entity %s from %s", self.entity, rootdir)
         if not os.path.isdir(entity_path):
-            _log.error(
-                "Data dir %s does not exist, will NOT remove missing entities",
-                entity_path
-            )
+            _log.error("Data dir %s does not exist, will NOT remove missing entities", entity_path)
             self.skip_removal = True
-        for filename in glob.glob(os.path.join(entity_path, '*.yaml')):
+        for filename in glob.glob(os.path.join(entity_path, "*.yaml")):
             _log.info("Parsing file %s", filename)
             filedata = yaml_safe_load(filename, default={})
             if not filedata:
                 _log.error(
-                    "The file %s returned empty content, will NOT remove missing entities",
-                    filename
+                    "The file %s returned empty content, will NOT remove missing entities", filename
                 )
                 self.skip_removal = True
 
@@ -121,16 +113,14 @@ class EntitySyncer:
                 exp_data = self.cls.from_yaml(filedata)
                 self.data.update(exp_data)
             except Exception:
-                _log.critical(
-                    "Data in file %s could not be loaded",
-                    self.data, exc_info=True)
+                _log.critical("Data in file %s could not be loaded", self.data, exc_info=True)
                 self.skip_removal = True
 
     def load(self):
         # Now we have all the data, let's translate those to tags/entities
         to_load, self.to_remove = self.get_changes(self.data)
         for key in to_load:
-            tags = key.split('/')
+            tags = key.split("/")
             _log.debug("Loading %s:%s", self.entity, key)
             obj = self.cls(*tags)
             if obj.exists:
@@ -145,10 +135,12 @@ class EntitySyncer:
             if self.to_remove:
                 _log.info(
                     "Not removing %s objects %s: errors processing files",
-                    self.entity, self.to_remove)
+                    self.entity,
+                    self.to_remove,
+                )
             return
         for key in self.to_remove:
-            tags = key.split('/')
+            tags = key.split("/")
             obj = self.cls(*tags)
             if obj.exists:
                 _log.info("Removing %s with tags %s", self.entity, key)
@@ -156,12 +148,11 @@ class EntitySyncer:
 
     def get_changes(self, exp_data):
         try:
-            live_data = dict(self.cls.backend.driver.all_data(
-                self.cls.base_path()))
+            live_data = dict(self.cls.backend.driver.all_data(self.cls.base_path()))
         except ValueError as e:
             # Empty remote server
             # TODO: Generalize and move to the etcd driver this hack.
-            if str(e).endswith('is not a directory'):
+            if str(e).endswith("is not a directory"):
                 live_data = {}
             else:
                 raise
@@ -173,19 +164,19 @@ class EntitySyncer:
 
 
 def get_args(args):
-    parser = argparse.ArgumentParser(description="Tool to sync the declared "
-                                     "configuration on-disk with the kvstore "
-                                     "data")
-    parser.add_argument('--version', action='version', version="%(prog)s " + __version__)
-    parser.add_argument('--directory',
-                        help="Directory containing the files to sync")
-    parser.add_argument('--config', help="Optional configuration file",
-                        default="/etc/conftool/config.yaml")
-    parser.add_argument('--debug', action="store_true",
-                        default=False, help="print debug info")
+    parser = argparse.ArgumentParser(
+        description="Tool to sync the declared " "configuration on-disk with the kvstore " "data"
+    )
+    parser.add_argument("--version", action="version", version="%(prog)s " + __version__)
+    parser.add_argument("--directory", help="Directory containing the files to sync")
     parser.add_argument(
-        '--schema', default="/etc/conftool/schema.yaml",
-        help="Schema file that defines additional object types"
+        "--config", help="Optional configuration file", default="/etc/conftool/config.yaml"
+    )
+    parser.add_argument("--debug", action="store_true", default=False, help="print debug info")
+    parser.add_argument(
+        "--schema",
+        default="/etc/conftool/schema.yaml",
+        help="Schema file that defines additional object types",
     )
     return parser.parse_args(args)
 
@@ -203,8 +194,8 @@ def main(arguments=None):
 
     logging.basicConfig(
         level=log_level,
-        format='%(asctime)s [%(levelname)s] %(name)s::%(funcName)s: %(message)s',
-        datefmt='%F %T'
+        format="%(asctime)s [%(levelname)s] %(name)s::%(funcName)s: %(message)s",
+        datefmt="%F %T",
     )
 
     try:

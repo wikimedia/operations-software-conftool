@@ -20,7 +20,7 @@ class ConftoolClient:
         configfile: Optional[str] = None,
         config: Optional[configuration.Config] = None,
         schemafile: Optional[str] = None,
-        schema: Optional[Dict] = None
+        schema: Optional[Dict] = None,
     ) -> None:
         """Initialize conftool."""
         if configfile is not None:
@@ -30,7 +30,7 @@ class ConftoolClient:
         else:
             raise ValueError(
                 "Either a configfile or a configuration must be passed to ConftoolClient()"
-                )
+            )
         KVObject.setup(self.configuration)
         if schema is not None:
             self.schema = Schema.from_data(schema)
@@ -38,8 +38,8 @@ class ConftoolClient:
             self.schema = Schema.from_file(schemafile)
         else:
             raise ValueError(
-                "Either a schemafile or a schema dictionary must be passed to ConftoolClient()"
-                )
+                "Either a configfile or a configuration must be passed to ConftoolClient()"
+            )
 
     def get(self, entity_name: str) -> Entity:
         """Returns the requested conftool object type client.

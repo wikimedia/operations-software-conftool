@@ -27,17 +27,18 @@ class DbConfig:
     content of the instance/section data, while checking the new data for
     correctness before saving them.
     """
+
     # in WMF's Mediawiki deploy, 's3' is a special 'DEFAULT' section with
     # wikis that pre-date the section-izing of databases.
-    default_section = 's3'
-    object_identifier = 'mwconfig'
-    object_name = 'dbconfig'
-    cache_file_suffix = '.json'
-    cache_file_datetime_format = '%Y%m%d-%H%M%S'
+    default_section = "s3"
+    object_identifier = "mwconfig"
+    object_name = "dbconfig"
+    cache_file_suffix = ".json"
+    cache_file_datetime_format = "%Y%m%d-%H%M%S"
     # section.schema prevents a KeyError from happening here.
     flavor_to_dbconfig_key = {
-        'regular': 'sectionLoads',
-        'external': 'externalLoads',
+        "regular": "sectionLoads",
+        "external": "externalLoads",
     }
 
     def __init__(self, schema, instance, section):
@@ -71,8 +72,8 @@ class DbConfig:
 
         """
         config = {}
-        for obj in self.entity.query({'name': re.compile(r'^{}$'.format(DbConfig.object_name))}):
-            dc = obj.tags['scope']
+        for obj in self.entity.query({"name": re.compile(r"^{}$".format(DbConfig.object_name))}):
+            dc = obj.tags["scope"]
             config[dc] = obj.val
 
         return config
@@ -83,7 +84,8 @@ class DbConfig:
     def config_from_dbstore(self):
         return self.compute_config(
             self.section.get_all(initialized_only=True),
-            self.instance.get_all(initialized_only=True))
+            self.instance.get_all(initialized_only=True),
+        )
 
     def compute_config(self, sections, instances):
         """
@@ -97,40 +99,40 @@ class DbConfig:
         section_flavors = defaultdict(dict)
         section_omit_replicas = defaultdict(dict)
         for obj in sections:
-            section_masters[obj.tags['datacenter']][obj.name] = obj.master
-            section_flavors[obj.tags['datacenter']][obj.name] = obj.flavor
-            section_omit_replicas[obj.tags['datacenter']][obj.name] = obj.omit_replicas_in_mwconfig
+            section_masters[obj.tags["datacenter"]][obj.name] = obj.master
+            section_flavors[obj.tags["datacenter"]][obj.name] = obj.flavor
+            section_omit_replicas[obj.tags["datacenter"]][obj.name] = obj.omit_replicas_in_mwconfig
         config = {}
         # Let's initialize the variables
         for dc in section_masters.keys():
             config[dc] = {
-                'externalLoads': defaultdict(lambda: [{}, {}]),
-                'sectionLoads': defaultdict(lambda: [{}, {}]),
-                'groupLoadsBySection': {},
-                'readOnlyBySection': {},
-                'hostsByName': {},
+                "externalLoads": defaultdict(lambda: [{}, {}]),
+                "sectionLoads": defaultdict(lambda: [{}, {}]),
+                "groupLoadsBySection": {},
+                "readOnlyBySection": {},
+                "hostsByName": {},
             }
 
         # Fill in the readonlybysection data
         for obj in sections:
-            if obj.flavor != 'regular':
+            if obj.flavor != "regular":
                 continue
             if not obj.readonly:
                 continue
             section = self._mw_section(obj.name)
-            config[obj.tags['datacenter']]['readOnlyBySection'][section] = obj.ro_reason
+            config[obj.tags["datacenter"]]["readOnlyBySection"][section] = obj.ro_reason
 
         # now fill them with the content of instances
         for instance in instances:
-            datacenter = instance.tags['datacenter']
+            datacenter = instance.tags["datacenter"]
             masters = section_masters[datacenter]
-            if instance.name not in config[datacenter]['hostsByName']:
-                if instance.port == instance.get_default('port'):
+            if instance.name not in config[datacenter]["hostsByName"]:
+                if instance.port == instance.get_default("port"):
                     hostport = instance.host_ip
                 else:
                     # TODO: this will not work at all for IPv6 host_ips!
-                    hostport = '{}:{}'.format(instance.host_ip, instance.port)
-                config[datacenter]['hostsByName'][instance.name] = hostport
+                    hostport = "{}:{}".format(instance.host_ip, instance.port)
+                config[datacenter]["hostsByName"][instance.name] = hostport
             for section_name, section in instance.sections.items():
                 # If the corresponding section is not defined, skip it
                 if section_name not in masters:
@@ -138,13 +140,13 @@ class DbConfig:
                     continue
 
                 # Do not add the instance if not pooled
-                if not section['pooled']:
+                if not section["pooled"]:
                     continue
 
-                fraction = section['percentage']/100
+                fraction = section["percentage"] / 100
                 section_key = self._mw_section(section_name)
 
-                main_weight = int(section['weight'] * fraction)
+                main_weight = int(section["weight"] * fraction)
                 section_load_index = 1
                 if instance.name == masters[section_name]:
                     section_load_index = 0
@@ -156,16 +158,19 @@ class DbConfig:
                 section_load[section_load_index][instance.name] = main_weight
 
                 # Groups only work in regular-flavored sections.
-                if section_flavor != 'regular' or 'groups' not in section:
+                if section_flavor != "regular" or "groups" not in section:
                     continue
-                for group_name, group in section['groups'].items():
+                for group_name, group in section["groups"].items():
                     # Instances can be pooled for a section, but depooled from a given group.
-                    if not group['pooled']:
+                    if not group["pooled"]:
                         continue
-                    weight = int(group['weight'] * fraction)
+                    weight = int(group["weight"] * fraction)
                     self._add_group(
-                        config[datacenter]['groupLoadsBySection'], section_key,
-                        instance.name, group_name, weight
+                        config[datacenter]["groupLoadsBySection"],
+                        section_key,
+                        instance.name,
+                        group_name,
+                        weight,
                     )
         return config
 
@@ -184,8 +189,8 @@ class DbConfig:
             # in each section, check:
             # 1 - a master is defined
             # 2 - at least N instances are pooled.
-            for name, section in mwconfig['sectionLoads'].items():
-                if name == 'DEFAULT':
+            for name, section in mwconfig["sectionLoads"].items():
+                if name == "DEFAULT":
                     name = self.default_section
 
                 section_errors = self._check_section(name, section)
@@ -194,17 +199,16 @@ class DbConfig:
                     continue
 
                 master = next(iter(section[0]))
-                my_sections = [s for s in sections if name == s.name
-                               and s.tags['datacenter'] == dc]
+                my_sections = [s for s in sections if name == s.name and s.tags["datacenter"] == dc]
                 if not my_sections:
-                    errors.append('Section {} is not configured'.format(name))
+                    errors.append("Section {} is not configured".format(name))
                     continue
 
                 my_section = my_sections[0]
                 if master != my_section.master:
                     errors.append(
-                        'Section {section} is supposed to have master'
-                        ' {master} but had {found} instead'.format(
+                        "Section {section} is supposed to have master"
+                        " {master} but had {found} instead".format(
                             section=name, master=my_section.master, found=master
                         )
                     )
@@ -212,9 +216,10 @@ class DbConfig:
                 num_replicas = len(section[1])
                 if num_replicas < min_pooled:
                     errors.append(
-                        'Section {section} is supposed to have '
-                        'minimum {N} replicas, found {M}'.format(
-                            section=name, N=min_pooled, M=num_replicas)
+                        "Section {section} is supposed to have "
+                        "minimum {N} replicas, found {M}".format(
+                            section=name, N=min_pooled, M=num_replicas
+                        )
                     )
         return errors
 
@@ -224,11 +229,14 @@ class DbConfig:
         for the new one, and checks preventively if the resulting configuration would
         be ok.
         """
-        dc = instance.tags['datacenter']
+        dc = instance.tags["datacenter"]
         sections = [s for s in self.section.get_all(initialized_only=True)]
         # Swap the instance we want to check in the live config
-        instances = [inst for inst in self.instance.get_all(initialized_only=True)
-                     if not (inst.name == instance.name and inst.tags['datacenter'] == dc)]
+        instances = [
+            inst
+            for inst in self.instance.get_all(initialized_only=True)
+            if not (inst.name == instance.name and inst.tags["datacenter"] == dc)
+        ]
         instances.append(instance)
         new_config = self.compute_config(sections, instances)
         return self.check_config(new_config, sections)
@@ -240,9 +248,12 @@ class DbConfig:
         be ok.
         """
         # Swap the instance we want to check in the live config
-        dc = section.tags['datacenter']
-        sections = [s for s in self.section.get_all(initialized_only=True)
-                    if not (s.name == section.name and s.tags['datacenter'] == dc)]
+        dc = section.tags["datacenter"]
+        sections = [
+            s
+            for s in self.section.get_all(initialized_only=True)
+            if not (s.name == section.name and s.tags["datacenter"] == dc)
+        ]
         sections.append(section)
         instances = [inst for inst in self.instance.get_all(initialized_only=True)]
         new_config = self.compute_config(sections, instances)
@@ -256,11 +267,15 @@ class DbConfig:
 
             obj = self.entity(dc, DbConfig.object_name)
             try:
-                obj.validate({'val': data})
+                obj.validate({"val": data})
             except ValueError as e:
-                errors.extend(['Object {} failed to validate:'.format(obj.name),
-                               str(e),
-                               'The actual value was: {}'.format(data)])
+                errors.extend(
+                    [
+                        "Object {} failed to validate:".format(obj.name),
+                        str(e),
+                        "The actual value was: {}".format(data),
+                    ]
+                )
 
         return errors
 
@@ -273,17 +288,16 @@ class DbConfig:
         # using all sections and instances.  It might be relevant in the future if we allow
         # instances to belong to sections from another DC, or some other oddball scenarios.
         sections = [s for s in self.section.get_all(initialized_only=True)]
-        config = self.compute_config(
-            sections,
-            self.instance.get_all(initialized_only=True))
+        config = self.compute_config(sections, self.instance.get_all(initialized_only=True))
 
         errors = []
         errors.extend(self.check_config(config, sections))
         errors.extend(self._validate(config))
         return (config, errors)
 
-    def diff_configs(self, a, b, *, a_name='live', b_name='generated', datacenter=None,
-                     force_unified=False):
+    def diff_configs(
+        self, a, b, *, a_name="live", b_name="generated", datacenter=None, force_unified=False
+    ):
         """
         Returns a 2-element tuple. The first element is a boolean, True if there is any diff,
         False otherwise. The second element is a generator that yields unified diff lines of
@@ -319,37 +333,44 @@ class DbConfig:
         def _diff_leaf(a, b, branches):
             """Given an 'a' tree and a 'b' tree, compute a diff of _get(a, branches) against
             _get(b, branches)."""
-            path = '/'.join(branches)
+            path = "/".join(branches)
             a_lines = _to_json_lines(_get(a, branches))
             b_lines = _to_json_lines(_get(b, branches))
-            a_descr = ' '.join([path, a_name])
-            b_descr = ' '.join([path, b_name])
+            a_descr = " ".join([path, a_name])
+            b_descr = " ".join([path, b_name])
             if icdiff is not None and not force_unified:
                 consolediff = icdiff.ConsoleDiff(cols=self._terminal_columns())
-                difflines = list([line + '\n' for line in consolediff.make_table(
-                    a_lines,
-                    b_lines,
-                    context=True,
-                    fromdesc=a_descr,
-                    todesc=b_descr,
-                )])
+                difflines = list(
+                    [
+                        line + "\n"
+                        for line in consolediff.make_table(
+                            a_lines,
+                            b_lines,
+                            context=True,
+                            fromdesc=a_descr,
+                            todesc=b_descr,
+                        )
+                    ]
+                )
                 # Unlike difflib.unified_diff, icdiff outputs a header regardless of whether or
                 # not there was a diff between contents.  Suppress header-only output sections.
                 if len(difflines) > 1:
                     rv.extend(difflines)
             else:
-                rv.extend([line + '\n' for line in difflib.unified_diff(
-                    a_lines,
-                    b_lines,
-                    lineterm='',
-                    fromfile=a_descr,
-                    tofile=b_descr)])
+                rv.extend(
+                    [
+                        line + "\n"
+                        for line in difflib.unified_diff(
+                            a_lines, b_lines, lineterm="", fromfile=a_descr, tofile=b_descr
+                        )
+                    ]
+                )
 
         def _recursively_diff(a, b, branches):
             """Diff the sub-trees of 'a' and 'b', recursing an extra time for keys_with_subtrees."""
             # These keys have sub-trees with non-trivial structure, so we recurse into them to
             # separately present their leaves to difflib.
-            keys_with_subtrees = ('externalLoads', 'groupLoadsBySection', 'sectionLoads')
+            keys_with_subtrees = ("externalLoads", "groupLoadsBySection", "sectionLoads")
 
             for next_branch in sorted(_get(a, branches).keys() | _get(b, branches).keys()):
                 if next_branch in keys_with_subtrees:
@@ -384,8 +405,9 @@ class DbConfig:
             previous_config = self.live_config
         except Exception as e:
             previous_config = None
-            rollback_message = ('Unable to backup previous configuration. Failed to fetch it: '
-                                '{e}').format(e=e)
+            rollback_message = (
+                "Unable to backup previous configuration. Failed to fetch it: " "{e}"
+            ).format(e=e)
 
         # TODO: add a locking mechanism
         config, errors = self.compute_and_check_config()
@@ -395,39 +417,42 @@ class DbConfig:
         if datacenter is not None:
             if datacenter not in config.keys():
                 return ActionResult(
-                    False, 2, messages=['Datacenter {} not found'.format(datacenter)])
+                    False, 2, messages=["Datacenter {} not found".format(datacenter)]
+                )
 
         has_diff, diff = self.diff_configs(previous_config, config, datacenter=datacenter)
         if not has_diff:
-            return ActionResult(True, 0, messages=['Nothing to commit'])
+            return ActionResult(True, 0, messages=["Nothing to commit"])
 
         # We want to Phab-paste a unified diff, not the two-column icdiff.
-        _, unified_diff = self.diff_configs(previous_config, config,
-                                            datacenter=datacenter, force_unified=True)
+        _, unified_diff = self.diff_configs(
+            previous_config, config, datacenter=datacenter, force_unified=True
+        )
 
-        diff_text = ''.join(diff)
+        diff_text = "".join(diff)
         if batch and comment is None:
-            return ActionResult(False, 4, messages=['--message required for batch commits'])
+            return ActionResult(False, 4, messages=["--message required for batch commits"])
         if not batch:
             # TODO: add test coverage
             confirmed, error = self._ask_confirmation(diff_text)
             if not confirmed:
                 return ActionResult(False, 3, messages=[error])
             if not sys.stdout.isatty():
-                return ActionResult(False, 4,
-                                    messages=['--batch required when running uninteractively'])
+                return ActionResult(
+                    False, 4, messages=["--batch required when running uninteractively"]
+                )
             if comment is None:
                 comment = input("Please describe this commit: ")
 
         # Save current config for easy rollback
         cache_file = None
         if previous_config is not None:
-            cache_file_name = '{date}-{user}{suffix}'.format(
+            cache_file_name = "{date}-{user}{suffix}".format(
                 date=datetime.now().strftime(DbConfig.cache_file_datetime_format),
                 user=get_username(),
-                suffix=DbConfig.cache_file_suffix)
-            cache_file_path = Path(self.entity.config.cache_path).joinpath(
-                DbConfig.object_name)
+                suffix=DbConfig.cache_file_suffix,
+            )
+            cache_file_path = Path(self.entity.config.cache_path).joinpath(DbConfig.object_name)
             try:  # TODO Python3.4 doesn't accept exist_ok=True
                 Path(cache_file_path).mkdir(mode=0o755, parents=True)
             except FileExistsError:
@@ -436,28 +461,34 @@ class DbConfig:
             # TODO: when Python3.4 and 3.5 support is removed, remove the str()
             cache_file = cache_file_path.joinpath(cache_file_name)
             try:
-                with open(str(cache_file), 'w') as f:
+                with open(str(cache_file), "w") as f:
                     json.dump(previous_config, f, indent=4, sort_keys=True)
             except Exception as e:
-                rollback_message = ('Unable to backup previous configuration. Failed to save it: '
-                                    '{e}').format(e=e)
+                rollback_message = (
+                    "Unable to backup previous configuration. Failed to save it: " "{e}"
+                ).format(e=e)
             else:
-                rollback_message = ('Previous configuration saved. To restore it run: '
-                                    'dbctl config restore {path}').format(path=cache_file)
+                rollback_message = (
+                    "Previous configuration saved. To restore it run: "
+                    "dbctl config restore {path}"
+                ).format(path=cache_file)
 
         result = self._write(config, datacenter=datacenter)
         # Inject the rollback message
         result.messages.insert(0, rollback_message)
-        datacenter_label = datacenter if datacenter is not None else 'all'
+        datacenter_label = datacenter if datacenter is not None else "all"
         # Publish diff to Phaste
-        message_prefix = '{}dbctl commit'.format('' if result.success else 'FAILED ')
+        message_prefix = "{}dbctl commit".format("" if result.success else "FAILED ")
         phaste_title = "{prefix} (dc={dc}): '{msg}'".format(
-            prefix=message_prefix, dc=datacenter_label, msg=comment)
-        phaste_url = phaste(phaste_title, ''.join(unified_diff))
+            prefix=message_prefix, dc=datacenter_label, msg=comment
+        )
+        phaste_url = phaste(phaste_title, "".join(unified_diff))
         # Set the announce message
-        result.announce_message = ("{prefix} (dc={dc}): '{msg}', diff saved to "
-                                   '{url} and previous config saved to {f}').format(
-            prefix=message_prefix, dc=datacenter_label, url=phaste_url, f=cache_file, msg=comment)
+        result.announce_message = (
+            "{prefix} (dc={dc}): '{msg}', diff saved to " "{url} and previous config saved to {f}"
+        ).format(
+            prefix=message_prefix, dc=datacenter_label, url=phaste_url, f=cache_file, msg=comment
+        )
         return result
 
     def restore(self, file_object, datacenter=None):
@@ -467,20 +498,23 @@ class DbConfig:
         try:
             config = json.load(file_object)
         except ValueError as e:  # TODO: Python 3.4 doesn't have json.JSONDecodeError
-            errors.append('Invalid JSON configuration: {e}'.format(e=e))
+            errors.append("Invalid JSON configuration: {e}".format(e=e))
             return ActionResult(False, 1, messages=errors)
 
         if datacenter is not None:
             if datacenter not in config:
-                errors.append('Datacenter {dc} not found in configuration to be restored'.format(
-                    dc=datacenter))
+                errors.append(
+                    "Datacenter {dc} not found in configuration to be restored".format(
+                        dc=datacenter
+                    )
+                )
                 return ActionResult(False, 2, messages=errors)
 
         for dc, mwconfig in config.items():
             if datacenter is not None and dc != datacenter:
                 continue
 
-            for name, section in mwconfig['sectionLoads'].items():
+            for name, section in mwconfig["sectionLoads"].items():
                 errors += self._check_section(name, section)
 
         if errors:
@@ -488,8 +522,9 @@ class DbConfig:
 
         result = self._write(config, datacenter=datacenter)
         # Set the announce message
-        result.announce_message = ('dbctl restore of MediaWiki config (dc={dc}) from {f}').format(
-            dc=datacenter if datacenter is not None else 'all', f=file_object.name)
+        result.announce_message = ("dbctl restore of MediaWiki config (dc={dc}) from {f}").format(
+            dc=datacenter if datacenter is not None else "all", f=file_object.name
+        )
         return result
 
     def _write(self, config, datacenter=None):
@@ -506,22 +541,22 @@ class DbConfig:
 
         return ActionResult(True, 0)
 
-    def _ask_confirmation(self, message, *, yes_responses=['y', 'yes']):
+    def _ask_confirmation(self, message, *, yes_responses=["y", "yes"]):
         """Display message to the user and prompt for confirmation, expecting yes_responses.
 
         Returns (success, error) where success is a boolean and error is a string.
         """
         if not sys.stdout.isatty():
-            return (False, 'Could not prompt for confirmation, stdin not a TTY.')
+            return (False, "Could not prompt for confirmation, stdin not a TTY.")
 
         print(message)
-        prompt = 'Enter {} to confirm: '.format(' or '.join(yes_responses))
+        prompt = "Enter {} to confirm: ".format(" or ".join(yes_responses))
         resp = input(prompt)
 
         if resp.lower() not in yes_responses:
-            return (False, 'User did not confirm')
+            return (False, "User did not confirm")
 
-        return (True, '')
+        return (True, "")
 
     def _terminal_columns(self, minimum=100):
         """Get the number of columns on the user's tty, if any, or return minimum."""
@@ -535,10 +570,13 @@ class DbConfig:
         """Checks the validity of a section in sectionLoads."""
         errors = []
         if not section[0]:
-            errors.append('Section {} has no master'.format(name))
+            errors.append("Section {} has no master".format(name))
         elif len(section[0]) != 1:
-            errors.append('Section {name} has multiple masters: {masters}'.format(
-                name=name, masters=sorted(section[0].keys())))
+            errors.append(
+                "Section {name} has multiple masters: {masters}".format(
+                    name=name, masters=sorted(section[0].keys())
+                )
+            )
 
         return errors
 
@@ -547,6 +585,6 @@ class DbConfig:
         # Mangle the section key.
         # Thanks for this, MediaWiki
         if section == self.default_section:
-            return 'DEFAULT'
+            return "DEFAULT"
         else:
             return section

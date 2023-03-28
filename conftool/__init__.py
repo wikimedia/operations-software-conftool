@@ -44,11 +44,8 @@ class IRCSocketHandler(logging.Handler):
             self.user = pwd.getpwuid(os.getuid())[0]
 
     def emit(self, record):
-        message = '!log %s@%s %s' % (
-            self.user,
-            socket.gethostname(),
-            record.getMessage())
-        message = message.encode('utf-8')
+        message = "!log %s@%s %s" % (self.user, socket.gethostname(), record.getMessage())
+        message = message.encode("utf-8")
 
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -60,7 +57,7 @@ class IRCSocketHandler(logging.Handler):
             self.handleError(record)
 
 
-_irc = logging.getLogger('conftool.announce')
+_irc = logging.getLogger("conftool.announce")
 
 
 def setup_irc(config):
@@ -69,15 +66,13 @@ def setup_irc(config):
         return
 
     if config.tcpircbot_host and config.tcpircbot_port:
-        _irc.addHandler(
-            IRCSocketHandler(
-                config.tcpircbot_host,
-                config.tcpircbot_port
-            )
-        )
+        _irc.addHandler(IRCSocketHandler(config.tcpircbot_host, config.tcpircbot_port))
     else:
-        _log.warning('Skipped configuration of IRC handler, invalid parameters: host=%s, port=%d',
-                     config.tcpircbot_host, config.tcpircbot_port)
+        _log.warning(
+            "Skipped configuration of IRC handler, invalid parameters: host=%s, port=%d",
+            config.tcpircbot_host,
+            config.tcpircbot_port,
+        )
 
 
 def yaml_log_error(name, exc, critical):
@@ -96,10 +91,10 @@ def yaml_log_error(name, exc, critical):
 
 def yaml_safe_load(filename, default=None):
     try:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             return yaml.safe_load(f)
     except (IOError, yaml.YAMLError) as exc:
-        critical = (default is None)
+        critical = default is None
         yaml_log_error(filename, exc, critical)
         if critical:
             raise
@@ -115,13 +110,13 @@ def get_username():
 
     """
     # TODO: add test coverage, although the same code is fully tested in Spicerack
-    user = os.getenv('USER')
-    sudo_user = os.getenv('SUDO_USER')
+    user = os.getenv("USER")
+    sudo_user = os.getenv("SUDO_USER")
 
-    if sudo_user is not None and sudo_user != 'root':
+    if sudo_user is not None and sudo_user != "root":
         return sudo_user
 
     if user is not None:
         return user
 
-    return '-'
+    return "-"

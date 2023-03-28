@@ -5,6 +5,7 @@ import etcd
 import urllib3
 
 from conftool import drivers, yaml_safe_load, _log
+
 """
 
 This driver will look at the following config files:
@@ -27,9 +28,9 @@ def get_config(configfile):
     # By default, expanduser checks the HOME variable, which is not overwritten by sudo
     # if env_keep += HOME is set. So sudo confctl would end up reading the config files of the user
     # executing sudo and not those of the user it was sudoing to.
-    run_as = os.environ.get('USER', '')
-    user_home = os.path.expanduser('~{}'.format(run_as))
-    configfiles = ['/etc/etcd/etcdrc', os.path.join(user_home, '.etcdrc')]
+    run_as = os.environ.get("USER", "")
+    user_home = os.path.expanduser("~{}".format(run_as))
+    configfiles = ["/etc/etcd/etcdrc", os.path.join(user_home, ".etcdrc")]
     if configfile:
         configfiles.append(configfile)
 
@@ -45,16 +46,16 @@ class Driver(drivers.BaseDriver):
     def __init__(self, config):
         super().__init__(config)
         self.locks = {}
-        configfile = config.driver_options.get(
-            'etcd_config_file',
-            '/etc/conftool/etcdrc')
+        configfile = config.driver_options.get("etcd_config_file", "/etc/conftool/etcdrc")
         driver_config = get_config(configfile)
         try:
-            if config.driver_options.get('suppress_san_warnings', True):
+            if config.driver_options.get("suppress_san_warnings", True):
                 urllib3.disable_warnings(category=urllib3.exceptions.SubjectAltNameWarning)
         except AttributeError:
-            _log.warning("You are using a modern version of urllib3; "
-                         "please set suppress_san_warnings to false in your driver configuration.")
+            _log.warning(
+                "You are using a modern version of urllib3; "
+                "please set suppress_san_warnings to false in your driver configuration."
+            )
 
         self.client = etcd.Client(**driver_config)
         super().__init__(config)
@@ -90,27 +91,28 @@ class Driver(drivers.BaseDriver):
     def ls(self, path, recursive=False):
         """Given a path, returns a tuple (key, data) for each value found"""
         objects = self._ls(path, recursive=recursive)
-        fullpath = self.abspath(path) + '/'
-        return [(el.key.replace(fullpath, ''), self._data(el))
-                for el in objects]
+        fullpath = self.abspath(path) + "/"
+        return [(el.key.replace(fullpath, ""), self._data(el)) for el in objects]
 
     def all_keys(self, path):
         # The full path we're searching in
-        base_path = self.abspath(path) + '/'
+        base_path = self.abspath(path) + "/"
 
         def split_path(p):
             """Strip the root path and normalize elements"""
-            r = p.replace(base_path, '').replace('//', '/')
-            return r.split('/')
+            r = p.replace(base_path, "").replace("//", "/")
+            return r.split("/")
 
-        return [split_path(el.key)
-                for el in self._ls(path, recursive=True) if not el.dir]
+        return [split_path(el.key) for el in self._ls(path, recursive=True) if not el.dir]
 
     def all_data(self, path):
         """Return a (path, object) tuple for all the objects"""
-        base_path = self.abspath(path) + '/'
-        return [(obj.key.replace(base_path, ''), self._data(obj))
-                for obj in self._ls(path, recursive=True) if not obj.dir]
+        base_path = self.abspath(path) + "/"
+        return [
+            (obj.key.replace(base_path, ""), self._data(obj))
+            for obj in self._ls(path, recursive=True)
+            if not obj.dir
+        ]
 
     @drivers.wrap_exception(etcd.EtcdException)
     def _ls(self, path, recursive=False):
@@ -139,5 +141,5 @@ class Driver(drivers.BaseDriver):
             return json.loads(etcdresult.value)
         except ValueError:
             raise drivers.BackendError(
-                "The kvstore contains malformed data at key %s" %
-                etcdresult.key)
+                "The kvstore contains malformed data at key %s" % etcdresult.key
+            )
