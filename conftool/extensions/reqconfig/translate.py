@@ -97,7 +97,7 @@ class DSLTranslator:
         if obj.method:
             output.append(f'{self.method} {self.equality} "{obj.method}"')
         url_rule = self._url_match(
-            obj.url_path, obj.query_parameter, self._escape(obj.query_parameter_value)
+            self._escape(obj.url_path), obj.query_parameter, self._escape(obj.query_parameter_value)
         )
         if url_rule != "":
             output.append(url_rule)
