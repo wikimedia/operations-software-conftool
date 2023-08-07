@@ -1,3 +1,10 @@
+conftool (2.3.1-1) UNRELEASED; urgency=medium
+
+  * requestctl: fix two minor bugs in `requestctl log`
+  * Enforce black as formatter
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Mon, 07 Aug 2023 09:06:36 +0200
+
 conftool (2.3.0-1) bullseye-wikimedia; urgency=medium
 
   * Add conftool.cli.ConftoolClient for ease of initialization
