@@ -202,7 +202,7 @@ class VSLView(View):
 You can monitor requests matching this action using the following command:
 sudo varnishncsa -n frontend -g request \\
   -F '"%{X-Client-IP}i" %l %u %t "%r" %s %b "%{Referer}i" "%{User-agent}i" "%{X-Public-Cloud}i"' \\
-  -q '$vsl and VCL_ACL eq "NO_MATCH wikimedia_nets"'
+  -q '$vsl and not VCL_ACL eq "MATCH wikimedia_nets"'
 """
     )
 

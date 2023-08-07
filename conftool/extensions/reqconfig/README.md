@@ -130,7 +130,7 @@ $ requestctl log cache-text/requests_ua_api
 You can monitor requests matching this action using the following command:
 sudo varnishncsa -n frontend -g request \
   -F '"%{X-Client-IP}i" %l %u %t "%r" %s %b "%{Referer}i" "%{User-agent}i" "%{X-Public-Cloud}i"' \
-  -q 'ReqHeader:User-Agent ~ "^python-requests" and ( ReqURL ~ "^/api/rest_v1/" or ReqURL ~ "/w/api.php" ) and VCL_ACL eq "NO_MATCH wikimedia_nets"'
+  -q 'ReqHeader:User-Agent ~ "^python-requests" and ( ReqURL ~ "^/api/rest_v1/" or ReqURL ~ "/w/api.php" ) and  not VCL_ACL eq "MATCH wikimedia_nets"'
 
 ```
 
