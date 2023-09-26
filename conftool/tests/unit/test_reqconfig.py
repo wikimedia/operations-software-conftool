@@ -144,6 +144,13 @@ def test_vcl_from_pattern(requestctl, req, expected, negation):
         assert tr.from_pattern(req, True) == negation
 
 
+def test_vcl_from_expression_bad_ipblock(requestctl):
+    """An unsupported ipblock raises a readable issue"""
+    vcl = translate.VCLTranslator(requestctl.schema)
+    with pytest.raises(ValueError, match="scope 'pinkunicorn' is not currently supported"):
+        vcl.from_ipblock("ipblock@pinkunicorn/somevalue", False)
+
+
 @pytest.mark.parametrize(
     "path,param,value,expected",
     [

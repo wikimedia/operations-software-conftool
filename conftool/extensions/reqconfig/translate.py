@@ -10,7 +10,7 @@ class DSLTranslator:
     ipblock = "ipblock@"
     # IPblocks implemented as ACLs
     acl_scopes = ["abuse"]
-    custom_header_scopes = {"cloud": "X-Public-Cloud"}
+    custom_header_scopes = {"cloud": "X-Public-Cloud", "known-clients": "X-Known-Client"}
     # Translations.
     booleans = {"AND": None, "OR": None}
     parens = {"(": "(", ")": ")"}
@@ -82,6 +82,8 @@ class DSLTranslator:
             if negation:
                 oper = "!~"
             return f'{self.header_prefix}{self.custom_header_scopes[scope]} {oper} "^{value}$"'
+        else:
+            raise ValueError(f"scope '{scope}' is not currently supported")
 
     def _escape(self, expr: str) -> str:
         """Escape a regex, if needed."""
