@@ -1,4 +1,10 @@
-conftool (2.3.1-1) UNRELEASED; urgency=medium
+conftool (2.3.2-1) bullseye-wikimedia; urgency=high
+
+  * requestctl: add support for known-clients IPBlocks
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Wed, 27 Sep 2023 12:40:11 +0200
+
+conftool (2.3.1-1) bullseye-wikimedia; urgency=medium
 
   * requestctl: fix two minor bugs in `requestctl log`
   * Enforce black as formatter
