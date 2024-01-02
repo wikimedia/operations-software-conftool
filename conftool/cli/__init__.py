@@ -1,6 +1,6 @@
 """Simple conftool initialization class."""
 from typing import Dict, Optional
-from conftool import configuration
+from conftool import configuration, setup_irc
 from conftool.kvobject import KVObject, Entity
 from conftool.loader import Schema
 
@@ -21,6 +21,7 @@ class ConftoolClient:
         config: Optional[configuration.Config] = None,
         schemafile: Optional[str] = None,
         schema: Optional[Dict] = None,
+        irc_logging: bool = True,
     ) -> None:
         """Initialize conftool."""
         if configfile is not None:
@@ -40,6 +41,8 @@ class ConftoolClient:
             raise ValueError(
                 "Either a configfile or a configuration must be passed to ConftoolClient()"
             )
+        if irc_logging:
+            setup_irc(self.configuration)
 
     def get(self, entity_name: str) -> Entity:
         """Returns the requested conftool object type client.
