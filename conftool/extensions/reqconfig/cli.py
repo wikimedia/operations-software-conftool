@@ -54,7 +54,7 @@ class Requestctl:
         if (self.config.tcpircbot_host and self.config.tcpircbot_port) and not irc.handlers:
             irc.addHandler(IRCSocketHandler(config.tcpircbot_host, config.tcpircbot_port))
         # Now let's load the schema
-        self.client = ConftoolClient(config=self.config, schema=SCHEMA)
+        self.client = ConftoolClient(config=self.config, schema=SCHEMA, irc_logging=False)
         self.schema = self.client.schema
         # Load the right entity
         self.cls = self.client.get(self.object_type)

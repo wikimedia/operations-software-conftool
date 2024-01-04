@@ -66,7 +66,7 @@ SYNC_ENTITIES = sorted(set(SCHEMA.keys()) - {"vcl"})
 
 def get_schema(conf: configuration.Config) -> Schema:
     """Get the schema for requestctl."""
-    return ConftoolClient(config=conf, schema=SCHEMA).schema
+    return ConftoolClient(config=conf, schema=SCHEMA, irc_logging=False).schema
 
 
 def get_obj_from_slug(entity, slug: str) -> Entity:
