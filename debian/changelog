@@ -1,3 +1,9 @@
+conftool (2.3.3-1) bullseye-wikimedia; urgency=medium
+
+  * Fix irc logging, broken in 2.3.0
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Thu, 04 Jan 2024 17:49:14 +0100
+
 conftool (2.3.2-1) bullseye-wikimedia; urgency=high
 
   * requestctl: add support for known-clients IPBlocks
