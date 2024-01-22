@@ -1,3 +1,4 @@
+""" Module providing interaction with confd."""
 import logging
 import os
 import pwd
@@ -44,7 +45,7 @@ class IRCSocketHandler(logging.Handler):
             self.user = pwd.getpwuid(os.getuid())[0]
 
     def emit(self, record):
-        message = "!log %s@%s %s" % (self.user, socket.gethostname(), record.getMessage())
+        message = f"!log {self.user}@{socket.gethostname()} {record.getMessage()}"
         message = message.encode("utf-8")
 
         try:
@@ -61,6 +62,10 @@ _irc = logging.getLogger("conftool.announce")
 
 
 def setup_irc(config):
+    """
+    Function to setup IRC logging handler
+    """
+
     # Only one handler should be present
     if _irc.handlers:
         return
@@ -76,12 +81,18 @@ def setup_irc(config):
 
 
 def yaml_log_error(name, exc, critical):
+    """Logs YAML loading errors according to passed criticity and adds context for IOErrors
+
+    Returns:
+        None
+    """
+
     if critical:
         logger = _log.critical
     else:
         logger = _log.error
 
-    if type(exc) is IOError:
+    if isinstance(exc, IOError):
         if exc.errno == 2:
             logger("File %s not found", exc.filename)
         else:
@@ -91,16 +102,20 @@ def yaml_log_error(name, exc, critical):
 
 
 def yaml_safe_load(filename, default=None):
+    """Wrapper around PyYAML safe_load with file loading and error handling.
+    Returns the python object corresponding to the loaded YAML.
+    """
+
     try:
-        with open(filename, "r") as f:
-            return yaml.safe_load(f)
+        with open(filename, "r", encoding="utf-8") as file:
+            return yaml.safe_load(file)
     except (IOError, yaml.YAMLError) as exc:
         critical = default is None
         yaml_log_error(filename, exc, critical)
         if critical:
             raise
-        else:
-            return default
+
+        return default
 
 
 def get_username():
