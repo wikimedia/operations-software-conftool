@@ -79,7 +79,8 @@ def yaml_log_error(name, exc, critical):
     if critical:
         logger = _log.critical
     else:
-        logger = _log.debug
+        logger = _log.error
+
     if type(exc) is IOError:
         if exc.errno == 2:
             logger("File %s not found", exc.filename)
