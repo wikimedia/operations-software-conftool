@@ -113,6 +113,21 @@ def parse_args(args) -> Namespace:
         help="The string to search in the expression. Must be in the format <scope>/<name>."
         "No regex matching or partial string match is performed.",
     )
+    # find-ip command. Returns all the ipblocks and IP belongs to, if any
+    find_ip = command.add_parser(
+        "find-ip",
+        help="Find if an IP is part of any CIDR of any ipblock definitions on disk.",
+    )
+    find_ip.add_argument(
+        "--git-repo",
+        "-g",
+        help="location on disc of the git repository",
+        default="/srv/private/requestctl",
+    )
+    find_ip.add_argument(
+        "ip",
+        help="The IP address to search for.",
+    )
     return parser.parse_args(args)
 
 
@@ -122,6 +137,8 @@ def main():
     options = parse_args(sys.argv[1:])
     rq = Requestctl(options)
     try:
+        # TODO: add support to let a custom exit code surface, for example for
+        # "failed successfully" operations
         rq.run()
     except RequestctlError as e:
         logger.error(e)

@@ -6,6 +6,7 @@ We don't necessarily derive it from the base cli tools.
 
 import argparse
 import difflib
+import ipaddress
 import logging
 import pathlib
 import re
@@ -34,7 +35,7 @@ config = configuration.Config()
 class Requestctl:
     """Cli tool to interact with the dynamic banning of urls."""
 
-    ACTION_ONLY_CMD = ["enable", "disable", "commit", "vcl", "log", "find"]
+    ACTION_ONLY_CMD = ["enable", "disable", "commit", "vcl", "log", "find", "find-ip"]
 
     def __init__(self, args: argparse.Namespace) -> None:
         if args.debug:
@@ -83,9 +84,12 @@ class Requestctl:
     def run(self):
         """Runs the action defined in the cli args."""
         try:
-            command = getattr(self, self.args.command)
+            command = getattr(self, self.args.command.replace("-", "_"))
         except AttributeError as e:
             raise RequestctlError(f"Command {self.args.command} not implemented") from e
+
+        # TODO: add support to let a custom exit code surface, for example for
+        # "failed successfully" operations
         command()
 
     def validate(self):
@@ -205,6 +209,22 @@ class Requestctl:
                 print(f"action: {action.pprint()}, expression: {action.expression}")
         if not matches:
             print("No entries found.")
+
+    def find_ip(self):
+        """Find if the given IP is part of any IP block on disk."""
+        ip = ipaddress.ip_address(self.args.ip)
+        base_path = pathlib.Path(self.args.git_repo) / self.client.get("ipblock").base_path()
+        found = False
+        for file in base_path.glob("**/*.yaml"):
+            content = yaml_safe_load(file, {})
+            for prefix in content["cidrs"]:
+                if ip in ipaddress.ip_network(prefix):
+                    found = True
+                    ipblock = file.relative_to(base_path).with_suffix("")
+                    print(f"IP {ip} is part of prefix {prefix} in ipblock {ipblock}")
+
+        if not found:
+            print(f"IP {ip} is not part of any ipblock on disk")
 
     def vcl(self):
         """Print out the VCL for a specific action."""

@@ -7,6 +7,7 @@ import tempfile
 from io import StringIO
 from unittest.mock import patch
 
+import pytest
 import yaml
 from conftool.extensions import reqconfig
 from conftool.tests.integration import IntegrationTestBase
@@ -14,6 +15,7 @@ from conftool.tests.integration import IntegrationTestBase
 fixtures_base = os.path.realpath(
     os.path.join(os.path.dirname(__file__), os.path.pardir, "fixtures", "reqconfig")
 )
+STEP0_PATH = os.path.join(fixtures_base, "step0")
 
 
 class ReqConfigTestBase(IntegrationTestBase):
@@ -42,9 +44,13 @@ class ReqConfigTest(ReqConfigTestBase):
         """Method run before every test."""
         super().setUp()
         # Run sync.
-        step0_path = os.path.join(fixtures_base, "step0")
         for what in reversed(reqconfig.SYNC_ENTITIES):
-            self.get_cli("sync", "-g", step0_path, what).run()
+            self.get_cli("sync", "-g", STEP0_PATH, what).run()
+
+    # Required as long as this class inherits from TestCase
+    @pytest.fixture(autouse=True)
+    def capsys(self, capsys):
+        self.capsys = capsys
 
     def test_sync_all(self):
         """Test syncing all properties."""
@@ -225,6 +231,20 @@ class ReqConfigTest(ReqConfigTestBase):
             multi_match.run()
             assert len(mock_stdout.getvalue().splitlines()) == 2
 
+    # Can't use @pytest.mark.parametrize because subclass of TestCase
+    def test_find_ip_ok(self):
+        """It should find all the IP blocks the given IP is part of."""
+        self.get_cli("find-ip", "-g", STEP0_PATH, "1.123.123.123").run()
+        out, _ = self.capsys.readouterr()
+        assert "IP 1.123.123.123 is part of prefix 1.0.0.0/8 in ipblock cloud/aws" == out.strip()
+
+    # Can't use @pytest.mark.parametrize because subclass of TestCase
+    def test_find_ip_missing(self):
+        """It should tell that the given IP is not part of any IP block."""
+        self.get_cli("find-ip", "-g", STEP0_PATH, "127.0.0.1").run()
+        out, _ = self.capsys.readouterr()
+        assert "IP 127.0.0.1 is not part of any ipblock on disk" == out.strip()
+
     def test_test_validate_bad_ip(self):
         bad_ip_path = os.path.join(fixtures_base, "bad_ip")
         self.get_cli("--debug", "sync", "--purge", "-g", bad_ip_path, "ipblock").run()
@@ -242,8 +262,7 @@ class ReqConfigTest(ReqConfigTestBase):
 class ReqConfigTestNoSync(ReqConfigTestBase):
     def test_validate(self):
         # Step 0 should verify without issues.
-        step0_path = os.path.join(fixtures_base, "step0")
-        self.get_cli("validate", step0_path).run()
+        self.get_cli("validate", STEP0_PATH).run()
         # Now let's try the step1, where we were removing an object that we needed:
         bad_expr_path = os.path.join(fixtures_base, "step1")
         with self.assertRaises(reqconfig.cli.RequestctlError):
