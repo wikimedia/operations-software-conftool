@@ -1,4 +1,5 @@
 """Simple conftool initialization class."""
+
 from typing import Dict, Optional
 from conftool import configuration, setup_irc
 from conftool.kvobject import KVObject, Entity

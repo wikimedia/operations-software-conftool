@@ -1,4 +1,5 @@
 """Views for requestctl."""
+
 import json
 import textwrap
 from string import Template

@@ -1,4 +1,5 @@
 """ Module providing interaction with confd."""
+
 import logging
 import os
 import pwd
