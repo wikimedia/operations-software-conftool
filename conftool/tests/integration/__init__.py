@@ -42,6 +42,7 @@ class EtcdProcessHelper:
         peers = "%s127.0.0.1:%d" % (self.schema, self.internal_port)
         daemon_args = [
             self.proc_name,
+            "-enable-v2",
             "-data-dir",
             self.base_directory,
             "-name",
