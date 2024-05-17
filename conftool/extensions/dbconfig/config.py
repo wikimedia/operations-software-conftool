@@ -180,47 +180,55 @@ class DbConfig:
             group_loads_by_section[section] = defaultdict(OrderedDict)
         group_loads_by_section[section][group][instance] = weight
 
+    def _check_config_section(self, dc, name, section, sections):
+        """
+        Checks the validity of a sectionLoads or externalLoads value in config.
+
+        All sections must have exactly one master per intent in their section
+        config and the number of replicas must fall in the accepted range.
+        """
+        section_errors = self._check_section(name, section)
+        if section_errors:
+            return section_errors
+
+        master = next(iter(section[0]))
+        my_sections = [s for s in sections if name == s.name and s.tags["datacenter"] == dc]
+        if not my_sections:
+            return ["Section {} is not configured".format(name)]
+
+        errors = []
+        my_section = my_sections[0]
+        if master != my_section.master:
+            errors.append(
+                "Section {section} is supposed to have master"
+                " {master} but had {found} instead".format(
+                    section=name, master=my_section.master, found=master
+                )
+            )
+        min_pooled = my_section.min_replicas
+        num_replicas = len(section[1])
+        if num_replicas < min_pooled:
+            errors.append(
+                "Section {section} is supposed to have "
+                "minimum {N} replicas, found {M}".format(section=name, N=min_pooled, M=num_replicas)
+            )
+
+        return errors
+
     def check_config(self, config, sections):
         """
         Checks the validity of a configuration
         """
         errors = []
         for dc, mwconfig in config.items():
-            # in each section, check:
-            # 1 - a master is defined
-            # 2 - at least N instances are pooled.
             for name, section in mwconfig["sectionLoads"].items():
                 if name == "DEFAULT":
                     name = self.default_section
+                errors.extend(self._check_config_section(dc, name, section, sections))
 
-                section_errors = self._check_section(name, section)
-                if section_errors:
-                    errors += section_errors
-                    continue
+            for name, section in mwconfig["externalLoads"].items():
+                errors.extend(self._check_config_section(dc, name, section, sections))
 
-                master = next(iter(section[0]))
-                my_sections = [s for s in sections if name == s.name and s.tags["datacenter"] == dc]
-                if not my_sections:
-                    errors.append("Section {} is not configured".format(name))
-                    continue
-
-                my_section = my_sections[0]
-                if master != my_section.master:
-                    errors.append(
-                        "Section {section} is supposed to have master"
-                        " {master} but had {found} instead".format(
-                            section=name, master=my_section.master, found=master
-                        )
-                    )
-                min_pooled = my_section.min_replicas
-                num_replicas = len(section[1])
-                if num_replicas < min_pooled:
-                    errors.append(
-                        "Section {section} is supposed to have "
-                        "minimum {N} replicas, found {M}".format(
-                            section=name, N=min_pooled, M=num_replicas
-                        )
-                    )
         return errors
 
     def check_instance(self, instance):
@@ -517,6 +525,9 @@ class DbConfig:
             for name, section in mwconfig["sectionLoads"].items():
                 errors += self._check_section(name, section)
 
+            for name, section in mwconfig["externalLoads"].items():
+                errors += self._check_section(name, section)
+
         if errors:
             return ActionResult(False, 3, messages=errors)
 
@@ -567,7 +578,7 @@ class DbConfig:
             return minimum
 
     def _check_section(self, name, section):
-        """Checks the validity of a section in sectionLoads."""
+        """Checks the validity of a section in sectionLoads or externalLoads."""
         errors = []
         if not section[0]:
             errors.append("Section {} has no master".format(name))

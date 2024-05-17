@@ -568,9 +568,38 @@ class TestDbConfig(TestCase):
         # Reset it to normal state
         config["test"]["sectionLoads"]["DEFAULT"] = [{"db3": 0}, {"db1": 5}]
         # Add an unknown section
-        sections.pop()  # Will pop s4
+        s4 = sections.pop()  # Will pop s4
         self.assertEqual(
             self.config.check_config(config, sections), ["Section s4 is not configured"]
+        )
+        # Reset sections to a normal state
+        sections.append(s4)
+        # Remove master from x2
+        config["test"]["externalLoads"]["x2"][0] = {}
+        self.assertEqual(self.config.check_config(config, sections), ["Section x2 has no master"])
+        # Add multiple masters to x2
+        config["test"]["externalLoads"]["x2"][0] = {"xtwodb1": 0, "xtwodb2": 0}
+        self.assertEqual(
+            self.config.check_config(config, sections),
+            ["Section x2 has multiple masters: ['xtwodb1', 'xtwodb2']"],
+        )
+        # Set x2 master to an incorrect instance
+        config["test"]["externalLoads"]["x2"][0] = {"esdb1": 0}
+        self.assertEqual(
+            self.config.check_config(config, sections),
+            ["Section x2 is supposed to have master xtwodb1 but had esdb1 instead"],
+        )
+        # Reset x2 to a normal state
+        config["test"]["externalLoads"]["x2"][0] = {"xtwodb1": 0}
+        # Set min_replicas to 1 on es1 and clear its replicas
+        for section in sections:
+            if section.name == "es1":
+                section.min_replicas = 1
+                break
+        config["test"]["externalLoads"]["es1"][1] = {}
+        self.assertEqual(
+            self.config.check_config(config, sections),
+            ["Section es1 is supposed to have minimum 1 replicas, found 0"],
         )
 
     def test_check_instance(self):
@@ -732,6 +761,12 @@ class TestDbConfig(TestCase):
             res = self.config.restore(f)
         self.assertFalse(res.success)
         self.assertEqual(res.messages, ["Section s1 has multiple masters: ['dba2:3307', 'dba3']"])
+
+    def test_restore_invalid_data_external(self):
+        with open(os.path.join(self.restore_path, "invalid_data_external.json"), "r") as f:
+            res = self.config.restore(f)
+        self.assertFalse(res.success)
+        self.assertEqual(res.messages, ["Section es1 has no master"])
 
     def test_restore_invalid_schema(self):
         with open(os.path.join(self.restore_path, "invalid_schema.json"), "r") as f:
