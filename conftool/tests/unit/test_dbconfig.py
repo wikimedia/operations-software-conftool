@@ -413,13 +413,17 @@ class TestDbConfig(TestCase):
         self.mwconfig = self.config.entity
         self.restore_path = os.path.join(test_base, "fixtures", "dbconfig", "restore")
 
-    def _mock_objects(self):
+    def _mock_objects(self, valid=False):
+        # Note: by default, this method returns instance configuration that
+        # cannot satisfy the section configuration (s4 has min_replicas = 1,
+        # but db1 is not pooled, so it has 0). Set valid = True to return an
+        # instance configuration with db1 pooled.
         db1 = self.schema.entities["dbconfig-instance"]("test", "db1")
         db1.host_ip = "1.1.1.1"
         db1.sections = {
             "s1": {"weight": 10, "pooled": True, "percentage": 50},
             "s3": {"weight": 10, "pooled": True, "percentage": 100},
-            "s4": {"weight": 10, "pooled": False, "percentage": 100},
+            "s4": {"weight": 10, "pooled": valid, "percentage": 100},
         }
         db2 = self.schema.entities["dbconfig-instance"]("test", "db2")
         db2.host_ip = "2.2.2.2"
@@ -540,57 +544,59 @@ class TestDbConfig(TestCase):
         del expected["test"]["groupLoadsBySection"]["DEFAULT"]
         self.assertEqual(self.config.compute_config(sections, instances), expected)
 
-    def test_check_config(self):
-        instances, sections = self._mock_objects()
+    def test_check_config_is_valid(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
+        self.assertEqual(self.config.check_config(config, sections), [])
+
+    def test_check_config_not_enough_replicas(self):
+        # With valid=False, s4 has no (pooled) replicas, but has min_replicas = 1.
+        instances, sections = self._mock_objects(valid=False)
         config = self.config.compute_config(sections, instances)
         self.assertEqual(
             self.config.check_config(config, sections),
             ["Section s4 is supposed to have minimum 1 replicas, found 0"],
         )
-        # Let's add one replica for s4. Config should be now ok
-        config["test"]["sectionLoads"]["s4"][1]["db1"] = 1
-        self.assertEqual(self.config.check_config(config, sections), [])
+
+    def test_check_config_no_master(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
         # Let's remove the master from s3
         config["test"]["sectionLoads"]["DEFAULT"][0] = {}
         self.assertEqual(self.config.check_config(config, sections), ["Section s3 has no master"])
+
+    def test_check_config_multiple_masters(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
         # Let's try with two masters
         config["test"]["sectionLoads"]["DEFAULT"] = [{"db3": 0, "db1": 5}, {}]
         self.assertEqual(
             self.config.check_config(config, sections),
             ["Section s3 has multiple masters: ['db1', 'db3']"],
         )
+
+    def test_check_config_master_does_not_match_intent(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
         # And now with a master that doesn't belong to the section
         config["test"]["sectionLoads"]["DEFAULT"] = [{"db4": 0}, {"db1": 5}]
         self.assertEqual(
             self.config.check_config(config, sections),
             ["Section s3 is supposed to have master db3 but had db4 instead"],
         )
-        # Reset it to normal state
-        config["test"]["sectionLoads"]["DEFAULT"] = [{"db3": 0}, {"db1": 5}]
+
+    def test_check_config_unknown_section(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
         # Add an unknown section
-        s4 = sections.pop()  # Will pop s4
+        sections.pop()  # Will pop s4
         self.assertEqual(
             self.config.check_config(config, sections), ["Section s4 is not configured"]
         )
-        # Reset sections to a normal state
-        sections.append(s4)
-        # Remove master from x2
-        config["test"]["externalLoads"]["x2"][0] = {}
-        self.assertEqual(self.config.check_config(config, sections), ["Section x2 has no master"])
-        # Add multiple masters to x2
-        config["test"]["externalLoads"]["x2"][0] = {"xtwodb1": 0, "xtwodb2": 0}
-        self.assertEqual(
-            self.config.check_config(config, sections),
-            ["Section x2 has multiple masters: ['xtwodb1', 'xtwodb2']"],
-        )
-        # Set x2 master to an incorrect instance
-        config["test"]["externalLoads"]["x2"][0] = {"esdb1": 0}
-        self.assertEqual(
-            self.config.check_config(config, sections),
-            ["Section x2 is supposed to have master xtwodb1 but had esdb1 instead"],
-        )
-        # Reset x2 to a normal state
-        config["test"]["externalLoads"]["x2"][0] = {"xtwodb1": 0}
+
+    def test_check_config_external_not_enough_replicas(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
         # Set min_replicas to 1 on es1 and clear its replicas
         for section in sections:
             if section.name == "es1":
@@ -600,6 +606,42 @@ class TestDbConfig(TestCase):
         self.assertEqual(
             self.config.check_config(config, sections),
             ["Section es1 is supposed to have minimum 1 replicas, found 0"],
+        )
+
+    def test_check_config_external_no_master(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
+        # Remove master from x2
+        config["test"]["externalLoads"]["x2"][0] = {}
+        self.assertEqual(self.config.check_config(config, sections), ["Section x2 has no master"])
+
+    def test_check_config_external_multiple_masters(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
+        # Add multiple masters to x2
+        config["test"]["externalLoads"]["x2"][0] = {"xtwodb1": 0, "xtwodb2": 0}
+        self.assertEqual(
+            self.config.check_config(config, sections),
+            ["Section x2 has multiple masters: ['xtwodb1', 'xtwodb2']"],
+        )
+
+    def test_check_config_external_master_does_not_match_intent(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
+        # Set x2 master to an incorrect instance
+        config["test"]["externalLoads"]["x2"][0] = {"esdb1": 0}
+        self.assertEqual(
+            self.config.check_config(config, sections),
+            ["Section x2 is supposed to have master xtwodb1 but had esdb1 instead"],
+        )
+
+    def test_check_config_external_unknown_section(self):
+        instances, sections = self._mock_objects(valid=True)
+        config = self.config.compute_config(sections, instances)
+        # Add an unknown section
+        sections = [section for section in sections if section.name != "es1"]
+        self.assertEqual(
+            self.config.check_config(config, sections), ["Section es1 is not configured"]
         )
 
     def test_check_instance(self):
