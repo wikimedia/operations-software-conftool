@@ -1,3 +1,11 @@
+conftool (3.0.0-1) bullseye-wikimedia; urgency=medium
+
+  * T365123: dbctl: extend dbconfig checks to external sections
+  * T356423: requestctl: add command to search IP in ipblocks
+  * T355256: Raise yaml_log_error logging level to error
+
+ -- swfrench <swfrench@wikimedia.org>  Wed, 22 May 2024 17:35:52 -0700
+
 conftool (2.3.3-1) bullseye-wikimedia; urgency=medium
 
   * Fix irc logging, broken in 2.3.0
