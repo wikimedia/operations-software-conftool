@@ -4,6 +4,7 @@ import etcd
 
 from conftool import configuration
 from conftool.drivers import BackendError
+from conftool.drivers.etcd import get_config
 from conftool import backend
 
 
@@ -34,3 +35,34 @@ class EtcdDriverTestCase(TestCase):
         self.assertEqual(self.driver._data(mockResult), {"a": "b"})
         mockResult.value = "{]}"
         self.assertRaises(BackendError, self.driver._data, mockResult)
+
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.expanduser")
+    @mock.patch("conftool.drivers.etcd.yaml_safe_load")
+    @mock.patch.dict("os.environ", {"USER": "zebra"})
+    def test_get_config(self, mock_yaml_safe_load, mock_expanduser, mock_exists):
+        """Tests the behavior of the etcdrc search logic in get_config."""
+        # All but /home/zebra/.etcdrc exist.
+        mock_exists.side_effect = [True, False, True]
+        mock_expanduser.return_value = "/home/zebra"
+        mock_yaml_safe_load.side_effect = [
+            {"a": 1, "b": 2},  # /etc/etcd/etcdrc
+            {"a": 3, "c": 4},  # /path/to/config/etcdrc
+        ]
+        # Result: get_config returns a merged config, reflecting the order in
+        # which existing configs have been loaded.
+        self.assertEqual(get_config("/path/to/config/etcdrc"), {"a": 3, "b": 2, "c": 4})
+        mock_exists.assert_has_calls(
+            [
+                mock.call("/etc/etcd/etcdrc"),
+                mock.call("/home/zebra/.etcdrc"),
+                mock.call("/path/to/config/etcdrc"),
+            ]
+        )
+        mock_expanduser.assert_called_with("~zebra")
+        mock_yaml_safe_load.assert_has_calls(
+            [
+                mock.call("/etc/etcd/etcdrc", default={}),
+                mock.call("/path/to/config/etcdrc", default={}),
+            ]
+        )

@@ -35,8 +35,10 @@ def get_config(configfile):
         configfiles.append(configfile)
 
     for filename in configfiles:
-        c = yaml_safe_load(filename, default={})
-        conf.update(c)
+        if os.path.exists(filename):
+            conf.update(yaml_safe_load(filename, default={}))
+        else:
+            _log.debug("Skipping nonexistent etcd config file: %s", filename)
     return conf
 
 
