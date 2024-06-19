@@ -1,3 +1,10 @@
+conftool (3.0.1-1) bullseye-wikimedia; urgency=medium
+
+  * T367019: Avoid error logging while searching configs during normal 
+    operation
+
+ -- Giuseppe Lavagetto <glavagetto@wikimedia.org>  Wed, 19 Jun 2024 07:17:35 +0200
+
 conftool (3.0.0-1) bullseye-wikimedia; urgency=medium
 
   * T365123: dbctl: extend dbconfig checks to external sections
